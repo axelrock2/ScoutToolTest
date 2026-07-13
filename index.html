@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ScoutIQ — Scouting-Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.1.0/dist/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--pitch:#0A1612;--pitch-2:#0E1C17;--panel:#13241D;--panel-2:#16291F;--line:#1F3B2E;--line-bright:#2A4F3C;--lime:#C7F94B;--lime-dim:#9FD12E;--ink:#EAF3EC;--ink-2:#8FA89A;--ink-3:#5E7568;--amber:#F5A623;--red:#FF5B5B;--green:#5BD37A;--blue:#4DA6FF}
+html{scroll-behavior:smooth}
+body{background:var(--pitch);color:var(--ink);font-family:'Archivo',sans-serif;min-height:100vh;position:relative;overflow-x:hidden}
+body:before{content:'';position:fixed;inset:0;background-image:linear-gradient(var(--line) 0.5px,transparent 0.5px),linear-gradient(90deg,var(--line) 0.5px,transparent 0.5px);background-size:44px 44px;opacity:0.22;pointer-events:none;z-index:0;mask-image:radial-gradient(ellipse 90% 70% at 50% 0%,black 25%,transparent 78%);-webkit-mask-image:radial-gradient(ellipse 90% 70% at 50% 0%,black 25%,transparent 78%)}
+.topbar{position:sticky;top:0;z-index:100;background:rgba(10,22,18,0.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between}
+.logo{font-weight:800;font-size:19px;letter-spacing:-0.5px;cursor:pointer;display:flex;align-items:center;gap:9px;color:var(--ink)}
+.logo-mark{width:26px;height:26px;border-radius:6px;background:var(--lime);display:flex;align-items:center;justify-content:center;position:relative}
+.logo-mark:before{content:'';position:absolute;width:10px;height:10px;border:1.5px solid var(--pitch);border-radius:50%}
+.logo-mark:after{content:'';position:absolute;width:1.5px;height:26px;background:var(--pitch);opacity:0.5}
+.logo span{color:var(--lime)}
+.breadcrumb{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:1.5px;display:flex;align-items:center;gap:8px}
+.breadcrumb .dot{width:5px;height:5px;border-radius:50%;background:var(--lime);box-shadow:0 0 8px var(--lime)}
+.page{display:none;padding:32px 28px;position:relative;z-index:1}
+.page.active{display:block;animation:fadeUp 0.4s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.nav-back{display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-2);cursor:pointer;margin-bottom:26px;text-transform:uppercase;letter-spacing:1px;transition:color 0.15s;background:none;border:none}
+.nav-back:hover{color:var(--lime)}
+.hero{max-width:1080px;margin:0 auto;padding:40px 0 8px}
+.hero-eyebrow{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--lime);letter-spacing:3px;text-transform:uppercase;margin-bottom:20px;display:flex;align-items:center;gap:12px}
+.hero-eyebrow:before{content:'';width:32px;height:1px;background:var(--lime)}
+.hero h1{font-weight:900;font-size:clamp(38px,6vw,72px);line-height:0.95;letter-spacing:-2px;margin-bottom:24px;text-transform:uppercase}
+.hero h1 .out{color:transparent;-webkit-text-stroke:1.5px var(--ink-2)}
+.hero h1 .hl{color:var(--lime)}
+.hero p{font-size:16px;color:var(--ink-2);max-width:520px;line-height:1.6;margin-bottom:8px}
+.hero-stats{display:flex;gap:36px;margin-top:36px;padding-top:28px;border-top:1px solid var(--line);flex-wrap:wrap}
+.hstat{display:flex;flex-direction:column;gap:4px}
+.hstat-num{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:30px;color:var(--ink);line-height:1}
+.hstat-num em{color:var(--lime);font-style:normal}
+.hstat-lbl{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3);text-transform:uppercase;letter-spacing:1.5px}
+.mode-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:1080px;margin:44px auto 0}
+.mode-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden}
+.mode-card:before{content:attr(data-num);position:absolute;top:18px;right:20px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3);letter-spacing:1px}
+.mode-card:after{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--lime);transform:scaleY(0);transform-origin:top;transition:transform 0.25s}
+.mode-card:hover{border-color:var(--line-bright);background:var(--panel-2);transform:translateY(-3px)}
+.mode-card:hover:after{transform:scaleY(1)}
+.mode-ico{width:46px;height:46px;border-radius:11px;background:var(--pitch-2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;margin-bottom:20px;transition:all 0.2s}
+.mode-card:hover .mode-ico{background:var(--lime);border-color:var(--lime)}
+.mode-ico i{font-size:23px;color:var(--lime);transition:color 0.2s}
+.mode-card:hover .mode-ico i{color:var(--pitch)}
+.mode-card h3{font-weight:700;font-size:19px;margin-bottom:9px;letter-spacing:-0.3px}
+.mode-card p{font-size:13px;color:var(--ink-2);line-height:1.55}
+.mode-go{margin-top:18px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:6px;transition:all 0.2s}
+.mode-card:hover .mode-go{color:var(--lime);gap:10px}
+.panel-title{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--lime);text-transform:uppercase;letter-spacing:2px;margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.panel-title .idx{color:var(--ink-3)}
+.two-col{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:300px 1fr;gap:18px;align-items:start}
+.filter-panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;position:sticky;top:74px}
+.fg{margin-bottom:17px}
+.fg label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-2);display:block;margin-bottom:7px;text-transform:uppercase;letter-spacing:1px}
+.fg select,.fg input{width:100%;font-family:'Archivo',sans-serif;font-size:13px;padding:9px 11px;border-radius:9px;border:1px solid var(--line);background:var(--pitch-2);color:var(--ink);transition:border-color 0.15s}
+.fg select:focus,.fg input:focus{outline:none;border-color:var(--lime)}
+.fg select option{background:var(--pitch-2)}
+.fg input::placeholder{color:var(--ink-3)}
+.age-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tr{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px}
+.tr label{font-size:13px;color:var(--ink)}
+.tog{position:relative;width:40px;height:22px;cursor:pointer;flex-shrink:0}
+.tog input{opacity:0;width:0;height:0}
+.tslider{position:absolute;inset:0;background:var(--line);border-radius:22px;transition:0.2s;border:1px solid var(--line-bright)}
+.tslider:before{content:'';position:absolute;width:15px;height:15px;left:3px;top:2.5px;background:var(--ink-2);border-radius:50%;transition:0.2s}
+.tog input:checked+.tslider{background:rgba(199,249,75,0.2);border-color:var(--lime)}
+.tog input:checked+.tslider:before{transform:translateX(18px);background:var(--lime)}
+.btn-primary{width:100%;padding:12px;background:var(--lime);color:var(--pitch);border:none;border-radius:9px;font-family:'Archivo',sans-serif;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;letter-spacing:0.2px;transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:8px;text-transform:uppercase}
+.btn-primary:hover{background:var(--ink);box-shadow:0 0 24px rgba(199,249,75,0.3)}
+.empty-panel{background:var(--panel);border:1px dashed var(--line-bright);border-radius:14px;padding:72px 32px;text-align:center;color:var(--ink-3)}
+.empty-panel i{font-size:40px;color:var(--line-bright);display:block;margin-bottom:16px}
+.empty-panel p{font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1.5px}
+.vm-grid{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:230px 1fr 310px;gap:16px;align-items:start}
+.liga-panel,.opt-panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;position:sticky;top:74px}
+.verein-panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;min-height:300px}
+.liga-item{padding:10px 12px;border-radius:8px;font-size:13px;color:var(--ink-2);cursor:pointer;display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;transition:all 0.13s;border:1px solid transparent}
+.liga-item:hover{background:var(--pitch-2);color:var(--ink)}
+.liga-item.active{background:var(--pitch-2);color:var(--lime);border-color:var(--line-bright);font-weight:600}
+.liga-country{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink-3);text-transform:uppercase;letter-spacing:1px}
+.liga-item.active .liga-country{color:var(--lime-dim)}
+.verein-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:4px}
+.verein-card{border:1px solid var(--line);border-radius:10px;padding:13px;cursor:pointer;display:flex;align-items:center;gap:11px;transition:all 0.15s;background:var(--pitch-2)}
+.verein-card:hover{border-color:var(--line-bright);transform:translateY(-2px)}
+.verein-card.sel{border-color:var(--lime);background:rgba(199,249,75,0.08)}
+.vc-icon{width:36px;height:36px;border-radius:9px;background:var(--panel-2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--ink-2);flex-shrink:0}
+.verein-card.sel .vc-icon{background:var(--lime);color:var(--pitch);border-color:var(--lime)}
+.vc-name{font-size:13px;color:var(--ink);font-weight:600;line-height:1.25}
+.sel-info{background:var(--pitch-2);border:1px solid var(--line-bright);border-radius:10px;padding:13px;margin-bottom:18px}
+.sel-info .sl{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink-3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px}
+.sel-info .sn{font-size:15px;font-weight:700;color:var(--lime)}
+.sel-info .sm{font-size:12px;color:var(--ink-2);margin-top:2px}
+.slider-row{margin-bottom:11px}
+.slider-row .srl{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-2);margin-bottom:5px}
+.slider-row .srv{font-family:'JetBrains Mono',monospace;color:var(--lime);font-weight:700}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:4px;background:var(--line);border-radius:4px;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--lime);cursor:pointer;box-shadow:0 0 8px rgba(199,249,75,0.5)}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--lime);cursor:pointer;border:none}
+.results-wrap{max-width:1180px;margin:0 auto}
+.res-header{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 22px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.res-count{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--ink-2)}
+.res-count strong{color:var(--lime);font-size:20px;font-weight:700}
+.res-count .filt{display:block;font-size:10px;color:var(--ink-3);text-transform:uppercase;letter-spacing:1px;margin-top:4px}
+.sort-sel{font-family:'JetBrains Mono',monospace;font-size:12px;padding:8px 11px;border-radius:8px;border:1px solid var(--line);background:var(--pitch-2);color:var(--ink)}
+.pcard{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:18px 22px;margin-bottom:11px;display:grid;grid-template-columns:52px 1fr auto;gap:18px;align-items:center;cursor:pointer;transition:all 0.18s;position:relative;overflow:hidden}
+.pcard:after{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--lime);transform:scaleY(0);transition:transform 0.2s}
+.pcard:hover{border-color:var(--line-bright);transform:translateX(4px)}
+.pcard:hover:after{transform:scaleY(1)}
+.av{width:52px;height:52px;border-radius:12px;background:var(--pitch-2);border:1px solid var(--line-bright);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:var(--lime);flex-shrink:0;position:relative}
+.av .num{position:absolute;bottom:-6px;right:-6px;width:20px;height:20px;border-radius:6px;background:var(--lime);color:var(--pitch);font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--panel)}
+.pi h4{font-size:17px;font-weight:700;letter-spacing:-0.2px;margin-bottom:4px}
+.pi .meta{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-2);display:flex;gap:14px;flex-wrap:wrap;text-transform:uppercase;letter-spacing:0.5px}
+.pi .meta .pos-tag{color:var(--lime)}
+.badges{display:flex;gap:7px;margin-top:9px;flex-wrap:wrap}
+.badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:4px 9px;border-radius:6px;font-weight:500;display:inline-flex;align-items:center;gap:5px;text-transform:uppercase;letter-spacing:0.5px;border:1px solid}
+.b-red{background:rgba(255,91,91,0.1);color:var(--red);border-color:rgba(255,91,91,0.3)}
+.b-yellow{background:rgba(245,166,35,0.1);color:var(--amber);border-color:rgba(245,166,35,0.3)}
+.b-green{background:rgba(91,211,122,0.1);color:var(--green);border-color:rgba(91,211,122,0.3)}
+.b-blue{background:rgba(77,166,255,0.1);color:var(--blue);border-color:rgba(77,166,255,0.3)}
+.b-teal{background:rgba(199,249,75,0.1);color:var(--lime);border-color:rgba(199,249,75,0.3)}
+.ampel{width:7px;height:7px;border-radius:50%;display:inline-block}
+.a-r{background:var(--red);box-shadow:0 0 6px var(--red)}
+.a-y{background:var(--amber);box-shadow:0 0 6px var(--amber)}
+.a-g{background:var(--green);box-shadow:0 0 6px var(--green)}
+.scores{display:flex;gap:10px;flex-shrink:0}
+.score-cap{background:var(--pitch-2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;min-width:62px;position:relative;overflow:hidden}
+.score-cap.primary{border-color:var(--line-bright)}
+.score-cap .scl{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink-3);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px}
+.score-cap .scv{font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;line-height:1}
+.score-cap.primary .scv{color:var(--lime)}
+.score-cap:not(.primary) .scv{color:var(--ink)}
+.score-cap .scbar{position:absolute;bottom:0;left:0;height:2px;background:var(--lime)}
+.profile-wrap{max-width:1000px;margin:0 auto}
+.report-bar{display:flex;align-items:center;justify-content:space-between;background:linear-gradient(100deg,var(--panel),var(--panel-2));border:1px solid var(--line-bright);border-radius:13px;padding:16px 22px;margin-bottom:16px;flex-wrap:wrap;gap:12px}
+.report-bar-info{font-size:13px;color:var(--ink-2)}
+.report-bar-info strong{color:var(--ink);font-size:14px;display:block;margin-bottom:2px;font-weight:700}
+.btn-report{display:inline-flex;align-items:center;gap:8px;padding:11px 20px;background:var(--lime);color:var(--pitch);border:none;border-radius:9px;font-family:'Archivo',sans-serif;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0;text-transform:uppercase;letter-spacing:0.3px;transition:all 0.15s}
+.btn-report:hover{background:var(--ink);box-shadow:0 0 24px rgba(199,249,75,0.3)}
+.ph{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:0;margin-bottom:16px;overflow:hidden}
+.ph-banner{background:linear-gradient(135deg,var(--panel-2),var(--pitch-2));border-bottom:1px solid var(--line);padding:28px;display:flex;align-items:flex-start;gap:22px;position:relative;overflow:hidden}
+.ph-banner:before{content:'';position:absolute;right:-40px;top:50%;transform:translateY(-50%);width:200px;height:200px;border:1px solid var(--line);border-radius:50%;opacity:0.4}
+.ph-banner:after{content:'';position:absolute;right:10px;top:50%;transform:translateY(-50%);width:120px;height:120px;border:1px solid var(--line);border-radius:50%;opacity:0.3}
+.ph-av{width:84px;height:84px;border-radius:16px;background:var(--pitch);border:2px solid var(--lime);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800;color:var(--lime);flex-shrink:0;position:relative;z-index:1}
+.ph-id{position:relative;z-index:1}
+.ph-name{font-size:30px;font-weight:800;letter-spacing:-1px;margin-bottom:6px;text-transform:uppercase}
+.ph-sub{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-2);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+.ph-sub .pos-tag{color:var(--lime)}
+.note-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line)}
+.nc{background:var(--panel);padding:20px 22px;position:relative}
+.nc-lbl{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-2);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.nc-val{font-family:'JetBrains Mono',monospace;font-size:44px;font-weight:700;color:var(--lime);line-height:1}
+.nc-val .sl{font-size:14px;color:var(--ink-3)}
+.nc-sub{font-size:11px;color:var(--ink-3);margin-top:8px}
+.nc-bar{height:3px;background:var(--line);border-radius:3px;margin-top:12px;overflow:hidden}
+.nc-bar-fill{height:100%;background:var(--lime);border-radius:3px}
+.nc.locked .nc-val{color:var(--ink-3);font-size:20px;font-family:'Archivo',sans-serif;font-weight:700}
+.sec{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:24px;margin-bottom:16px}
+.sec-title{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--lime);text-transform:uppercase;letter-spacing:2px;margin-bottom:20px;display:flex;align-items:center;gap:10px}
+.sec-title:after{content:'';flex:1;height:1px;background:var(--line)}
+.sd-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:11px}
+.sd{background:var(--pitch-2);border:1px solid var(--line);border-radius:10px;padding:13px 15px}
+.sd-lbl{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink-3);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}
+.sd-val{font-size:15px;font-weight:700;color:var(--ink)}
+.param-row{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.param-name{font-size:13px;color:var(--ink-2);width:210px;flex-shrink:0}
+.bar-wrap{flex:1;height:10px;background:var(--pitch-2);border-radius:5px;overflow:hidden;border:1px solid var(--line)}
+.bar{height:100%;border-radius:5px;transition:width 0.5s ease}
+.bar.top{background:var(--lime)}
+.bar.mid{background:var(--blue)}
+.bar.low{background:var(--amber)}
+.pct{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--ink);width:34px;text-align:right;flex-shrink:0;font-weight:500}
+.legend{display:flex;gap:20px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line);flex-wrap:wrap}
+.leg-item{display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-2);text-transform:uppercase;letter-spacing:0.5px}
+.leg-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.flag-list{display:flex;flex-direction:column;gap:11px}
+.flag{display:flex;align-items:flex-start;gap:11px;font-size:14px;color:var(--ink);line-height:1.5}
+.fdot{width:9px;height:9px;border-radius:3px;flex-shrink:0;margin-top:4px}
+.fdot.pos{background:var(--green)}
+.fdot.neg{background:var(--red)}
+.fdot.neu{background:var(--ink-3)}
+.fazit{background:var(--pitch-2);border:1px solid var(--line);border-left:3px solid var(--lime);border-radius:10px;padding:18px 20px;font-size:14px;color:var(--ink);line-height:1.7}
+.kad-wrap{max-width:1180px;margin:0 auto}
+.kad-head{margin-bottom:26px}
+.kad-head h2{font-size:32px;font-weight:800;letter-spacing:-1px;text-transform:uppercase;margin-bottom:8px}
+.kad-head h2 .hl{color:var(--lime)}
+.kad-head p{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-2);text-transform:uppercase;letter-spacing:1px}
+.kbar-row{display:flex;align-items:center;gap:14px;margin-bottom:11px}
+.kbar-pos{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-2);width:64px;flex-shrink:0;text-transform:uppercase;letter-spacing:1px}
+.kbar-wrap{flex:1;height:22px;background:var(--pitch-2);border-radius:6px;overflow:hidden;border:1px solid var(--line);position:relative}
+.kbar{height:100%;border-radius:5px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;transition:width 0.6s ease;min-width:32px}
+.kbar-val{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--pitch)}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(5,11,9,0.8);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:300;align-items:flex-start;justify-content:center;padding-top:70px}
+.modal-overlay.open{display:flex;animation:fadeUp 0.25s ease}
+.modal{background:var(--panel);border:1px solid var(--line-bright);border-radius:16px;padding:30px;width:calc(100% - 40px);max-width:500px}
+.modal h3{font-size:22px;font-weight:800;text-transform:uppercase;letter-spacing:-0.5px;margin-bottom:8px}
+.modal>p{font-size:13px;color:var(--ink-2);margin-bottom:22px;line-height:1.5}
+.report-options{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:22px}
+.ro{border:1px solid var(--line);border-radius:12px;padding:18px;cursor:pointer;transition:all 0.15s;background:var(--pitch-2)}
+.ro:hover{border-color:var(--line-bright)}
+.ro.sel{border-color:var(--lime);background:rgba(199,249,75,0.06)}
+.ro h4{font-size:15px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:7px}
+.ro.sel h4{color:var(--lime)}
+.ro p{font-size:12px;color:var(--ink-2);line-height:1.45}
+.ro .ro-check{width:16px;height:16px;border-radius:5px;border:1px solid var(--line-bright);display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:transparent}
+.ro.sel .ro-check{background:var(--lime);border-color:var(--lime);color:var(--pitch)}
+.modal-ctx{background:var(--pitch-2);border:1px solid var(--line);border-radius:9px;padding:13px 15px;margin-bottom:22px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-2);text-transform:uppercase;letter-spacing:0.5px}
+.modal-ctx strong{color:var(--lime)}
+.modal-footer{display:flex;gap:11px;justify-content:flex-end}
+.btn-cancel{padding:11px 20px;background:transparent;color:var(--ink-2);border:1px solid var(--line);border-radius:9px;font-family:'Archivo',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s}
+.btn-cancel:hover{border-color:var(--line-bright);color:var(--ink)}
+.btn-dl{padding:11px 22px;background:var(--lime);color:var(--pitch);border:none;border-radius:9px;font-family:'Archivo',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;text-transform:uppercase;transition:all 0.15s}
+.btn-dl:hover{background:var(--ink)}
+.btn-dl:disabled{opacity:0.6;cursor:not-allowed}
+/* --- v2: Noten-Ringe, Radar, HUD --- */
+.ring-wrap{position:relative;width:84px;height:84px;margin:2px 0 6px}
+.ring-bg{fill:none;stroke:var(--line);stroke-width:6}
+.ring-fg{fill:none;stroke-width:6;stroke-linecap:round;transform:rotate(-90deg);transform-origin:center;filter:drop-shadow(0 0 6px rgba(199,249,75,0.35));animation:ringIn 0.9s ease}
+@keyframes ringIn{from{stroke-dashoffset:213.6}}
+.ring-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700}
+.radar-grid{display:grid;grid-template-columns:280px 1fr;gap:26px;align-items:center}
+.radar-box svg{width:100%;height:auto;display:block}
+@media(max-width:920px){.radar-grid{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.ring-fg{animation:none}.page.active{animation:none}}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+@media(max-width:920px){.two-col,.vm-grid{grid-template-columns:1fr}.mode-grid{grid-template-columns:1fr}.filter-panel,.liga-panel,.opt-panel{position:static}.note-grid{grid-template-columns:1fr}.sd-grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<h1 class="sr-only">ScoutIQ — Scouting-Terminal</h1>
+<div class="topbar">
+  <div class="logo" onclick="go('home')"><span class="logo-mark"></span>SCOUT<span>IQ</span></div>
+  <div class="breadcrumb" id="bc"><span class="dot"></span> TERMINAL // START</div>
+</div>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3>Bericht generieren</h3>
+    <p id="modal-desc">Wähle den Umfang des Berichts.</p>
+    <div id="modal-ctx"></div>
+    <div class="report-options">
+      <div class="ro sel" id="ro-k" onclick="selRep('kompakt')"><h4><span class="ro-check"><i class="ti ti-check"></i></span> Kompakt</h4><p>Eine Seite — Kerninfos, Noten, Top-Flags und Scout-Fazit.</p></div>
+      <div class="ro" id="ro-a" onclick="selRep('ausfuehrlich')"><h4><span class="ro-check"><i class="ti ti-check"></i></span> Ausführlich</h4><p>Zwei bis drei Seiten — alle Parameter, Vergleichswerte und volle Matching-Analyse.</p></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Abbrechen</button>
+      <button class="btn-dl" id="btn-dl" onclick="downloadReport()"><i class="ti ti-download"></i> Herunterladen</button>
+    </div>
+  </div>
+</div>
+
+<div class="page active" id="p-home">
+  <div class="hero">
+    <div class="hero-eyebrow">Scouting-Terminal · 16 Ligen live</div>
+    <h1><span class="out">Lies</span> das Spiel.<br><span class="hl">Finde</span> den Spieler.</h1>
+    <p>Datengetriebenes Scouting für Profis. Normabweichungen, Positions-Noten und Vereins-Matching — in einem Werkzeug, das so schnell denkt wie du.</p>
+    <div class="hero-stats">
+      <div class="hstat"><div class="hstat-num"><em>16</em></div><div class="hstat-lbl">Ligen</div></div>
+      <div class="hstat"><div class="hstat-num"><em>11</em></div><div class="hstat-lbl">Länder</div></div>
+      <div class="hstat"><div class="hstat-num">3</div><div class="hstat-lbl">Such-Modi</div></div>
+      <div class="hstat"><div class="hstat-num">0–100</div><div class="hstat-lbl">Bewertungsskala</div></div>
+    </div>
+  </div>
+  <div class="mode-grid">
+    <div class="mode-card" data-num="01" onclick="go('spielersuche')">
+      <div class="mode-ico"><i class="ti ti-radar-2"></i></div>
+      <h3>Spielersuche</h3>
+      <p>Freie Suche mit Filtern für Position, Liga, Alter, Marktwert und Vertragsstatus. Jedes Feld optional.</p>
+      <div class="mode-go">Öffnen <i class="ti ti-arrow-right"></i></div>
+    </div>
+    <div class="mode-card" data-num="02" onclick="go('vereinsmatching')">
+      <div class="mode-ico"><i class="ti ti-arrows-shuffle"></i></div>
+      <h3>Vereins-Matching</h3>
+      <p>Spieler passend zu einem Verein finden — Formation, Spielstil und Kaderprofil fließen ein.</p>
+      <div class="mode-go">Öffnen <i class="ti ti-arrow-right"></i></div>
+    </div>
+    <div class="mode-card" data-num="03" onclick="go('kaderanalyse')">
+      <div class="mode-ico"><i class="ti ti-chart-grid-dots"></i></div>
+      <h3>Kaderanalyse</h3>
+      <p>Kompletter Kader-Scan mit Budget, Schwachstellen und gezielten Verstärkungs-Empfehlungen.</p>
+      <div class="mode-go">Öffnen <i class="ti ti-arrow-right"></i></div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="p-spielersuche">
+  <button class="nav-back" onclick="go('home')"><i class="ti ti-arrow-left"></i> Terminal</button>
+  <div class="two-col">
+    <div class="filter-panel">
+      <div class="panel-title"><span class="idx">//</span> Filter</div>
+      <div class="fg"><label>Name</label><input type="text" placeholder="z.B. Müller"></div>
+      <div class="fg"><label>Position</label><select><option>Alle Positionen</option><option>IV</option><option>LV / RV</option><option>DM</option><option>ZM</option><option>OM / Flügel</option><option>ST / HS</option></select></div>
+      <div class="fg"><label>Liga</label><select><option>Alle Ligen</option><option>Bundesliga</option><option>2. Bundesliga</option><option>Premier League</option><option>Championship</option><option>La Liga</option><option>Serie A</option><option>Ligue 1</option><option>Eredivisie</option></select></div>
+      <div class="fg"><label>Alter</label><div class="age-row"><input type="number" placeholder="von"><input type="number" placeholder="bis"></div></div>
+      <div class="fg"><label>Max. Marktwert (Mio. €)</label><input type="number" placeholder="z.B. 10"></div>
+      <div class="fg"><label>Mindest-Liga-Note</label><select><option>Keine</option><option>60+</option><option>65+</option><option>70+</option><option>75+</option><option>80+</option></select></div>
+      <div class="fg"><label>Vertragsstatus</label><select><option>Alle</option><option>Läuft ab (rot)</option><option>Kritisch (gelb)</option><option>Stabil (grün)</option></select></div>
+      <div class="fg">
+        <div class="tr"><label>Nur Vertragsläufer</label><label class="tog"><input type="checkbox"><span class="tslider"></span></label></div>
+        <div class="tr"><label>Nur unterbewertete Spieler</label><label class="tog"><input type="checkbox"><span class="tslider"></span></label></div>
+      </div>
+      <button class="btn-primary" onclick="go('ergebnisse','spielersuche')"><i class="ti ti-search"></i> Suche starten</button>
+    </div>
+    <div class="empty-panel"><i class="ti ti-radar-2"></i><p>Filter setzen · Suche starten</p></div>
+  </div>
+</div>
+
+<div class="page" id="p-vereinsmatching">
+  <button class="nav-back" onclick="go('home')"><i class="ti ti-arrow-left"></i> Terminal</button>
+  <div class="vm-grid">
+    <div class="liga-panel"><div class="panel-title"><span class="idx">01</span> Liga</div><div id="vm-liga-list"></div></div>
+    <div class="verein-panel" id="vm-verein-panel"><div class="panel-title"><span class="idx">02</span> Verein</div><div class="empty-panel" style="padding:48px 16px"><i class="ti ti-shield"></i><p>Liga wählen</p></div></div>
+    <div class="opt-panel" id="vm-opt-panel"><div class="panel-title"><span class="idx">03</span> Optionen</div><div class="empty-panel" style="padding:48px 16px"><i class="ti ti-adjustments"></i><p>Verein wählen</p></div></div>
+  </div>
+</div>
+
+<div class="page" id="p-kaderanalyse">
+  <button class="nav-back" onclick="go('home')"><i class="ti ti-arrow-left"></i> Terminal</button>
+  <div class="vm-grid">
+    <div class="liga-panel"><div class="panel-title"><span class="idx">01</span> Liga</div><div id="kad-liga-list"></div></div>
+    <div class="verein-panel" id="kad-verein-panel"><div class="panel-title"><span class="idx">02</span> Verein</div><div class="empty-panel" style="padding:48px 16px"><i class="ti ti-shield"></i><p>Liga wählen</p></div></div>
+    <div class="opt-panel" id="kad-opt-panel"><div class="panel-title"><span class="idx">03</span> Analyse</div><div class="empty-panel" style="padding:48px 16px"><i class="ti ti-chart-grid-dots"></i><p>Verein wählen</p></div></div>
+  </div>
+</div>
+
+<div class="page" id="p-kaderresult">
+  <button class="nav-back" onclick="go('kaderanalyse')"><i class="ti ti-arrow-left"></i> Eingabe</button>
+  <div class="kad-wrap">
+    <div class="kad-head" id="kad-result-header"></div>
+    <div class="sec"><div class="sec-title">Kaderstärke nach Position</div><div id="kad-bars"></div><div class="legend"><div class="leg-item"><div class="leg-dot" style="background:var(--green)"></div>Stark ≥ 70</div><div class="leg-item"><div class="leg-dot" style="background:var(--amber)"></div>Solide 60–69</div><div class="leg-item"><div class="leg-dot" style="background:var(--red)"></div>Schwach &lt; 60</div></div></div>
+    <div class="sec"><div class="sec-title">Empfohlene Verstärkungen</div><p style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-2);text-transform:uppercase;letter-spacing:1px;margin-bottom:16px">3 Positionen unter Note 60</p><div id="kad-recs"></div></div>
+  </div>
+</div>
+
+<div class="page" id="p-ergebnisse">
+  <button class="nav-back" id="ergebnis-bk"><i class="ti ti-arrow-left"></i> Filter</button>
+  <div class="results-wrap">
+    <div class="res-header">
+      <div class="res-count"><strong id="res-num">47</strong> Treffer<span class="filt" id="res-filt">Liga-Note 65+ · 2. Bundesliga · OM/Flügel</span></div>
+      <select class="sort-sel"><option>Sortieren: Liga-Note ↓</option><option>Positions-Note ↓</option><option>Alter ↑</option><option>Marktwert ↓</option></select>
+    </div>
+    <div id="player-list"></div>
+  </div>
+</div>
+
+<div class="page" id="p-profil">
+  <button class="nav-back" id="profil-bk"><i class="ti ti-arrow-left"></i> Ergebnisse</button>
+  <div class="profile-wrap" id="profil-content"></div>
+</div>
+
+<script>
+const LIGEN=[
+  {id:'buli',name:'Bundesliga',land:'GER',vereine:['Bayern München','Borussia Dortmund','Bayer Leverkusen','RB Leipzig','Eintracht Frankfurt','VfB Stuttgart','SC Freiburg','Union Berlin']},
+  {id:'buli2',name:'2. Bundesliga',land:'GER',vereine:['Hamburger SV','Fortuna Düsseldorf','Hannover 96','SC Paderborn','1. FC Kaiserslautern','Hertha BSC','Greuther Fürth','Eintr. Braunschweig']},
+  {id:'pl',name:'Premier League',land:'ENG',vereine:['Arsenal','Chelsea','Liverpool','Manchester City','Manchester United','Tottenham','Newcastle','Aston Villa']},
+  {id:'champ',name:'Championship',land:'ENG',vereine:['Leeds United','Sunderland','Sheffield United','Middlesbrough','Coventry City','Watford','Norwich City','Preston NE']},
+  {id:'laliga',name:'La Liga',land:'ESP',vereine:['Real Madrid','FC Barcelona','Atlético Madrid','Athletic Bilbao','Real Sociedad','Villarreal','Valencia CF','Sevilla FC']},
+  {id:'seriea',name:'Serie A',land:'ITA',vereine:['Juventus','Inter Mailand','AC Milan','SSC Napoli','AS Roma','Lazio','Atalanta','Fiorentina']},
+  {id:'ligue1',name:'Ligue 1',land:'FRA',vereine:['Paris SG','Marseille','AS Monaco','Olympique Lyon','LOSC Lille','RC Lens','Stade Rennais','OGC Nice']},
+  {id:'ere',name:'Eredivisie',land:'NED',vereine:['Ajax','PSV Eindhoven','Feyenoord','AZ Alkmaar','FC Utrecht','FC Twente','NEC Nijmegen','Sparta Rotterdam']},
+  {id:'primeira',name:'Primeira Liga',land:'POR',vereine:['Benfica','FC Porto','Sporting CP','SC Braga','Vitória SC','Boavista','Moreirense','Famalicão']},
+  {id:'scottish',name:'Scottish Prem.',land:'SCO',vereine:['Celtic FC','Rangers FC','Hearts','Aberdeen','Motherwell','Hibernian','Dundee United','St Mirren']},
+  {id:'oebuli',name:'Österreich Bundesliga',land:'AUT',vereine:['RB Salzburg','Rapid Wien','LASK','Sturm Graz','Austria Wien','Wolfsberger AC','WSG Tirol','A. Lustenau']},
+  {id:'superlig',name:'Süper Lig',land:'TUR',vereine:['Galatasaray','Fenerbahçe','Beşiktaş','Trabzonspor','Başakşehir','Kayserispor','Sivasspor','Antalyaspor']}
+];
+const PLAYERS=[
+  {id:1,ini:'RO',name:'Robert Okeke',pos:'OM',club:'Fortuna Düsseldorf',liga:'2. Bundesliga',age:23,foot:'rechts',height:'179 cm',weight:'76 kg',number:10,contract:'red',mv:'1,8 Mio.',ln:78,pn:81,underval:true,
+    params:[{n:'Schlüsselpässe',p:88,cat:'top'},{n:'xA / Spiel',p:82,cat:'top'},{n:'Erfolgreiche Dribblings',p:74,cat:'top'},{n:'xG / Spiel',p:65,cat:'mid'},{n:'Schüsse / Spiel',p:61,cat:'mid'},{n:'Progressive Carries',p:77,cat:'top'},{n:'Rückweg / Defensivarbeit',p:38,cat:'low'}],
+    flags:[{t:'Überdurchschnittliche Passkreativität: Schlüsselpässe Top-12% der Liga',c:'pos'},{t:'Starker Ballträger mit hoher Dribblingquote (74. Percentil)',c:'pos'},{t:'Defensiver Rückweg unter Ligadurchschnitt — typisch für diesen Spielertyp',c:'neg'},{t:'Vertrag läuft in 4 Monaten ab — sofortiger Handlungsbedarf',c:'neg'},{t:'Marktwert deutlich unter Leistungsniveau (Unterbewertet-Index: +23)',c:'neu'}],
+    fazit:'Okeke ist ein kreativer Achter mit ausgeprägtem Zug zum Tor. Seine Stärken in der finalen Phase machen ihn für ligaähnliche Vereine interessant. Kritischer Vertragsstatus bietet Ablösevorteil — Transfer noch in diesem Fenster empfohlen.'},
+  {id:2,ini:'MS',name:'Marvin Schneider',pos:'OM',club:'Hannover 96',liga:'2. Bundesliga',age:25,foot:'links',height:'183 cm',weight:'80 kg',number:8,contract:'yellow',mv:'3,2 Mio.',ln:73,pn:76,underval:false,
+    params:[{n:'Schlüsselpässe',p:72,cat:'top'},{n:'xA / Spiel',p:68,cat:'mid'},{n:'Erfolgreiche Dribblings',p:55,cat:'mid'},{n:'xG / Spiel',p:71,cat:'top'},{n:'Schüsse / Spiel',p:69,cat:'mid'},{n:'Progressive Carries',p:64,cat:'mid'},{n:'Rückweg / Defensivarbeit',p:58,cat:'mid'}],
+    flags:[{t:'Ausgewogenes Profil zwischen Kreativität und Torabschluss',c:'neu'},{t:'Vertrag läuft in 9 Monaten ab — Beobachtung empfohlen',c:'neg'},{t:'Überdurchschnittliche xG-Werte deuten auf gute Schusswahl hin',c:'pos'}],
+    fazit:'Schneider bietet ein balanciertes Offensivprofil mit soliden Werten in allen Kernbereichen. Für Vereine geeignet, die Konstanz über Kreativitätsspitzen stellen.'},
+  {id:3,ini:'TL',name:'Théo Laurent',pos:'Flügel',club:'SC Paderborn',liga:'2. Bundesliga',age:21,foot:'rechts',height:'175 cm',weight:'71 kg',number:7,contract:'green',mv:'2,5 Mio.',ln:71,pn:74,underval:true,
+    params:[{n:'Schlüsselpässe',p:66,cat:'mid'},{n:'xA / Spiel',p:61,cat:'mid'},{n:'Erfolgreiche Dribblings',p:88,cat:'top'},{n:'xG / Spiel',p:59,cat:'mid'},{n:'Schüsse / Spiel',p:54,cat:'mid'},{n:'Progressive Carries',p:84,cat:'top'},{n:'Rückweg / Defensivarbeit',p:62,cat:'mid'}],
+    flags:[{t:'Elite-Dribbler: Top-12% in der Liga bei erfolgreichen Eins-gegen-Eins-Aktionen',c:'pos'},{t:'Hoher xT durch progressive Carries und Tiefenläufe',c:'pos'},{t:'Abschlusseffizienz ausbaufähig (59. Percentil)',c:'neg'},{t:'Mit 21 Jahren noch in Entwicklung — Potenzial nach oben',c:'neu'}],
+    fazit:'Laurent ist ein gefährlicher Flügelspieler mit außergewöhnlichem Dribbling. Sein junges Alter und der laufende Vertrag machen ihn zu einem interessanten Entwicklungsspieler.'},
+  {id:4,ini:'JK',name:'Jonas Köhler',pos:'IV',club:'Hertha BSC',liga:'2. Bundesliga',age:27,foot:'rechts',height:'188 cm',weight:'85 kg',number:5,contract:'yellow',mv:'4,1 Mio.',ln:74,pn:77,underval:false,
+    params:[{n:'Luftzweikampfquote',p:83,cat:'top'},{n:'Bodenzweikampfquote',p:76,cat:'top'},{n:'Klärungsaktionen',p:71,cat:'top'},{n:'Interceptions / Spiel',p:68,cat:'mid'},{n:'Passquote',p:72,cat:'top'},{n:'Progressive Pässe',p:55,cat:'mid'},{n:'Fehler → Chancen (inv.)',p:81,cat:'top'}],
+    flags:[{t:'Dominant in der Luft: Top-17% aller IV in der 2. Bundesliga',c:'pos'},{t:'Sehr zuverlässig im Zweikampf — unterdurchschnittliche Fehlerquote',c:'pos'},{t:'Aufbau von hinten solide, aber nicht herausragend',c:'neu'},{t:'Vertrag läuft in 10 Monaten ab',c:'neg'}],
+    fazit:'Köhler ist ein robuster, zweikampfstarker Innenverteidiger mit guter Passquote. Für Vereine mit pressingorientiertem Spielstil eine verlässliche Verstärkungsoption.'},
+  {id:5,ini:'LS',name:'Luca Santoro',pos:'ST',club:'1. FC Kaiserslautern',liga:'2. Bundesliga',age:24,foot:'rechts',height:'182 cm',weight:'79 kg',number:9,contract:'red',mv:'2,0 Mio.',ln:69,pn:72,underval:true,
+    params:[{n:'Tore / 90 Min',p:74,cat:'top'},{n:'xG / Spiel',p:68,cat:'mid'},{n:'Schussgenauigkeit',p:71,cat:'top'},{n:'Kopfballchancen',p:58,cat:'mid'},{n:'Ablagen',p:62,cat:'mid'},{n:'Tiefenläufe',p:77,cat:'top'},{n:'xG-Übererfüllung',p:81,cat:'top'}],
+    flags:[{t:'Überdurchschnittliche xG-Übererfüllung: trifft besser als statistisch erwartet',c:'pos'},{t:'Starke Tiefenläufe — gefährlich bei Kontern',c:'pos'},{t:'Kopfball-Profil ausbaufähig',c:'neg'},{t:'Vertrag läuft in 3 Monaten ab — ablösefrei möglich',c:'neg'},{t:'Marktwert unter Leistungsniveau (Unterbewertet-Index: +18)',c:'neu'}],
+    fazit:'Santoro ist ein beweglicher Mittelstürmer mit ausgezeichneter Abschlusseffizienz. Sein ablaufender Vertrag macht ihn zum sofortigen Handlungsfall — ohne Ablöse realistisch verfügbar.'}
+];
+const KPOS=[{pos:'TW',note:72},{pos:'IV L',note:68},{pos:'IV R',note:71},{pos:'LV',note:54},{pos:'RV',note:62},{pos:'DM',note:57},{pos:'ZM L',note:75},{pos:'ZM R',note:69},{pos:'OM',note:65},{pos:'LA',note:51},{pos:'RA',note:58},{pos:'ST',note:73}];
+/* ============================================================
+   KONFIGURATION — echte Daten anbinden:
+   Sobald dein Backend läuft (uvicorn, Port 8000), ändere die
+   nächste Zeile in:  const API_URL='http://localhost:8000';
+   Solange API_URL null ist, läuft die Seite mit Demo-Daten.
+   ============================================================ */
+const API_URL=null;
+
+let fromPage='spielersuche',vmLiga=null,vmVerein=null,vmVereinLiga=null,kadLiga=null,kadVerein=null,kadVereinLiga=null,activePlayer=null,reportType='kompakt';
+let styleProfile={pressing:3,ballbesitz:3,konter:3,aufbau:3,standards:3};
+let chosenFormation='4-2-3-1';
+let lastTN=null;
+
+async function apiGet(path){
+  if(!API_URL)return null;
+  try{const r=await fetch(API_URL+path);if(!r.ok)return null;return await r.json();}
+  catch(e){console.warn('API nicht erreichbar:',e);return null;}
+}
+
+/* ---------- Team-Note (identische Logik wie compute_grades.py) ---------- */
+const TN_W={stil:0.70,bedarf:0.20,formation:0.10};
+const TN_MAP={
+  OM:{pressing:['Defensivarbeit','Rückweg'],ballbesitz:['Schlüsselpässe','xA'],konter:['Progressive Carries','Dribbling'],aufbau:['Progressive Carries'],standards:['Kopfball']},
+  IV:{pressing:['Bodenzweikampf','Interceptions'],ballbesitz:['Passquote'],konter:['Klärung'],aufbau:['Passquote','Progressive Pässe'],standards:['Luftzweikampf']},
+  DM:{pressing:['Rückeroberungen','Interceptions','Pressing'],ballbesitz:['Passquote','Schlüsselpässe'],konter:['Progressive Carries'],aufbau:['Passquote'],standards:['Kopfball']},
+  ST:{pressing:['Pressing'],ballbesitz:['Ablagen','xA'],konter:['Tiefenläufe','xG-Über','Tore'],aufbau:['Kopfball'],standards:['Kopfball']}
+};
+const FORM_FIT={'4-2-3-1':{IV:100,LV:100,DM:100,OM:100,ST:100},'4-3-3':{IV:100,LV:100,DM:100,OM:90,ST:100},'3-5-2':{IV:100,LV:70,DM:100,OM:60,ST:100},'4-4-2':{IV:100,LV:100,DM:90,OM:90,ST:100},'3-4-3':{IV:100,LV:70,DM:90,OM:100,ST:100},'5-3-2':{IV:100,LV:80,DM:100,OM:50,ST:100},'4-1-4-1':{IV:100,LV:100,DM:100,OM:90,ST:90}};
+function tnKey(pos){if(pos==='IV')return 'IV';if(pos==='DM'||pos==='ZM'||pos==='DM/ZM')return 'DM';if((''+pos).startsWith('ST'))return 'ST';if((''+pos).startsWith('LV')||(''+pos).startsWith('RV'))return 'LV';return 'OM';}
+function pctLookup(pct,label){
+  let best=null;
+  for(const k in pct){
+    if(!k.toLowerCase().includes(label.toLowerCase()))continue;
+    if(label==='Bodenzweikampf'&&k.includes('Luft'))continue;
+    if(best===null||k.length<best.length)best=k;
+  }
+  return best!==null?pct[best]:undefined;
+}
+function bedarfNoteFor(pos){
+  const map={'OM':['OM'],'Flügel':['LA','RA'],'IV':['IV L','IV R'],'ST':['ST'],'DM':['DM'],'ZM':['ZM L','ZM R']};
+  const ks=map[pos]||[];const vals=KPOS.filter(k=>ks.includes(k.pos)).map(k=>k.note);
+  if(!vals.length)return null;
+  return Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
+}
+function computeTN(p){
+  const map=TN_MAP[tnKey(p.pos)]||TN_MAP.OM;
+  const pct={};p.params.forEach(pm=>pct[pm.n]=pm.p);
+  const tot=Object.values(styleProfile).reduce((a,b)=>a+b,0)||1;
+  let stil=0;const dims={};const gaps=[];
+  for(const d in styleProfile){
+    const vals=(map[d]||[]).map(l=>pctLookup(pct,l)).filter(v=>v!==undefined);
+    let s;
+    if(vals.length){s=vals.reduce((a,b)=>a+b,0)/vals.length;}
+    else{s=50;gaps.push(d);}
+    dims[d]=Math.round(s);
+    stil+=styleProfile[d]/tot*s;
+  }
+  const sq=bedarfNoteFor(p.pos);
+  const bedarf=sq===null?50:(sq<60?100:sq<70?70:40);
+  const ff=(FORM_FIT[chosenFormation]||{})[tnKey(p.pos)]??80;
+  return {tn:Math.round(TN_W.stil*stil+TN_W.bedarf*bedarf+TN_W.formation*ff),
+          stil:Math.round(stil),dims,bedarf,formfit:ff,gaps};
+}
+function startMatching(){
+  styleProfile={
+    pressing:+document.getElementById('sv0').textContent,
+    ballbesitz:+document.getElementById('sv1').textContent,
+    konter:+document.getElementById('sv2').textContent,
+    aufbau:+document.getElementById('sv3').textContent,
+    standards:+document.getElementById('sv4').textContent
+  };
+  const f=document.getElementById('vm-formation');
+  if(f)chosenFormation=f.value;
+  go('ergebnisse','vereinsmatching');
+}
+
+/* ---------- Anzeige-Bausteine (Ringe, Radar, Passungs-Panel) ---------- */
+function ringCard(code,name,val,sub,color){
+  if(val==null)return '<div class="nc locked"><div class="nc-lbl">'+name+' <span>'+code+'</span></div><div class="nc-val">–</div><div class="nc-sub">'+sub+'</div></div>';
+  const c=213.6,off=(c*(1-Math.max(0,Math.min(100,val))/100)).toFixed(1);
+  return '<div class="nc"><div class="nc-lbl">'+name+' <span>'+code+'</span></div><div class="ring-wrap"><svg width="84" height="84" viewBox="0 0 84 84"><circle class="ring-bg" cx="42" cy="42" r="34"></circle><circle class="ring-fg" cx="42" cy="42" r="34" style="stroke:'+color+';stroke-dasharray:213.6;stroke-dashoffset:'+off+'"></circle></svg><div class="ring-num" style="color:'+color+'">'+val+'</div></div><div class="nc-sub">'+sub+'</div></div>';
+}
+function radarSVG(params){
+  const ps=params.slice(0,8);const n=ps.length;if(n<3)return '';
+  const cx=130,cy=122,R=86;
+  const pt=(i,v)=>{const a=-Math.PI/2+i*2*Math.PI/n;return [(cx+Math.cos(a)*R*v/100).toFixed(1),(cy+Math.sin(a)*R*v/100).toFixed(1)];};
+  let g='';
+  [25,50,75,100].forEach(l=>{g+='<polygon points="'+ps.map((_,i)=>pt(i,l).join(',')).join(' ')+'" fill="none" stroke="var(--line)" stroke-width="1"/>';});
+  ps.forEach((_,i)=>{const q=pt(i,100);g+='<line x1="'+cx+'" y1="'+cy+'" x2="'+q[0]+'" y2="'+q[1]+'" stroke="var(--line)" stroke-width="1"/>';});
+  g+='<polygon points="'+ps.map((pm,i)=>pt(i,pm.p).join(',')).join(' ')+'" fill="rgba(199,249,75,0.14)" stroke="var(--lime)" stroke-width="2"/>';
+  ps.forEach((pm,i)=>{const q=pt(i,pm.p);g+='<circle cx="'+q[0]+'" cy="'+q[1]+'" r="3" fill="var(--lime)"/>';});
+  ps.forEach((pm,i)=>{const q=pt(i,120);const short=pm.n.length>15?pm.n.slice(0,14)+'…':pm.n;
+    g+='<text x="'+q[0]+'" y="'+q[1]+'" fill="var(--ink-3)" font-size="8.5" font-family="JetBrains Mono, monospace" text-anchor="middle">'+short+'</text>';});
+  return '<svg viewBox="0 0 260 250" role="img" aria-label="Parameter-Radar">'+g+'</svg>';
+}
+const DIM_NAME={pressing:'Pressing',ballbesitz:'Ballbesitz',konter:'Konter',aufbau:'Aufbau von hinten',standards:'Standardsituationen'};
+function tnSection(tn,vN){
+  let rows='';
+  for(const d in tn.dims){
+    rows+='<div class="param-row"><div class="param-name">'+DIM_NAME[d]+' <span style="color:var(--ink-3)">('+styleProfile[d]+'/5)</span></div><div class="bar-wrap"><div class="bar" style="width:'+tn.dims[d]+'%;background:var(--blue)"></div></div><div class="pct">'+tn.dims[d]+'</div></div>';
+  }
+  const gaps=tn.gaps&&tn.gaps.length?'<div class="flag" style="margin-top:12px"><div class="fdot neu"></div><span>Datenlücke: '+tn.gaps.map(g=>DIM_NAME[g]).join(', ')+' — mangels Messwerten neutral (50) angesetzt.</span></div>':'';
+  return '<div class="sec"><div class="sec-title">Passungsanalyse · '+vN+'</div><div style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink-2);margin-bottom:16px;text-transform:uppercase;letter-spacing:1px">Team-Note '+tn.tn+' = Stil '+tn.stil+' (70%) · Kaderbedarf '+tn.bedarf+' (20%) · Formation '+tn.formfit+' (10%)</div>'+rows+gaps+'</div>';
+}
+function contractColorFromDate(d){
+  if(!d)return 'none';
+  const days=(new Date(d)-new Date())/86400000;
+  return days<182?'red':days<365?'yellow':'green';
+}
+function fmtMv(eur){if(eur==null)return null;return (eur/1e6).toLocaleString('de-DE',{maximumFractionDigits:1})+' Mio.';}
+function catOf(v){return v>=75?'top':v<=25?'low':'mid';}
+function nc(n){return n>=70?'#5BD37A':n>=60?'#F5A623':'#FF5B5B'}
+function ini(n){return n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
+function cbadge(c){if(c==='none')return '<span class="badge b-blue" style="opacity:0.65">Vertrag k.A.</span>';const d=c==='red'?'a-r':c==='yellow'?'a-y':'a-g';const cl=c==='red'?'b-red':c==='yellow'?'b-yellow':'b-green';const t=c==='red'?'< 6 Mon':c==='yellow'?'6–12 Mon':'Stabil';return '<span class="badge '+cl+'"><span class="ampel '+d+'"></span>'+t+'</span>'}
+function ctxt(c){return c==='red'?'Läuft ab (< 6 Monate)':c==='yellow'?'Kritisch (6–12 Monate)':'Stabil (> 12 Monate)'}
+function go(page,from){
+  if(from)fromPage=from;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('p-'+page).classList.add('active');
+  window.scrollTo(0,0);
+  const lbl={home:'TERMINAL // START',spielersuche:'SPIELERSUCHE',vereinsmatching:'VEREINS-MATCHING',kaderanalyse:'KADERANALYSE',kaderresult:'KADER // REPORT',ergebnisse:'TREFFER',profil:'SPIELERAKTE'};
+  document.getElementById('bc').innerHTML='<span class="dot"></span> '+(lbl[page]||page);
+  if(page==='ergebnisse'){document.getElementById('ergebnis-bk').onclick=()=>go(fromPage);renderPlayers();}
+  if(page==='kaderresult')renderKadResult();
+  if(page==='vereinsmatching'){vmLiga=null;vmVerein=null;renderLigen('vm');resetPanels('vm');}
+  if(page==='kaderanalyse'){kadLiga=null;kadVerein=null;renderLigen('kad');resetPanels('kad');}
+}
+function resetPanels(px){
+  document.getElementById(px+'-verein-panel').innerHTML='<div class="panel-title"><span class="idx">02</span> Verein</div><div class="empty-panel" style="padding:48px 16px"><i class="ti ti-shield"></i><p>Liga wählen</p></div>';
+  document.getElementById(px+'-opt-panel').innerHTML='<div class="panel-title"><span class="idx">03</span> '+(px==='vm'?'Optionen':'Analyse')+'</div><div class="empty-panel" style="padding:48px 16px"><i class="ti ti-'+(px==='vm'?'adjustments':'chart-grid-dots')+'"></i><p>Verein wählen</p></div>';
+}
+function renderLigen(px){document.getElementById(px+'-liga-list').innerHTML=LIGEN.map(l=>'<div class="liga-item '+((px==='vm'?vmLiga:kadLiga)===l.id?'active':'')+'" onclick="pickLiga(\''+px+'\',\''+l.id+'\')"><span>'+l.name+'</span><span class="liga-country">'+l.land+'</span></div>').join('')}
+function pickLiga(px,id){
+  if(px==='vm'){vmLiga=id;vmVerein=null}else{kadLiga=id;kadVerein=null}
+  renderLigen(px);
+  const l=LIGEN.find(x=>x.id===id);
+  document.getElementById(px+'-verein-panel').innerHTML='<div class="panel-title"><span class="idx">02</span> Verein</div><div class="verein-grid">'+l.vereine.map(v=>'<div class="verein-card" onclick="pickVerein(\''+px+'\',\''+v.replace(/'/g,"\\'")+'\',\''+id+'\')"><div class="vc-icon">'+ini(v)+'</div><div class="vc-name">'+v+'</div></div>').join('')+'</div>';
+  document.getElementById(px+'-opt-panel').innerHTML='<div class="panel-title"><span class="idx">03</span> '+(px==='vm'?'Optionen':'Analyse')+'</div><div class="empty-panel" style="padding:48px 16px"><i class="ti ti-'+(px==='vm'?'adjustments':'chart-grid-dots')+'"></i><p>Verein wählen</p></div>';
+}
+function pickVerein(px,name,lid){
+  if(px==='vm'){vmVerein=name;vmVereinLiga=lid}else{kadVerein=name;kadVereinLiga=lid}
+  document.querySelectorAll('#'+px+'-verein-panel .verein-card').forEach(c=>c.classList.toggle('sel',c.querySelector('.vc-name').textContent===name));
+  const l=LIGEN.find(x=>x.id===lid);
+  if(px==='vm'){
+    document.getElementById('vm-opt-panel').innerHTML='<div class="panel-title"><span class="idx">03</span> Optionen</div>'+
+    '<div class="sel-info"><div class="sl">Ausgewählt</div><div class="sn">'+name+'</div><div class="sm">'+l.name+' · '+l.land+'</div></div>'+
+    '<div class="fg"><label>Formation</label><select id="vm-formation"><option>4-2-3-1</option><option>4-3-3</option><option>3-5-2</option><option>4-4-2</option><option>3-4-3</option><option>5-3-2</option><option>4-1-4-1</option></select></div>'+
+    '<div class="fg"><label>Gesuchte Position</label><select><option>Alle Positionen</option><option>IV</option><option>LV / RV</option><option>DM</option><option>ZM</option><option>OM / Flügel</option><option>ST / HS</option></select></div>'+
+    '<div class="fg"><label>Spielstil-Profil</label><div style="margin-top:8px">'+['Pressing','Ballbesitz','Konter','Aufbau hinten','Standards'].map((s,i)=>'<div class="slider-row"><div class="srl"><span>'+s+'</span><span class="srv" id="sv'+i+'">3</span></div><input type="range" min="1" max="5" value="3" oninput="document.getElementById(\'sv'+i+'\').textContent=this.value"></div>').join('')+'</div></div>'+
+    '<div class="fg"><label>Max. Alter</label><input type="number" placeholder="z.B. 27"></div>'+
+    '<button class="btn-primary" onclick="startMatching()"><i class="ti ti-arrows-shuffle"></i> Matching starten</button>';
+  }else{
+    document.getElementById('kad-opt-panel').innerHTML='<div class="panel-title"><span class="idx">03</span> Analyse</div>'+
+    '<div class="sel-info"><div class="sl">Ausgewählt</div><div class="sn">'+name+'</div><div class="sm">'+l.name+' · '+l.land+'</div></div>'+
+    '<div class="fg"><label>Transferbudget (Mio. €)</label><input type="number" placeholder="Automatisch schätzen"></div>'+
+    '<div class="fg"><label>Max. Ablöse / Spieler (Mio. €)</label><input type="number" placeholder="z.B. 5"></div>'+
+    '<div class="fg"><label>Vertragsläufer bevorzugen</label><select><option>Beides</option><option>Ja</option><option>Nein</option></select></div>'+
+    '<div class="fg"><div class="tr"><label>Nur Schwachstellen</label><label class="tog"><input type="checkbox" checked><span class="tslider"></span></label></div></div>'+
+    '<button class="btn-primary" onclick="go(\'kaderresult\',\'kaderanalyse\')"><i class="ti ti-chart-grid-dots"></i> Analyse starten</button>';
+  }
+}
+function renderKadResult(){
+  const name=kadVerein||'Hamburger SV',lid=kadVereinLiga||'buli2',l=LIGEN.find(x=>x.id===lid),ln=l?l.name:'2. Bundesliga';
+  document.getElementById('kad-result-header').innerHTML='<h2>'+name+' <span class="hl">// Scan</span></h2><p>'+ln+' · Budget ~8,5 Mio. € geschätzt · Saison 2024/25</p>';
+  document.getElementById('kad-bars').innerHTML=KPOS.map(p=>'<div class="kbar-row"><div class="kbar-pos">'+p.pos+'</div><div class="kbar-wrap"><div class="kbar" style="width:'+p.note+'%;background:'+nc(p.note)+'"><span class="kbar-val">'+p.note+'</span></div></div></div>').join('');
+  const weak=KPOS.filter(p=>p.note<60);
+  document.getElementById('kad-recs').innerHTML=weak.map(p=>'<div class="pcard" onclick="go(\'ergebnisse\',\'kaderresult\')" style="grid-template-columns:auto 1fr auto"><div class="av" style="background:rgba(255,91,91,0.1);border-color:rgba(255,91,91,0.3);color:#FF5B5B;font-family:\'JetBrains Mono\',monospace;font-size:20px">'+p.note+'</div><div class="pi"><h4>'+p.pos+' — Verstärkung gesucht</h4><div class="meta"><span>Ligaschnitt ~67</span><span style="color:var(--red)">Rückstand '+(67-p.note)+' Pkt</span></div></div><div style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--lime);text-transform:uppercase;letter-spacing:1px">Spieler →</div></div>').join('');
+}
+function renderPlayers(){
+  document.getElementById('player-list').innerHTML=PLAYERS.map(p=>'<div class="pcard" onclick="showProfile('+p.id+')"><div class="av">'+p.ini+'<span class="num">'+p.number+'</span></div><div class="pi"><h4>'+p.name+'</h4><div class="meta"><span class="pos-tag">'+p.pos+'</span><span>'+p.club+'</span><span>'+p.liga+'</span><span>'+p.age+' J.</span></div><div class="badges">'+cbadge(p.contract)+'<span class="badge b-blue">'+p.mv+' €</span>'+(p.underval?'<span class="badge b-teal"><i class="ti ti-trending-up" style="font-size:10px"></i> Unterbewertet</span>':'')+'</div></div><div class="scores"><div class="score-cap primary"><div class="scl">LN</div><div class="scv">'+p.ln+'</div><div class="scbar" style="width:'+p.ln+'%"></div></div><div class="score-cap"><div class="scl">PN</div><div class="scv">'+p.pn+'</div><div class="scbar" style="width:'+p.pn+'%;background:var(--blue)"></div></div></div></div>').join('');
+}
+function showProfile(id){
+  const p=PLAYERS.find(x=>x.id===id);activePlayer=p;
+  const hasV=(fromPage==='vereinsmatching'&&vmVerein)||fromPage==='kaderresult';
+  const vN=(fromPage==='vereinsmatching'&&vmVerein)?vmVerein:(fromPage==='kaderresult'?(kadVerein||'Hamburger SV'):null);
+  lastTN=hasV?computeTN(p):null;
+  renderProfile(p,hasV,vN);
+}
+function renderProfile(p,hasV,vN){
+  document.getElementById('profil-bk').onclick=()=>go('ergebnisse');
+  const rb=hasV?'<div class="report-bar"><div class="report-bar-info"><strong>Bericht generieren</strong>Spielerakte + Passungsanalyse für '+vN+'</div><button class="btn-report" onclick="openModal()"><i class="ti ti-file-text"></i> Bericht</button></div>':'<div class="report-bar"><div class="report-bar-info"><strong>Bericht generieren</strong>Spielerakte mit Stärken, Schwächen und Eigenschaften</div><button class="btn-report" onclick="openModal()"><i class="ti ti-file-text"></i> Bericht</button></div>';
+  const flagsArr=(p.flags||[]).map(f=>({c:f.c||f.type||'neu',t:f.t||f.text||''}));
+  const tnCard=(hasV&&lastTN)
+    ?ringCard('TN','Team-Note',lastTN.tn,'Passung zu '+vN,'var(--blue)')
+    :'<div class="nc locked"><div class="nc-lbl">Team-Note <span>TN</span></div><div class="nc-val">–</div><div class="nc-sub">Nur mit Vereinskontext (via Matching oder Kaderanalyse)</div></div>';
+  const tnSec=(hasV&&lastTN)?tnSection(lastTN,vN):'';
+  const bars=p.params.map(pm=>'<div class="param-row"><div class="param-name">'+pm.n+'</div><div class="bar-wrap"><div class="bar '+pm.cat+'" style="width:'+pm.p+'%"></div></div><div class="pct">'+pm.p+'</div></div>').join('');
+  document.getElementById('profil-content').innerHTML=rb+
+  '<div class="ph"><div class="ph-banner"><div class="ph-av">'+p.ini+'</div><div class="ph-id"><div class="ph-name">'+p.name+'</div><div class="ph-sub"><span class="pos-tag">'+p.pos+'</span> · '+p.club+' · '+p.liga+' · #'+p.number+'</div><div class="badges">'+cbadge(p.contract)+'<span class="badge b-blue">'+(p.mv||'k.A.')+' €</span>'+(p.underval?'<span class="badge b-teal"><i class="ti ti-trending-up" style="font-size:10px"></i> Unterbewertet</span>':'')+'</div></div></div>'+
+  '<div class="note-grid">'+
+    ringCard('LN','Liga-Note',p.ln,'vs. alle '+p.pos+' der Liga','var(--lime)')+
+    ringCard('PN','Positions-Note',p.pn,'Gewichtete Kernparameter','var(--green)')+
+    tnCard+
+  '</div></div>'+
+  tnSec+
+  '<div class="sec"><div class="sec-title">Stammdaten</div><div class="sd-grid"><div class="sd"><div class="sd-lbl">Alter</div><div class="sd-val">'+p.age+' J.</div></div><div class="sd"><div class="sd-lbl">Fuß</div><div class="sd-val">'+p.foot+'</div></div><div class="sd"><div class="sd-lbl">Größe / Gewicht</div><div class="sd-val">'+p.height+' / '+p.weight+'</div></div><div class="sd"><div class="sd-lbl">Rückennummer</div><div class="sd-val">#'+p.number+'</div></div></div></div>'+
+  '<div class="sec"><div class="sec-title">Parameter-Percentile</div><div class="radar-grid"><div class="radar-box">'+radarSVG(p.params)+'</div><div>'+bars+'</div></div><div class="legend"><div class="leg-item"><div class="leg-dot" style="background:var(--lime)"></div>Top 25%</div><div class="leg-item"><div class="leg-dot" style="background:var(--blue)"></div>Norm 25–75%</div><div class="leg-item"><div class="leg-dot" style="background:var(--amber)"></div>Unter 25%</div></div></div>'+
+  '<div class="sec"><div class="sec-title">Normabweichungs-Flags</div><div class="flag-list">'+flagsArr.map(f=>'<div class="flag"><div class="fdot '+f.c+'"></div><span>'+f.t+'</span></div>').join('')+'</div></div>'+
+  '<div class="sec"><div class="sec-title">Scout-Fazit</div><div class="fazit">'+(p.fazit||'Kein Fazit vorhanden.')+'</div></div>';
+  go('profil');
+}
+function openModal(){
+  const hasV=(fromPage==='vereinsmatching'&&vmVerein)||fromPage==='kaderresult';
+  const vN=(fromPage==='vereinsmatching'&&vmVerein)?vmVerein:(fromPage==='kaderresult'?(kadVerein||'Hamburger SV'):null);
+  document.getElementById('modal-desc').textContent=hasV?'Spielereinschätzung plus Passungsanalyse für '+vN+'.':'Spielerakte mit Stärken, Schwächen und Eigenschaften — ohne Vereinsbezug.';
+  document.getElementById('modal-ctx').innerHTML=hasV?'<div class="modal-ctx">Kontext: <strong>'+vN+'</strong></div>':'';
+  reportType='kompakt';document.getElementById('ro-k').classList.add('sel');document.getElementById('ro-a').classList.remove('sel');
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal(){document.getElementById('modal').classList.remove('open')}
+function selRep(t){reportType=t;document.getElementById('ro-k').classList.toggle('sel',t==='kompakt');document.getElementById('ro-a').classList.toggle('sel',t==='ausfuehrlich')}
+function downloadReport(){
+  const p=activePlayer,btn=document.getElementById('btn-dl');
+  btn.disabled=true;btn.innerHTML='<i class="ti ti-loader"></i> Erstellt...';
+  const hasV=(fromPage==='vereinsmatching'&&vmVerein)||fromPage==='kaderresult';
+  const vN=(fromPage==='vereinsmatching'&&vmVerein)?vmVerein:(fromPage==='kaderresult'?(kadVerein||'Hamburger SV'):null);
+  const vLid=fromPage==='vereinsmatching'?vmVereinLiga:(fromPage==='kaderresult'?(kadVereinLiga||'buli2'):null);
+  const vLn=vLid?((LIGEN.find(x=>x.id===vLid)||{}).name||''):null;
+  const datum=new Date().toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const st=p.flags.filter(f=>f.c==='pos').map(f=>f.t),sw=p.flags.filter(f=>f.c==='neg').map(f=>f.t),nu=p.flags.filter(f=>f.c==='neu').map(f=>f.t);
+  const tnRes=lastTN,ms=tnRes?tnRes.tn:null;
+  let h='<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;font-size:11pt;color:#1a1a1a;margin:0}.page{padding:40px 48px;max-width:800px;margin:0 auto}.header{border-bottom:2px solid #185FA5;padding-bottom:16px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-end}.header h1{font-size:18pt;font-weight:700;color:#185FA5;margin:0 0 4px}.header p{font-size:9pt;color:#666;margin:0}.hr{text-align:right;font-size:9pt;color:#666}.logo{font-size:14pt;font-weight:700;color:#185FA5}h2{font-size:12pt;font-weight:700;color:#185FA5;margin:22px 0 10px;padding-bottom:4px;border-bottom:0.5px solid #dde4f0}h3{font-size:11pt;font-weight:700;margin:14px 0 6px}.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}.si{background:#f0f5fb;border-radius:4px;padding:8px 10px}.sl{font-size:8pt;color:#666}.sv{font-size:11pt;font-weight:700}.ng{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}.nb{border:1px solid #dde4f0;border-radius:4px;padding:12px 14px}.nl{font-size:8pt;color:#666}.nv{font-size:22pt;font-weight:700;color:#185FA5}.ns{font-size:8pt;color:#888}.fi{display:flex;gap:8px;margin-bottom:6px;font-size:10pt}.fd{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:3px}.fd.p{background:#3B6D11}.fd.n{background:#A32D2D}.fd.u{background:#888}.fz{background:#e8f2fb;border-left:3px solid #185FA5;padding:12px 14px;font-size:10pt;color:#0C447C;line-height:1.6}.pr{display:flex;align-items:center;gap:10px;margin-bottom:8px}.pn{font-size:9pt;width:180px;flex-shrink:0}.po{flex:1;height:7px;background:#e8eef5;border-radius:4px;overflow:hidden}.pi2{height:100%}.pp{font-size:9pt;color:#666;width:28px;text-align:right}.mb{background:#f7fdf9;border:1px solid #c0ddb0;border-radius:4px;padding:14px 16px}.mt{font-size:10pt;font-weight:700;color:#3B6D11;margin-bottom:6px}.mx{font-size:10pt;line-height:1.6}.cb{display:inline-block;padding:3px 10px;border-radius:12px;font-size:9pt;font-weight:700}.cr{background:#FCEBEB;color:#A32D2D}.cy{background:#FAEEDA;color:#854F0B}.cg{background:#EAF3DE;color:#3B6D11}.ub{display:inline-block;background:#E1F5EE;color:#0F6E56;padding:2px 8px;border-radius:10px;font-size:9pt;font-weight:700;margin-left:8px}.footer{border-top:0.5px solid #ddd;margin-top:32px;padding-top:10px;font-size:8pt;color:#999;display:flex;justify-content:space-between}@media print{body{print-color-adjust:exact;-webkit-print-color-adjust:exact}}</style></head><body><div class="page"><div class="header"><div><h1>'+p.name+'</h1><p>'+p.pos+' · '+p.club+' · '+p.liga+' · #'+p.number+'</p></div><div class="hr"><div class="logo">ScoutIQ</div><div>Erstellt am '+datum+'</div><div>'+(reportType==='kompakt'?'Kompaktbericht':'Ausführlicher Bericht')+'</div></div></div><h2>Spielereinschätzung</h2><div class="sg"><div class="si"><div class="sl">Alter</div><div class="sv">'+p.age+' J.</div></div><div class="si"><div class="sl">Fuß</div><div class="sv">'+p.foot+'</div></div><div class="si"><div class="sl">Größe</div><div class="sv">'+p.height+'</div></div><div class="si"><div class="sl">Marktwert</div><div class="sv">'+p.mv+' €</div></div></div><div style="margin-bottom:14px">Vertrag: <span class="cb '+(p.contract==='red'?'cr':p.contract==='yellow'?'cy':'cg')+'">'+ctxt(p.contract)+'</span>'+(p.underval?'<span class="ub">Unterbewertet</span>':'')+'</div><div class="ng"><div class="nb"><div class="nl">Liga-Note (LN)</div><div class="nv">'+p.ln+'</div><div class="ns">Percentil vs. alle '+p.pos+'</div></div><div class="nb"><div class="nl">Positions-Note (PN)</div><div class="nv">'+p.pn+'</div><div class="ns">Gewichtete Kernparameter</div></div></div>';
+  if(reportType==='ausfuehrlich'){h+='<h3>Parameter-Percentile</h3>';p.params.forEach(pm=>{const c=pm.cat==='top'?'#185FA5':pm.cat==='low'?'#F0997B':'#9DC0E8';h+='<div class="pr"><div class="pn">'+pm.n+'</div><div class="po"><div class="pi2" style="width:'+pm.p+'%;background:'+c+'"></div></div><div class="pp">'+pm.p+'</div></div>'})}
+  h+='<h3>Stärken</h3>';st.forEach(s=>h+='<div class="fi"><div class="fd p"></div><span>'+s+'</span></div>');if(!st.length)h+='<p style="font-size:10pt;color:#888">Keine herausragenden Stärken.</p>';
+  h+='<h3>Schwächen</h3>';sw.forEach(s=>h+='<div class="fi"><div class="fd n"></div><span>'+s+'</span></div>');if(!sw.length)h+='<p style="font-size:10pt;color:#888">Keine signifikanten Schwächen.</p>';
+  if(reportType==='ausfuehrlich'&&nu.length){h+='<h3>Weitere Charakteristika</h3>';nu.forEach(s=>h+='<div class="fi"><div class="fd u"></div><span>'+s+'</span></div>')}
+  h+='<h3>Scout-Fazit</h3><div class="fz">'+p.fazit+'</div>';
+  if(hasV&&tnRes&&ms!==null){
+    const dn={pressing:'Pressing',ballbesitz:'Ballbesitz',konter:'Konter',aufbau:'Aufbau von hinten',standards:'Standardsituationen'};
+    const sorted=Object.entries(tnRes.dims).sort((a,b)=>b[1]-a[1]);
+    const best=sorted[0],worst=sorted[sorted.length-1];
+    h+='<h2>Passungsanalyse: '+vN+'</h2>';
+    h+='<div class="mb"><div class="mt">Team-Note: '+ms+'/100 · '+vN+(vLn?' ('+vLn+')':'')+'</div><div class="mx">Zusammensetzung: Stilpassung '+tnRes.stil+' (Gewicht 70%), Kaderbedarf auf der Position '+tnRes.bedarf+' (20%), Formationspassung '+tnRes.formfit+' (10%). Hinterlegtes Vereinsprofil: '+Object.entries(styleProfile).map(([k,v])=>dn[k]+' '+v+'/5').join(', ')+'.</div></div>';
+    if(reportType==='ausfuehrlich'){
+      h+='<h3>Stilpassung je Dimension</h3>';
+      for(const d in tnRes.dims){h+='<div class="pr"><div class="pn">'+dn[d]+' ('+styleProfile[d]+'/5)</div><div class="po"><div class="pi2" style="width:'+tnRes.dims[d]+'%;background:#185FA5"></div></div><div class="pp">'+tnRes.dims[d]+'</div></div>';}
+      if(tnRes.gaps&&tnRes.gaps.length)h+='<p style="font-size:9pt;color:#888">Datenlücke: '+tnRes.gaps.map(g=>dn[g]).join(', ')+' — mangels Messwerten neutral (50) angesetzt.</p>';
+    }
+    h+='<h3>Einschätzung</h3><div class="fz">'+p.name+' erreicht für das hinterlegte Profil von '+vN+' eine Team-Note von '+ms+'. Beste Übereinstimmung: '+dn[best[0]]+' ('+best[1]+'. Perzentilniveau). Größte Reibung: '+dn[worst[0]]+' ('+worst[1]+'). '
+      +(ms>=75?'Eine Verpflichtung ist aus sportlicher Sicht vertretbar, sofern der Befund per Videoanalyse und Live-Sichtung bestätigt wird.'
+        :ms>=60?'Weitere Beobachtung ist sinnvoll; eine Entscheidung sollte von der Entwicklung in der Dimension '+dn[worst[0]]+' abhängig gemacht werden.'
+        :'Die sportliche Passung ist derzeit begrenzt; Alternativen mit besserem Profilabgleich sollten geprüft werden.')
+      +' Vertragsstatus ('+ctxt(p.contract)+') und Marktwert sind separat zu bewerten und fließen bewusst nicht in die Team-Note ein.</div>';
+  }
+  h+='<div class="footer"><span>ScoutIQ · Datenbasierter Bericht — Sichtung/Video zur Bestätigung empfohlen</span><span>'+p.name+' · '+datum+'</span></div></div></body></html>';
+  const b=new Blob([h],{type:'text/html'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='ScoutIQ_'+p.name.replace(/ /g,'_')+'_'+reportType+'.html';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(u);
+  btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i> Fertig';
+  setTimeout(()=>{btn.innerHTML='<i class="ti ti-download"></i> Herunterladen';closeModal()},1600);
+}
+document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)closeModal()});
+
+/* ============================================================
+   LIVE-DATEN-MODUS — aktiv, sobald oben API_URL gesetzt ist.
+   Überschreibt die Demo-Funktionen und lädt echte Daten aus
+   dem ScoutIQ-Backend (FastAPI). Demo-Modus bleibt unberührt.
+   ============================================================ */
+if(API_URL){
+  let LIVE_LIGEN=[],liveTeams=[],selTeam=null,livePosFilter=null;
+  const lkey=l=>'c'+l.competition_id+'s'+l.season_id;
+  const lfind=key=>LIVE_LIGEN.find(x=>lkey(x)===key);
+  const lname=l=>l.competition_name+' '+l.season_name;
+  const LOADING='<div style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:1px;padding:20px 0">Lade Daten …</div>';
+  const NOAPI='<div style="font-size:13px;color:var(--ink-2);padding:20px 0">Backend nicht erreichbar. Läuft die API auf '+API_URL+'? (uvicorn api:app)</div>';
+
+  async function ensureLigen(){
+    if(!LIVE_LIGEN.length){const ls=await apiGet('/leagues');if(ls)LIVE_LIGEN=ls;}
+    return LIVE_LIGEN.length>0;
+  }
+  function currentLeague(){
+    const key=(fromPage==='kaderresult'?kadLiga:vmLiga)||vmLiga||kadLiga;
+    return key?lfind(key):LIVE_LIGEN[0];
+  }
+
+  renderLigen=async function(px){
+    const el=document.getElementById(px+'-liga-list');
+    el.innerHTML=LOADING;
+    if(!await ensureLigen()){el.innerHTML=NOAPI;return;}
+    const cur=px==='vm'?vmLiga:kadLiga;
+    el.innerHTML=LIVE_LIGEN.map(l=>'<div class="liga-item '+(cur===lkey(l)?'active':'')+'" onclick="pickLiga(\''+px+'\',\''+lkey(l)+'\')"><span>'+lname(l)+'</span><span class="liga-country">'+(l.country_name||'')+'</span></div>').join('');
+  };
+
+  pickLiga=async function(px,key){
+    const l=lfind(key);if(!l)return;
+    if(px==='vm'){vmLiga=key;vmVerein=null;}else{kadLiga=key;kadVerein=null;}
+    renderLigen(px);
+    const vp=document.getElementById(px+'-verein-panel');
+    vp.innerHTML='<div class="panel-title"><span class="idx">02</span> Verein</div>'+LOADING;
+    const ts=await apiGet('/leagues/'+l.competition_id+'/'+l.season_id+'/teams')||[];
+    liveTeams=ts;
+    vp.innerHTML='<div class="panel-title"><span class="idx">02</span> Verein</div>'+
+      (ts.length?'<div class="verein-grid">'+ts.map(t=>'<div class="verein-card" data-tid="'+t.team_id+'" onclick="pickVerein(\''+px+'\','+t.team_id+',\''+key+'\')"><div class="vc-icon">'+ini(t.team_name)+'</div><div class="vc-name">'+t.team_name+'</div></div>').join('')+'</div>'
+      :'<div style="font-size:13px;color:var(--ink-2)">Keine Vereine — wurden aggregate_stats.py und compute_grades.py für diese Liga ausgeführt?</div>');
+    document.getElementById(px+'-opt-panel').innerHTML='<div class="panel-title"><span class="idx">03</span> '+(px==='vm'?'Optionen':'Analyse')+'</div><div class="empty-panel" style="padding:48px 16px"><i class="ti ti-'+(px==='vm'?'adjustments':'chart-grid-dots')+'"></i><p>Verein wählen</p></div>';
+  };
+
+  pickVerein=function(px,teamId,key){
+    const t=liveTeams.find(x=>x.team_id===teamId);if(!t)return;
+    selTeam={id:t.team_id,name:t.team_name};
+    const l=lfind(key);
+    if(px==='vm'){vmVerein=t.team_name;vmVereinLiga=key;}else{kadVerein=t.team_name;kadVereinLiga=key;}
+    document.querySelectorAll('#'+px+'-verein-panel .verein-card').forEach(c=>c.classList.toggle('sel',c.dataset.tid==String(teamId)));
+    const selInfo='<div class="sel-info"><div class="sl">Ausgewählt</div><div class="sn">'+t.team_name+'</div><div class="sm">'+lname(l)+'</div></div>';
+    if(px==='vm'){
+      document.getElementById('vm-opt-panel').innerHTML='<div class="panel-title"><span class="idx">03</span> Optionen</div>'+selInfo+
+      '<div class="fg"><label>Formation</label><select id="vm-formation"><option>4-2-3-1</option><option>4-3-3</option><option>3-5-2</option><option>4-4-2</option><option>3-4-3</option><option>5-3-2</option><option>4-1-4-1</option></select></div>'+
+      '<div class="fg"><label>Gesuchte Position</label><select id="vm-pos"><option value="">Alle Positionen</option><option>IV</option><option>LV/RV</option><option>DM</option><option>ZM</option><option>OM/Flügel</option><option>ST/HS</option></select></div>'+
+      '<div class="fg"><label>Spielstil-Profil</label><div style="margin-top:8px">'+['Pressing','Ballbesitz','Konter','Aufbau hinten','Standards'].map((s,i)=>'<div class="slider-row"><div class="srl"><span>'+s+'</span><span class="srv" id="sv'+i+'">3</span></div><input type="range" min="1" max="5" value="3" oninput="document.getElementById(\'sv'+i+'\').textContent=this.value"></div>').join('')+'</div></div>'+
+      '<button class="btn-primary" onclick="liveStartMatching()"><i class="ti ti-arrows-shuffle"></i> Matching starten</button>';
+    }else{
+      document.getElementById('kad-opt-panel').innerHTML='<div class="panel-title"><span class="idx">03</span> Analyse</div>'+selInfo+
+      '<button class="btn-primary" onclick="go(\'kaderresult\',\'kaderanalyse\')"><i class="ti ti-chart-grid-dots"></i> Analyse starten</button>';
+    }
+  };
+
+  window.liveStartMatching=function(){
+    styleProfile={pressing:+document.getElementById('sv0').textContent,ballbesitz:+document.getElementById('sv1').textContent,konter:+document.getElementById('sv2').textContent,aufbau:+document.getElementById('sv3').textContent,standards:+document.getElementById('sv4').textContent};
+    chosenFormation=document.getElementById('vm-formation').value;
+    livePosFilter=document.getElementById('vm-pos').value||null;
+    go('ergebnisse','vereinsmatching');
+  };
+
+  renderPlayers=async function(){
+    const el=document.getElementById('player-list');
+    el.innerHTML=LOADING;
+    if(!await ensureLigen()){el.innerHTML=NOAPI;return;}
+    const l=currentLeague();
+    let url='/players?competition_id='+l.competition_id+'&season_id='+l.season_id+'&limit=60';
+    if(livePosFilter)url+='&position_group='+encodeURIComponent(livePosFilter);
+    const ps=await apiGet(url)||[];
+    document.getElementById('res-num').textContent=ps.length;
+    document.getElementById('res-filt').textContent=lname(l)+(livePosFilter?' · '+livePosFilter:'')+' · min. 450 Min.';
+    el.innerHTML=ps.length?ps.map(p=>{
+      const cc=contractColorFromDate(p.contract_until),mv=fmtMv(p.market_value_eur);
+      return '<div class="pcard" onclick="showProfile('+p.player_id+')"><div class="av">'+ini(p.player_name)+(p.shirt_number?'<span class="num">'+p.shirt_number+'</span>':'')+'</div><div class="pi"><h4>'+p.player_name+'</h4><div class="meta"><span class="pos-tag">'+(p.position_group||'–')+'</span><span>'+(p.team_name||'–')+'</span><span>'+lname(l)+'</span></div><div class="badges">'+cbadge(cc)+(mv?'<span class="badge b-blue">'+mv+' €</span>':'')+'</div></div><div class="scores"><div class="score-cap primary"><div class="scl">LN</div><div class="scv">'+(p.liga_note??'–')+'</div>'+(p.liga_note!=null?'<div class="scbar" style="width:'+p.liga_note+'%"></div>':'')+'</div><div class="score-cap"><div class="scl">PN</div><div class="scv">'+(p.positions_note??'–')+'</div>'+(p.positions_note!=null?'<div class="scbar" style="width:'+p.positions_note+'%;background:var(--blue)"></div>':'')+'</div></div></div>';
+    }).join(''):'<div class="empty-panel"><i class="ti ti-database-off"></i><p>Keine Spieler — compute_grades.py schon ausgeführt?</p></div>';
+  };
+
+  showProfile=async function(id){
+    const l=currentLeague();if(!l)return;
+    document.getElementById('profil-content').innerHTML=LOADING;go('profil');
+    const d=await apiGet('/players/'+id+'?competition_id='+l.competition_id+'&season_id='+l.season_id);
+    if(!d){document.getElementById('profil-content').innerHTML=NOAPI;return;}
+    const pctObj=d.percentiles||{};
+    const params=Object.entries(pctObj).map(([n,v])=>({n:n,p:v,cat:catOf(v)}));
+    const age=d.birth_date?Math.floor((Date.now()-new Date(d.birth_date))/3.15576e10):'–';
+    const p={id:id,ini:ini(d.player_name),name:d.player_name,pos:d.position_group||'–',club:d.team_name||'–',liga:lname(l),age:age,foot:d.preferred_foot||'–',height:d.height_cm?d.height_cm+' cm':'–',weight:d.weight_kg?d.weight_kg+' kg':'–',number:d.shirt_number||'–',contract:contractColorFromDate(d.contract_until),mv:fmtMv(d.market_value_eur)||'k.A.',ln:d.liga_note,pn:d.positions_note,underval:false,params:params,flags:d.flags||[],fazit:d.fazit||''};
+    activePlayer=p;
+    const hasV=((fromPage==='vereinsmatching'&&vmVerein)||fromPage==='kaderresult')&&selTeam;
+    const vN=hasV?selTeam.name:null;
+    lastTN=null;
+    if(hasV){
+      const s=styleProfile;
+      const t=await apiGet('/team-note/'+id+'?competition_id='+l.competition_id+'&season_id='+l.season_id+'&team_id='+selTeam.id+'&formation='+encodeURIComponent(chosenFormation)+'&pressing='+s.pressing+'&ballbesitz='+s.ballbesitz+'&konter='+s.konter+'&aufbau='+s.aufbau+'&standards='+s.standards);
+      if(t&&t.aufschluesselung){
+        const a=t.aufschluesselung;
+        lastTN={tn:t.team_note,stil:a.stilpassung,dims:a.stil_je_dimension,bedarf:a.bedarfspassung,formfit:a.formationspassung,gaps:a.datenluecken_stil||[]};
+      }
+    }
+    renderProfile(p,hasV,vN);
+  };
+
+  renderKadResult=async function(){
+    const l=currentLeague();
+    const head=document.getElementById('kad-result-header');
+    head.innerHTML='<h2>'+(selTeam?selTeam.name:'—')+' <span class="hl">// Scan</span></h2><p>'+(l?lname(l):'')+' · Live-Daten (StatsBomb Open Data)</p>';
+    const bars=document.getElementById('kad-bars');bars.innerHTML=LOADING;
+    if(!selTeam||!l){bars.innerHTML=NOAPI;return;}
+    const rows=await apiGet('/squad-analysis?team_id='+selTeam.id+'&competition_id='+l.competition_id+'&season_id='+l.season_id)||[];
+    bars.innerHTML=rows.length?rows.map(r=>{const note=r.durchschnitt_ln;const w=note==null?0:note;return '<div class="kbar-row"><div class="kbar-pos" style="width:96px">'+(r.position_group||'–')+'</div><div class="kbar-wrap"><div class="kbar" style="width:'+w+'%;background:'+(note==null?'var(--line)':nc(note))+'">'+(note!=null?'<span class="kbar-val">'+note+'</span>':'')+'</div></div></div>';}).join(''):'<div style="font-size:13px;color:var(--ink-2)">Keine Daten für diesen Verein.</div>';
+    const weak=rows.filter(r=>r.durchschnitt_ln!=null&&r.durchschnitt_ln<60);
+    document.getElementById('kad-recs').innerHTML=weak.length?weak.map(r=>'<div class="pcard" onclick="liveWeakClick(\''+r.position_group+'\')" style="grid-template-columns:auto 1fr auto"><div class="av" style="background:rgba(255,91,91,0.1);border-color:rgba(255,91,91,0.3);color:#FF5B5B;font-family:\'JetBrains Mono\',monospace;font-size:20px">'+r.durchschnitt_ln+'</div><div class="pi"><h4>'+r.position_group+' — Verstärkung prüfen</h4><div class="meta"><span>'+r.anzahl_spieler+' Spieler bewertet</span><span>Beste LN: '+(r.bester_ln??'–')+'</span></div></div><div style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--lime);text-transform:uppercase;letter-spacing:1px">Spieler →</div></div>').join(''):'<div style="font-size:13px;color:var(--ink-2)">Keine Positionsgruppe unter Note 60.</div>';
+  };
+  window.liveWeakClick=function(pg){livePosFilter=pg;go('ergebnisse','kaderresult');};
+}
+</script>
+</body>
+</html>
