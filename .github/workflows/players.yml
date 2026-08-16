@@ -20,7 +20,9 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    # Rund 600 Vereine mit je zwei Seiten. Bei 1,5 s Abstand sind das etwa
+    # 35 Minuten; die Reserve faengt langsame Abrufe und Wiederholungen ab.
+    timeout-minutes: 120
 
     steps:
       - uses: actions/checkout@v4
@@ -38,6 +40,7 @@ jobs:
         env:
           SCOUT_SAISON: ${{ github.event.inputs.saison || '2025' }}
           TM_DELAY: "1.5"
+          TM_HARD_TIMEOUT: "60"     # haengende Abrufe abbrechen statt warten
         run: |
           if [ -n "${{ github.event.inputs.ligen }}" ]; then
             python3 scripts/build_players.py --ligen "${{ github.event.inputs.ligen }}"

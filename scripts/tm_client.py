@@ -18,6 +18,7 @@ from __future__ import annotations
 import hashlib
 import os
 import random
+import signal
 import time
 
 CACHE_DIR = os.path.join(os.path.dirname(__file__), "..", ".cache")
@@ -25,6 +26,36 @@ BASE = "https://www.transfermarkt.de"
 DELAY = float(os.environ.get("TM_DELAY", "1.2"))   # Sekunden zwischen Abrufen
 RETRIES = 3
 CACHE_TTL = 6 * 3600                                # 6 Stunden
+
+# Harte Obergrenze je Abruf. Noetig, weil der uebergebene timeout in der
+# Praxis nicht zuverlaessig greift: beobachtet wurden Abrufe, die ueber
+# 15 Minuten haengen blieben. Bei ~380 Vereinen sprengt das jede Action.
+#
+# Umgesetzt per SIGALRM im Hauptthread. Ein Arbeitsthread scheidet aus:
+# Scrapling haelt seine HTTP-Sitzung threadgebunden und meldet dort
+# "No active session available".
+HARD_TIMEOUT = float(os.environ.get("TM_HARD_TIMEOUT", "60"))
+
+
+class _Zeitgrenze(Exception):
+    pass
+
+
+def _mit_zeitgrenze(fn, grenze: float):
+    """Fuehrt fn aus und bricht nach `grenze` Sekunden ab."""
+    if not hasattr(signal, "SIGALRM"):        # nicht auf Windows
+        return fn()
+
+    def wecker(signum, frame):
+        raise _Zeitgrenze(f"Zeitgrenze {grenze:.0f}s ueberschritten")
+
+    alt = signal.signal(signal.SIGALRM, wecker)
+    signal.setitimer(signal.ITIMER_REAL, grenze)
+    try:
+        return fn()
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, alt)
 
 _last_call = 0.0
 _stealth_needed = False   # einmal blockiert -> direkt Stufe 2 nutzen
@@ -89,7 +120,14 @@ def fetch(path: str, use_cache: bool = True):
         try:
             _throttle()
             if not _stealth_needed:
-                page = Fetcher.get(url, timeout=30)
+                # retries=1: Standard waeren drei, was zusammen mit dieser
+                # Schleife bis zu neun Versuche ergaebe - und genau dadurch
+                # entstanden die beobachteten 15-Minuten-Haenger.
+                # retries=0 ist keine Option: dann oeffnet Scrapling gar
+                # keine Sitzung ("No active session available").
+                page = _mit_zeitgrenze(
+                    lambda: Fetcher.get(url, timeout=25, retries=1),
+                    HARD_TIMEOUT)
                 if page.status == 200:
                     _write_cache(url, page.html_content)
                     return page
@@ -99,10 +137,11 @@ def fetch(path: str, use_cache: bool = True):
                     last_err = RuntimeError(f"HTTP {page.status}")
 
             if _stealth_needed:
-                page = StealthyFetcher.fetch(
-                    url, headless=True, network_idle=True,
-                    solve_cloudflare=True, timeout=120000,
-                )
+                page = _mit_zeitgrenze(
+                    lambda: StealthyFetcher.fetch(
+                        url, headless=True, network_idle=True,
+                        solve_cloudflare=True, timeout=120000),
+                    HARD_TIMEOUT * 4)      # Browser braucht laenger
                 if page.status == 200:
                     _write_cache(url, page.html_content)
                     return page

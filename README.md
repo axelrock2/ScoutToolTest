@@ -35,8 +35,10 @@ markiert das in der Kopfzeile — sie ist also nie leer.
 | Portugal | Liga Portugal |
 | Österreich | Bundesliga |
 
-Zusammen rund 246 Vereine. Eine Liga ergänzen = eine Zeile in
-`scripts/leagues.py`.
+Dazu der **deutsche Unterbau**: 3. Liga, alle fünf Regionalligen und alle
+vierzehn Oberligen — zusammen 33 Wettbewerbe und rund 620 Vereine.
+
+Eine Liga ergänzen = eine Zeile in `scripts/leagues.py`.
 
 ## Kennzahlen — und was bewusst fehlt
 
@@ -57,6 +59,25 @@ Dieselbe Ehrlichkeit gilt beim Vereins-Matching: die Stil-Dimensionen
 *Pressing* und *Aufbau* lassen sich ohne Ereignisdaten nicht seriös
 berechnen und werden als **Datenlücke** ausgewiesen statt mit einer
 erfundenen Zahl gefüllt.
+
+### Datenlage im deutschen Unterbau
+
+Je tiefer die Spielklasse, desto dünner die Quelle. Das Tool bildet das ab,
+statt Lücken zu kaschieren:
+
+| Stufe | Einsätze, Tore, Vorlagen, Minuten | Marktwert | Unterbewertet-Index |
+|---|---|---|---|
+| 1. – 3. Liga | vollständig | ja | ja |
+| Regionalliga | vollständig | überwiegend | ja |
+| Oberliga | vollständig | **nein** | **entfällt** |
+
+In der Oberliga führt die Quelle keine Marktwerte. Der Unterbewertet-Index
+wird dort deshalb nicht berechnet — sonst erschiene jeder überdurchschnittliche
+Spieler automatisch als unterbewertet. Die Spielerakte weist das aus.
+
+Jede Staffel ist eine **eigene Vergleichsgruppe**: ein Stürmer der Oberliga
+Westfalen wird mit Stürmern der Oberliga Westfalen verglichen, nicht mit der
+Bayernliga.
 
 Percentile werden immer innerhalb derselben Liga **und** Positionsgruppe
 gebildet — ein Innenverteidiger der 2. Bundesliga wird mit

@@ -42,7 +42,42 @@ LEAGUES: list[League] = [
     League("BE1", "jupiler",   "Jupiler Pro League",    "BEL", 1),
     League("PO1", "primeira",  "Liga Portugal",         "POR", 1),
     League("A1",  "oebuli",    "Österreich Bundesliga", "AUT", 1),
+
+    # ---------------------------------------------------------------
+    # Deutscher Unterbau. Bewusst weniger tief ausgewertet: ab der
+    # Oberliga fuehrt Transfermarkt keine Marktwerte mehr, daher entfaellt
+    # dort der Unterbewertet-Index. Einsaetze, Tore, Vorlagen und Minuten
+    # sind dagegen bis in die 5. Liga vorhanden und werden voll genutzt.
+    # ---------------------------------------------------------------
+    League("L3",   "l3",       "3. Liga",               "GER", 3),
+
+    # 4. Liga - fuenf Staffeln, jede ist eine eigene Vergleichsgruppe
+    League("RLN3", "rl-nord",  "Regionalliga Nord",     "GER", 4),
+    League("RLN4", "rl-nordost", "Regionalliga Nordost", "GER", 4),
+    League("RLW3", "rl-west",  "Regionalliga West",     "GER", 4),
+    League("RLSW", "rl-suedwest", "Regionalliga Südwest", "GER", 4),
+    League("RLB3", "rl-bayern", "Regionalliga Bayern",  "GER", 4),
+
+    # 5. Liga - vierzehn Staffeln
+    League("OBLF", "ol-nord",      "NOFV-Oberliga Nord",        "GER", 5),
+    League("OBLG", "ol-sued",      "NOFV-Oberliga Süd",         "GER", 5),
+    League("OBLN", "ol-nds",       "Oberliga Niedersachsen",    "GER", 5),
+    League("OBLJ", "ol-hamburg",   "Oberliga Hamburg",          "GER", 5),
+    League("OBLK", "ol-bremen",    "Bremenliga",                "GER", 5),
+    League("OBLL", "ol-sh",        "Oberliga Schleswig-Holst.", "GER", 5),
+    League("OLW3", "ol-westfalen", "Oberliga Westfalen",        "GER", 5),
+    League("OLNI", "ol-niederrhein", "Oberliga Niederrhein",    "GER", 5),
+    League("OLMR", "ol-mittelrhein", "Mittelrheinliga",         "GER", 5),
+    League("OBLC", "ol-hessen",    "Hessenliga",                "GER", 5),
+    League("OLRP", "ol-rps",       "Oberliga Rheinland-Pf./Saar", "GER", 5),
+    League("OBLB", "ol-bw",        "Oberliga Baden-Württemberg", "GER", 5),
+    League("OLB1", "ol-bayern-n",  "Bayernliga Nord",           "GER", 5),
+    League("OLB2", "ol-bayern-s",  "Bayernliga Süd",            "GER", 5),
 ]
+
+
+def nach_stufe(stufe: int) -> list[League]:
+    return [lg for lg in LEAGUES if lg.stufe == stufe]
 
 
 def by_frontend_id(fid: str) -> League | None:

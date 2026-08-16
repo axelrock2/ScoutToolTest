@@ -264,6 +264,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--ligen", help="Komma-Liste von frontend_id, sonst alle")
     ap.add_argument("--max-vereine", type=int, help="nur die ersten N je Liga (Test)")
+    ap.add_argument("--frisch", action="store_true",
+                    help="Bestand verwerfen statt ergaenzen")
     args = ap.parse_args()
 
     ligen = LEAGUES
@@ -279,6 +281,28 @@ def main() -> int:
         print("Kein einziger Spieler geladen - vorhandene Datei bleibt "
               "unangetastet.", file=sys.stderr)
         return 1
+
+    # Bereits vorhandene Ligen erhalten, sofern sie in diesem Lauf nicht
+    # angefasst wurden. So laesst sich der Bestand schrittweise erweitern,
+    # und eine Liga, die heute ausfaellt, behaelt ihren letzten Stand.
+    if not args.frisch and os.path.exists(TARGET):
+        try:
+            with open(TARGET, encoding="utf-8") as fh:
+                alt = json.load(fh)
+            neu_ids = {lg.frontend_id for lg in ligen}
+            behalten = [s for s in alt.get("spieler", [])
+                        if s.get("liga_id") not in neu_ids]
+            alt_bericht = [q for q in alt.get("quellen", [])
+                           if q.get("id") not in neu_ids]
+            if behalten:
+                print(f"  {len(behalten)} Spieler aus {len(alt_bericht)} frueheren "
+                      f"Ligen uebernommen", file=sys.stderr)
+            spieler = behalten + spieler
+            bericht = alt_bericht + bericht
+        except (OSError, ValueError) as exc:
+            print(f"  Bestand nicht lesbar, schreibe neu: {exc}", file=sys.stderr)
+
+    bericht.sort(key=lambda q: q.get("liga", ""))
 
     os.makedirs(os.path.dirname(TARGET), exist_ok=True)
     with open(TARGET, "w", encoding="utf-8") as fh:

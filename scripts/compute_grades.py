@@ -21,6 +21,10 @@ import os
 import sys
 from datetime import date, datetime, timezone
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from leagues import by_frontend_id                  # noqa: E402
+
 QUELLE = os.path.join(os.path.dirname(__file__), "..", "data", "players_raw.json")
 ZIEL = os.path.join(os.path.dirname(__file__), "..", "data", "players.json")
 
@@ -158,7 +162,10 @@ def baue_flags(s: dict, params: list, ln: int, monate: int | None,
             flags.append({"t": f"Vertrag läuft in {monate} Monaten ab — "
                                f"Beobachtung empfohlen", "c": "neg"})
 
-    if underval >= 10:
+    if underval is None:
+        flags.append({"t": "Für diese Liga führt die Quelle keine Marktwerte — "
+                           "kein Unterbewertet-Index berechenbar", "c": "neu"})
+    elif underval >= 10:
         flags.append({"t": f"Marktwert unter Leistungsniveau "
                            f"(Unterbewertet-Index: +{underval})", "c": "neu"})
 
@@ -187,7 +194,7 @@ def baue_fazit(s: dict, params: list, ln: int, monate: int | None,
 
     if schwaechen:
         teile.append(f"Ausbaufähig: {schwaechen[0].lower()}")
-    if underval >= 10:
+    if underval is not None and underval >= 10:
         teile.append("Marktwert liegt unter dem gezeigten Niveau — "
                      "wirtschaftlich interessant")
     if monate is not None and monate <= 6:
@@ -226,7 +233,13 @@ def main() -> int:
         verteilung = {
             key: [kw[key] for _, kw in mitglieder] for _, key, _ in felder
         }
-        mw_verteilung = [s.get("marktwert_eur") or 0 for s, _ in mitglieder]
+
+        # Ab der Oberliga fuehrt Transfermarkt keine Marktwerte mehr. Ohne
+        # sie ist der Unterbewertet-Index sinnlos - er wuerde jeden Spieler
+        # ueber Durchschnitt als unterbewertet ausweisen. Dann lieber weglassen.
+        mw_werte = [s.get("marktwert_eur") for s, _ in mitglieder]
+        hat_marktwerte = sum(1 for m in mw_werte if m) >= max(3, len(mitglieder) // 3)
+        mw_verteilung = [m or 0 for m in mw_werte]
 
         for s, kw in mitglieder:
             params = [{
@@ -244,8 +257,11 @@ def main() -> int:
             pn = min(99, ln + bonus)
 
             # Unterbewertet-Index: Leistungspercentil minus Marktwertpercentil
-            mw_p = percentil(s.get("marktwert_eur") or 0, mw_verteilung, True)
-            underval = ln - mw_p
+            if hat_marktwerte and s.get("marktwert_eur"):
+                mw_p = percentil(s["marktwert_eur"], mw_verteilung, True)
+                underval = ln - mw_p
+            else:
+                underval = None
 
             ampel, monate = vertrags_ampel(s.get("vertrag_bis"))
 
@@ -257,6 +273,8 @@ def main() -> int:
                 "club": s["verein"],
                 "liga": s["liga"],
                 "liga_id": s["liga_id"],
+                "stufe": (by_frontend_id(s["liga_id"]).stufe
+                          if by_frontend_id(s["liga_id"]) else 1),
                 "land": s["land"],
                 "age": alter,
                 "foot": s.get("fuss") or "k. A.",
@@ -269,7 +287,7 @@ def main() -> int:
                 "mv_eur": s.get("marktwert_eur"),
                 "ln": ln,
                 "pn": pn,
-                "underval": underval >= 10,
+                "underval": underval is not None and underval >= 10,
                 "underval_index": underval,
                 "minuten": kw["minuten"],
                 "einsaetze": kw["einsaetze"],
@@ -283,12 +301,25 @@ def main() -> int:
     # 4) Ligenliste fuer das Frontend (aus den echten Daten)
     ligen: dict[str, dict] = {}
     for s in roh["spieler"]:
+        lg = by_frontend_id(s["liga_id"])
         eintrag = ligen.setdefault(s["liga_id"], {
             "id": s["liga_id"], "name": s["liga"],
-            "land": s["land"], "vereine": set(),
+            "land": s["land"], "stufe": lg.stufe if lg else 1,
+            "vereine": set(),
         })
         eintrag["vereine"].add(s["verein"])
-    ligen_liste = [{**v, "vereine": sorted(v["vereine"])} for v in ligen.values()]
+
+    # Wie viele bewertete Spieler je Liga - macht duenne Datenlage sichtbar
+    bewertet_je_liga: dict[str, int] = {}
+    for p in spieler_out:
+        bewertet_je_liga[p["liga_id"]] = bewertet_je_liga.get(p["liga_id"], 0) + 1
+
+    ligen_liste = [{**v, "vereine": sorted(v["vereine"]),
+                    "bewertet": bewertet_je_liga.get(v["id"], 0),
+                    "marktwerte": any(
+                        p["mv_eur"] for p in spieler_out if p["liga_id"] == v["id"])}
+                   for v in ligen.values()]
+    ligen_liste.sort(key=lambda l: (l["stufe"], l["land"], l["name"]))
 
     os.makedirs(os.path.dirname(ZIEL), exist_ok=True)
     with open(ZIEL, "w", encoding="utf-8") as fh:

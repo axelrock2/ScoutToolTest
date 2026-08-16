@@ -597,7 +597,20 @@ function resetPanels(px){
   document.getElementById(px+'-verein-panel').innerHTML='<div class="panel-title"><span class="idx">02</span> Verein</div><div class="empty-panel" style="padding:48px 16px"><i class="ti ti-shield"></i><p>Liga wählen</p></div>';
   document.getElementById(px+'-opt-panel').innerHTML='<div class="panel-title"><span class="idx">03</span> '+(px==='vm'?'Optionen':'Analyse')+'</div><div class="empty-panel" style="padding:48px 16px"><i class="ti ti-'+(px==='vm'?'adjustments':'chart-grid-dots')+'"></i><p>Verein wählen</p></div>';
 }
-function renderLigen(px){document.getElementById(px+'-liga-list').innerHTML=LIGEN.map(l=>'<div class="liga-item '+((px==='vm'?vmLiga:kadLiga)===l.id?'active':'')+'" onclick="pickLiga(\''+px+'\',\''+l.id+'\')"><span>'+l.name+'</span><span class="liga-country">'+l.land+'</span></div>').join('')}
+function renderLigen(px){
+  const aktiv=(px==='vm'?vmLiga:kadLiga);
+  /* Nach Spielklasse gruppieren - bei ueber 30 Ligen sonst eine endlose Liste. */
+  const stufen={};
+  LIGEN.forEach(l=>{(stufen[l.stufe||1]=stufen[l.stufe||1]||[]).push(l);});
+  document.getElementById(px+'-liga-list').innerHTML=
+    Object.keys(stufen).sort((a,b)=>a-b).map(st=>
+      '<div class="liga-country" style="margin:14px 0 6px;padding-left:2px;opacity:0.75">'
+      +(STUFEN_NAME[st]||'Stufe '+st)+'</div>'
+      +stufen[st].map(l=>'<div class="liga-item '+(aktiv===l.id?'active':'')
+        +'" onclick="pickLiga(\''+px+'\',\''+l.id+'\')"><span>'+l.name+'</span>'
+        +'<span class="liga-country">'+(l.bewertet||0)+'</span></div>').join('')
+    ).join('');
+}
 function pickLiga(px,id){
   if(px==='vm'){vmLiga=id;vmVerein=null}else{kadLiga=id;kadVerein=null}
   renderLigen(px);
@@ -759,12 +772,22 @@ function filterText(f){
 }
 
 /* Liga-Auswahl aus den tatsaechlich geladenen Daten fuellen. */
+const STUFEN_NAME={1:'Erste Ligen',2:'Zweite Ligen',3:'3. Liga',
+                   4:'Regionalliga (4. Liga)',5:'Oberliga (5. Liga)'};
+
 function fuelleLigaFilter(){
   const sel=document.getElementById('f-liga');
   if(!sel||!LIGEN.length)return;
   const aktuell=sel.value;
+  /* Nach Spielklasse gruppieren - bei ueber 30 Ligen sonst unuebersichtlich. */
+  const stufen={};
+  LIGEN.forEach(l=>{(stufen[l.stufe||1]=stufen[l.stufe||1]||[]).push(l);});
   sel.innerHTML='<option value="">Alle Ligen</option>'+
-    LIGEN.map(l=>'<option value="'+l.id+'">'+l.name+'</option>').join('');
+    Object.keys(stufen).sort((a,b)=>a-b).map(st=>
+      '<optgroup label="'+(STUFEN_NAME[st]||'Stufe '+st)+'">'+
+      stufen[st].map(l=>'<option value="'+l.id+'">'+l.name
+        +(l.bewertet?' ('+l.bewertet+')':'')+'</option>').join('')+
+      '</optgroup>').join('');
   sel.value=aktuell;
 }
 
