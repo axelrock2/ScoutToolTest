@@ -76,6 +76,13 @@ KENNZAHLEN = {
 }
 
 
+# Alle vorkommenden Anzeigenamen, einmalig. Die Reihenfolge ist der
+# Index, den die params der Spieler referenzieren.
+KENNZAHL_NAMEN = sorted({anzeige for felder in KENNZAHLEN.values()
+                         for anzeige, _, _ in felder})
+KENNZAHL_INDEX = {name: i for i, name in enumerate(KENNZAHL_NAMEN)}
+
+
 def kennwerte(s: dict) -> dict | None:
     """Leitet die Rohkennzahlen eines Spielers ab.
 
@@ -146,74 +153,6 @@ def initialen(name: str) -> str:
     return (name[:2] or "??").upper()
 
 
-def baue_flags(s: dict, params: list, ln: int, monate: int | None,
-               underval: int | None, minuten: int = 0,
-               belastbar: bool = True) -> list[dict]:
-    flags = []
-
-    if not belastbar:
-        flags.append({"t": f"Nur {minuten} Saisonminuten — Werte sind ein "
-                           f"Hinweis, keine belastbare Bewertung", "c": "neg"})
-    top = [p for p in params if p["p"] >= 80]
-    low = [p for p in params if p["p"] < 35]
-
-    for p in top[:2]:
-        flags.append({"t": f"{p['n']}: Top-{100 - p['p']}% der Liga auf dieser "
-                           f"Position ({p['p']}. Percentil)", "c": "pos"})
-    for p in low[:1]:
-        flags.append({"t": f"{p['n']} unter Ligadurchschnitt "
-                           f"({p['p']}. Percentil)", "c": "neg"})
-
-    if monate is not None:
-        if monate <= 3:
-            flags.append({"t": f"Vertrag läuft in {max(monate, 0)} Monaten ab — "
-                               f"ablösefrei möglich", "c": "neg"})
-        elif monate <= 12:
-            flags.append({"t": f"Vertrag läuft in {monate} Monaten ab — "
-                               f"Beobachtung empfohlen", "c": "neg"})
-
-    if underval is None:
-        flags.append({"t": "Für diese Liga führt die Quelle keine Marktwerte — "
-                           "kein Unterbewertet-Index berechenbar", "c": "neu"})
-    elif underval >= 10:
-        flags.append({"t": f"Marktwert unter Leistungsniveau "
-                           f"(Unterbewertet-Index: +{underval})", "c": "neu"})
-
-    if (s.get("alter") or 99) <= 21 and ln >= 60:
-        flags.append({"t": f"Mit {s['alter']} Jahren bereits Ligadurchschnitt "
-                           f"übertroffen — Entwicklungspotenzial", "c": "neu"})
-
-    return flags
-
-
-def baue_fazit(s: dict, params: list, ln: int, monate: int | None,
-               underval: int) -> str:
-    staerken = [p["n"] for p in params if p["p"] >= 75][:2]
-    schwaechen = [p["n"] for p in params if p["p"] < 35][:1]
-    teile = []
-
-    if staerken:
-        teile.append(f"{s['name']} überzeugt vor allem bei "
-                     f"{' und '.join(staerken).lower()}")
-    else:
-        teile.append(f"{s['name']} zeigt ein ausgeglichenes Profil ohne "
-                     f"herausstechende Spitzenwerte")
-
-    teile.append(f"Leistungsnote {ln} im Ligavergleich der Position "
-                 f"{s['position']}")
-
-    if schwaechen:
-        teile.append(f"Ausbaufähig: {schwaechen[0].lower()}")
-    if underval is not None and underval >= 10:
-        teile.append("Marktwert liegt unter dem gezeigten Niveau — "
-                     "wirtschaftlich interessant")
-    if monate is not None and monate <= 6:
-        teile.append("Auslaufender Vertrag macht einen Zugriff ohne oder mit "
-                     "geringer Ablöse realistisch")
-
-    return ". ".join(teile) + "."
-
-
 def main() -> int:
     if not os.path.exists(QUELLE):
         print(f"{QUELLE} fehlt - zuerst build_players.py laufen lassen.",
@@ -256,10 +195,13 @@ def main() -> int:
         mw_verteilung = [m or 0 for m in mw_werte]
 
         for s, kw in mitglieder:
+            # Nur Index und Wert speichern: der Anzeigename steht einmal in
+            # kennzahlen[] am Dateianfang, statt sich je Spieler zu
+            # wiederholen, und "cat" leitet das Frontend aus p ab. Bei
+            # 18 000 Spielern spart das mehrere Megabyte.
             params = [{
-                "n": anzeige,
+                "i": KENNZAHL_INDEX[anzeige],
                 "p": percentil(kw[key], verteilung[key], hoch),
-                "cat": kategorie(percentil(kw[key], verteilung[key], hoch)),
             } for anzeige, key, hoch in felder]
 
             # Leistungsnote: Mittel der Percentile
@@ -307,9 +249,11 @@ def main() -> int:
                 "einsaetze": kw["einsaetze"],
                 "belastbar": kw["belastbar"],
                 "params": params,
-                "flags": baue_flags(s, params, ln, monate, underval,
-                                    kw["minuten"], kw["belastbar"]),
-                "fazit": baue_fazit(s, params, ln, monate, underval),
+                # flags und fazit entstehen im Frontend (flagsFuer/fazitFuer).
+                # Als Text mitgeliefert waeren sie rund 8 MB - fast die
+                # Haelfte der Datei - obwohl sie nur beim Oeffnen eines
+                # einzelnen Profils gebraucht werden. Alle Eingangswerte
+                # dafuer stehen ohnehin im Datensatz.
             })
 
     spieler_out.sort(key=lambda p: (-p["ln"], p["name"]))
@@ -355,6 +299,7 @@ def main() -> int:
                         "xG/xA/progressive Carries sind darin nicht enthalten "
                         "und werden bewusst nicht ausgewiesen."),
             "mindestminuten": MIN_MINUTEN,
+            "kennzahlen": KENNZAHL_NAMEN,
             "ligen": ligen_liste,
             "players": spieler_out,
         }, fh, ensure_ascii=False, separators=(",", ":"))

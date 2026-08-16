@@ -420,6 +420,13 @@ async function loadScoutData(){
     if(!r.ok)throw new Error('HTTP '+r.status);
     const d=await r.json();
     if(!d.players||!d.players.length)throw new Error('keine Spieler enthalten');
+    /* params kommen platzsparend als {i,p}. Namen und Kategorie hier einmal
+       ergaenzen, damit der uebrige Code unveraendert mit {n,p,cat} arbeitet. */
+    const kzNamen=d.kennzahlen||[];
+    if(kzNamen.length)d.players.forEach(p=>(p.params||[]).forEach(x=>{
+      if(x.n===undefined)x.n=kzNamen[x.i]||('Kennzahl '+x.i);
+      if(x.cat===undefined)x.cat=x.p>=70?'top':(x.p<40?'low':'mid');
+    }));
     PLAYERS=d.players;
     if(d.ligen&&d.ligen.length)LIGEN=d.ligen;
     dataStand=d.stand;dataSaison=d.saison;dataHinweis=d.hinweis;
@@ -854,6 +861,52 @@ function renderPlayers(){
     return '<div class="pcard" onclick="showProfile('+p.id+')"><div class="av">'+p.ini+'<span class="num">'+p.number+'</span></div><div class="pi"><h4>'+p.name+'</h4><div class="meta"><span class="pos-tag">'+p.pos+'</span><span>'+p.club+'</span><span>'+p.liga+'</span><span>'+p.age+' J.</span></div><div class="badges">'+cbadge(p.contract)+'<span class="badge b-blue">'+p.mv+' €</span>'+(p.underval?'<span class="badge b-teal"><i class="ti ti-trending-up" style="font-size:10px"></i> Unterbewertet</span>':'')+duenn+luecken+'</div></div><div class="scores">'+note+'</div></div>';
   }).join('');
 }
+/* Flags und Fazit werden hier erzeugt, nicht in der JSON mitgeliefert.
+   Beides ist reiner Fliesstext, der sich vollstaendig aus den uebrigen
+   Feldern ableitet - mitgespeichert waere er rund 8 MB gross gewesen,
+   also fast die Haelfte der Datei, obwohl er nur beim Oeffnen eines
+   einzelnen Profils gebraucht wird. */
+function restmonate(p){
+  if(!p.contract_until)return null;
+  const e=new Date(p.contract_until), h=new Date();
+  return (e.getFullYear()-h.getFullYear())*12+(e.getMonth()-h.getMonth());
+}
+
+function flagsFuer(p){
+  const f=[], par=p.params||[];
+  if(p.belastbar===false)
+    f.push({c:'neg',t:'Nur '+p.minuten+' Saisonminuten — Werte sind ein Hinweis, keine belastbare Bewertung'});
+  par.filter(x=>x.p>=80).slice(0,2).forEach(x=>
+    f.push({c:'pos',t:x.n+': Top-'+(100-x.p)+'% der Liga auf dieser Position ('+x.p+'. Percentil)'}));
+  par.filter(x=>x.p<35).slice(0,1).forEach(x=>
+    f.push({c:'neg',t:x.n+' unter Ligadurchschnitt ('+x.p+'. Percentil)'}));
+  const m=restmonate(p);
+  if(m!==null&&m<=3)f.push({c:'neg',t:'Vertrag läuft in '+Math.max(m,0)+' Monaten ab — ablösefrei möglich'});
+  else if(m!==null&&m<=12)f.push({c:'neg',t:'Vertrag läuft in '+m+' Monaten ab — Beobachtung empfohlen'});
+  if(p.underval_index===null||p.underval_index===undefined)
+    f.push({c:'neu',t:'Für diese Liga führt die Quelle keine Marktwerte — kein Unterbewertet-Index berechenbar'});
+  else if(p.underval_index>=10)
+    f.push({c:'neu',t:'Marktwert unter Leistungsniveau (Unterbewertet-Index: +'+p.underval_index+')'});
+  if(p.age<=21&&p.ln>=60)
+    f.push({c:'neu',t:'Mit '+p.age+' Jahren bereits Ligadurchschnitt übertroffen — Entwicklungspotenzial'});
+  return f;
+}
+
+function fazitFuer(p){
+  const par=p.params||[];
+  const st=par.filter(x=>x.p>=75).slice(0,2).map(x=>x.n.toLowerCase());
+  const sw=par.filter(x=>x.p<35).slice(0,1).map(x=>x.n.toLowerCase());
+  const t=[];
+  t.push(st.length?p.name+' überzeugt vor allem bei '+st.join(' und ')
+                 :p.name+' zeigt ein ausgeglichenes Profil ohne herausstechende Spitzenwerte');
+  t.push('Leistungsnote '+p.ln+' im Ligavergleich der Position '+p.pos);
+  if(sw.length)t.push('Ausbaufähig: '+sw[0]);
+  if(p.underval_index>=10)t.push('Marktwert liegt unter dem gezeigten Niveau — wirtschaftlich interessant');
+  const m=restmonate(p);
+  if(m!==null&&m<=6)t.push('Auslaufender Vertrag macht einen Zugriff ohne oder mit geringer Ablöse realistisch');
+  return t.join('. ')+'.';
+}
+
 function showProfile(id){
   const p=PLAYERS.find(x=>x.id===id);activePlayer=p;
   const hasV=(fromPage==='vereinsmatching'&&vmVerein)||fromPage==='kaderresult';
@@ -864,7 +917,7 @@ function showProfile(id){
 function renderProfile(p,hasV,vN){
   document.getElementById('profil-bk').onclick=()=>go('ergebnisse');
   const rb=hasV?'<div class="report-bar"><div class="report-bar-info"><strong>Bericht generieren</strong>Spielerakte + Passungsanalyse für '+vN+'</div><button class="btn-report" onclick="openModal()"><i class="ti ti-file-text"></i> Bericht</button></div>':'<div class="report-bar"><div class="report-bar-info"><strong>Bericht generieren</strong>Spielerakte mit Stärken, Schwächen und Eigenschaften</div><button class="btn-report" onclick="openModal()"><i class="ti ti-file-text"></i> Bericht</button></div>';
-  const flagsArr=(p.flags||[]).map(f=>({c:f.c||f.type||'neu',t:f.t||f.text||''}));
+  const flagsArr=flagsFuer(p);
   const tnCard=(hasV&&lastTN)
     ?ringCard('TN','Team-Note',lastTN.tn,'Passung zu '+vN,'var(--blue)')
     :'<div class="nc locked"><div class="nc-lbl">Team-Note <span>TN</span></div><div class="nc-val">–</div><div class="nc-sub">Nur mit Vereinskontext (via Matching oder Kaderanalyse)</div></div>';
@@ -881,7 +934,7 @@ function renderProfile(p,hasV,vN){
   '<div class="sec"><div class="sec-title">Stammdaten</div><div class="sd-grid"><div class="sd"><div class="sd-lbl">Alter</div><div class="sd-val">'+p.age+' J.</div></div><div class="sd"><div class="sd-lbl">Fuß</div><div class="sd-val">'+p.foot+'</div></div><div class="sd"><div class="sd-lbl">Größe / Gewicht</div><div class="sd-val">'+p.height+' / '+p.weight+'</div></div><div class="sd"><div class="sd-lbl">Rückennummer</div><div class="sd-val">#'+p.number+'</div></div></div></div>'+
   '<div class="sec"><div class="sec-title">Parameter-Percentile</div><div class="radar-grid"><div class="radar-box">'+radarSVG(p.params)+'</div><div>'+bars+'</div></div><div class="legend"><div class="leg-item"><div class="leg-dot" style="background:var(--lime)"></div>Top 25%</div><div class="leg-item"><div class="leg-dot" style="background:var(--blue)"></div>Norm 25–75%</div><div class="leg-item"><div class="leg-dot" style="background:var(--amber)"></div>Unter 25%</div></div></div>'+
   '<div class="sec"><div class="sec-title">Normabweichungs-Flags</div><div class="flag-list">'+flagsArr.map(f=>'<div class="flag"><div class="fdot '+f.c+'"></div><span>'+f.t+'</span></div>').join('')+'</div></div>'+
-  '<div class="sec"><div class="sec-title">Scout-Fazit</div><div class="fazit">'+(p.fazit||'Kein Fazit vorhanden.')+'</div></div>';
+  '<div class="sec"><div class="sec-title">Scout-Fazit</div><div class="fazit">'+fazitFuer(p)+'</div></div>';
   go('profil');
 }
 function openModal(){
@@ -902,14 +955,14 @@ function downloadReport(){
   const vLid=fromPage==='vereinsmatching'?vmVereinLiga:(fromPage==='kaderresult'?(kadVereinLiga||'buli2'):null);
   const vLn=vLid?((LIGEN.find(x=>x.id===vLid)||{}).name||''):null;
   const datum=new Date().toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
-  const st=p.flags.filter(f=>f.c==='pos').map(f=>f.t),sw=p.flags.filter(f=>f.c==='neg').map(f=>f.t),nu=p.flags.filter(f=>f.c==='neu').map(f=>f.t);
+  const _fl=flagsFuer(p);const st=_fl.filter(f=>f.c==='pos').map(f=>f.t),sw=_fl.filter(f=>f.c==='neg').map(f=>f.t),nu=_fl.filter(f=>f.c==='neu').map(f=>f.t);
   const tnRes=lastTN,ms=tnRes?tnRes.tn:null;
   let h='<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;font-size:11pt;color:#1a1a1a;margin:0}.page{padding:40px 48px;max-width:800px;margin:0 auto}.header{border-bottom:2px solid #185FA5;padding-bottom:16px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-end}.header h1{font-size:18pt;font-weight:700;color:#185FA5;margin:0 0 4px}.header p{font-size:9pt;color:#666;margin:0}.hr{text-align:right;font-size:9pt;color:#666}.logo{font-size:14pt;font-weight:700;color:#185FA5}h2{font-size:12pt;font-weight:700;color:#185FA5;margin:22px 0 10px;padding-bottom:4px;border-bottom:0.5px solid #dde4f0}h3{font-size:11pt;font-weight:700;margin:14px 0 6px}.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}.si{background:#f0f5fb;border-radius:4px;padding:8px 10px}.sl{font-size:8pt;color:#666}.sv{font-size:11pt;font-weight:700}.ng{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}.nb{border:1px solid #dde4f0;border-radius:4px;padding:12px 14px}.nl{font-size:8pt;color:#666}.nv{font-size:22pt;font-weight:700;color:#185FA5}.ns{font-size:8pt;color:#888}.fi{display:flex;gap:8px;margin-bottom:6px;font-size:10pt}.fd{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:3px}.fd.p{background:#3B6D11}.fd.n{background:#A32D2D}.fd.u{background:#888}.fz{background:#e8f2fb;border-left:3px solid #185FA5;padding:12px 14px;font-size:10pt;color:#0C447C;line-height:1.6}.pr{display:flex;align-items:center;gap:10px;margin-bottom:8px}.pn{font-size:9pt;width:180px;flex-shrink:0}.po{flex:1;height:7px;background:#e8eef5;border-radius:4px;overflow:hidden}.pi2{height:100%}.pp{font-size:9pt;color:#666;width:28px;text-align:right}.mb{background:#f7fdf9;border:1px solid #c0ddb0;border-radius:4px;padding:14px 16px}.mt{font-size:10pt;font-weight:700;color:#3B6D11;margin-bottom:6px}.mx{font-size:10pt;line-height:1.6}.cb{display:inline-block;padding:3px 10px;border-radius:12px;font-size:9pt;font-weight:700}.cr{background:#FCEBEB;color:#A32D2D}.cy{background:#FAEEDA;color:#854F0B}.cg{background:#EAF3DE;color:#3B6D11}.ub{display:inline-block;background:#E1F5EE;color:#0F6E56;padding:2px 8px;border-radius:10px;font-size:9pt;font-weight:700;margin-left:8px}.footer{border-top:0.5px solid #ddd;margin-top:32px;padding-top:10px;font-size:8pt;color:#999;display:flex;justify-content:space-between}@media print{body{print-color-adjust:exact;-webkit-print-color-adjust:exact}}</style></head><body><div class="page"><div class="header"><div><h1>'+p.name+'</h1><p>'+p.pos+' · '+p.club+' · '+p.liga+' · #'+p.number+'</p></div><div class="hr"><div class="logo">ScoutIQ</div><div>Erstellt am '+datum+'</div><div>'+(reportType==='kompakt'?'Kompaktbericht':'Ausführlicher Bericht')+'</div></div></div><h2>Spielereinschätzung</h2><div class="sg"><div class="si"><div class="sl">Alter</div><div class="sv">'+p.age+' J.</div></div><div class="si"><div class="sl">Fuß</div><div class="sv">'+p.foot+'</div></div><div class="si"><div class="sl">Größe</div><div class="sv">'+p.height+'</div></div><div class="si"><div class="sl">Marktwert</div><div class="sv">'+p.mv+' €</div></div></div><div style="margin-bottom:14px">Vertrag: <span class="cb '+(p.contract==='red'?'cr':p.contract==='yellow'?'cy':'cg')+'">'+ctxt(p.contract)+'</span>'+(p.underval?'<span class="ub">Unterbewertet</span>':'')+'</div><div class="ng"><div class="nb"><div class="nl">Liga-Note (LN)</div><div class="nv">'+p.ln+'</div><div class="ns">Percentil vs. alle '+p.pos+'</div></div><div class="nb"><div class="nl">Positions-Note (PN)</div><div class="nv">'+p.pn+'</div><div class="ns">Gewichtete Kernparameter</div></div></div>';
   if(reportType==='ausfuehrlich'){h+='<h3>Parameter-Percentile</h3>';p.params.forEach(pm=>{const c=pm.cat==='top'?'#185FA5':pm.cat==='low'?'#F0997B':'#9DC0E8';h+='<div class="pr"><div class="pn">'+pm.n+'</div><div class="po"><div class="pi2" style="width:'+pm.p+'%;background:'+c+'"></div></div><div class="pp">'+pm.p+'</div></div>'})}
   h+='<h3>Stärken</h3>';st.forEach(s=>h+='<div class="fi"><div class="fd p"></div><span>'+s+'</span></div>');if(!st.length)h+='<p style="font-size:10pt;color:#888">Keine herausragenden Stärken.</p>';
   h+='<h3>Schwächen</h3>';sw.forEach(s=>h+='<div class="fi"><div class="fd n"></div><span>'+s+'</span></div>');if(!sw.length)h+='<p style="font-size:10pt;color:#888">Keine signifikanten Schwächen.</p>';
   if(reportType==='ausfuehrlich'&&nu.length){h+='<h3>Weitere Charakteristika</h3>';nu.forEach(s=>h+='<div class="fi"><div class="fd u"></div><span>'+s+'</span></div>')}
-  h+='<h3>Scout-Fazit</h3><div class="fz">'+p.fazit+'</div>';
+  h+='<h3>Scout-Fazit</h3><div class="fz">'+fazitFuer(p)+'</div>';
   if(hasV&&tnRes&&ms!==null){
     const dn={pressing:'Pressing',ballbesitz:'Ballbesitz',konter:'Konter',aufbau:'Aufbau von hinten',standards:'Standardsituationen'};
     const sorted=Object.entries(tnRes.dims).sort((a,b)=>b[1]-a[1]);
