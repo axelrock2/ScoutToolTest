@@ -293,16 +293,16 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
   <div class="two-col">
     <div class="filter-panel">
       <div class="panel-title"><span class="idx">//</span> Filter</div>
-      <div class="fg"><label>Name</label><input type="text" placeholder="z.B. Müller"></div>
-      <div class="fg"><label>Position</label><select><option>Alle Positionen</option><option>IV</option><option>LV / RV</option><option>DM</option><option>ZM</option><option>OM / Flügel</option><option>ST / HS</option></select></div>
-      <div class="fg"><label>Liga</label><select><option>Alle Ligen</option><option>Bundesliga</option><option>2. Bundesliga</option><option>Premier League</option><option>Championship</option><option>La Liga</option><option>Serie A</option><option>Ligue 1</option><option>Eredivisie</option></select></div>
-      <div class="fg"><label>Alter</label><div class="age-row"><input type="number" placeholder="von"><input type="number" placeholder="bis"></div></div>
-      <div class="fg"><label>Max. Marktwert (Mio. €)</label><input type="number" placeholder="z.B. 10"></div>
-      <div class="fg"><label>Mindest-Liga-Note</label><select><option>Keine</option><option>60+</option><option>65+</option><option>70+</option><option>75+</option><option>80+</option></select></div>
-      <div class="fg"><label>Vertragsstatus</label><select><option>Alle</option><option>Läuft ab (rot)</option><option>Kritisch (gelb)</option><option>Stabil (grün)</option></select></div>
+      <div class="fg"><label>Name</label><input type="text" id="f-name" placeholder="z.B. Müller"></div>
+      <div class="fg"><label>Position</label><select id="f-pos"><option value="">Alle Positionen</option><option value="TW">TW</option><option value="IV">IV</option><option value="LV,RV">LV / RV</option><option value="DM">DM</option><option value="ZM">ZM</option><option value="OM,LA,RA">OM / Flügel</option><option value="ST">ST</option></select></div>
+      <div class="fg"><label>Liga</label><select id="f-liga"><option value="">Alle Ligen</option></select></div>
+      <div class="fg"><label>Alter</label><div class="age-row"><input type="number" id="f-age-von" placeholder="von"><input type="number" id="f-age-bis" placeholder="bis"></div></div>
+      <div class="fg"><label>Max. Marktwert (Mio. €)</label><input type="number" id="f-mw" step="0.1" placeholder="z.B. 10"></div>
+      <div class="fg"><label>Mindest-Liga-Note</label><select id="f-ln"><option value="">Keine</option><option value="60">60+</option><option value="65">65+</option><option value="70">70+</option><option value="75">75+</option><option value="80">80+</option></select></div>
+      <div class="fg"><label>Vertragsstatus</label><select id="f-vertrag"><option value="">Alle</option><option value="red">Läuft ab (rot)</option><option value="yellow">Kritisch (gelb)</option><option value="green">Stabil (grün)</option></select></div>
       <div class="fg">
-        <div class="tr"><label>Nur Vertragsläufer</label><label class="tog"><input type="checkbox"><span class="tslider"></span></label></div>
-        <div class="tr"><label>Nur unterbewertete Spieler</label><label class="tog"><input type="checkbox"><span class="tslider"></span></label></div>
+        <div class="tr"><label>Nur Vertragsläufer</label><label class="tog"><input type="checkbox" id="f-auslaufend"><span class="tslider"></span></label></div>
+        <div class="tr"><label>Nur unterbewertete Spieler</label><label class="tog"><input type="checkbox" id="f-underval"><span class="tslider"></span></label></div>
       </div>
       <button class="btn-primary" onclick="go('ergebnisse','spielersuche')"><i class="ti ti-search"></i> Suche starten</button>
     </div>
@@ -342,7 +342,7 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
   <div class="results-wrap">
     <div class="res-header">
       <div class="res-count"><strong id="res-num">47</strong> Treffer<span class="filt" id="res-filt">Liga-Note 65+ · 2. Bundesliga · OM/Flügel</span></div>
-      <select class="sort-sel"><option>Sortieren: Liga-Note ↓</option><option>Positions-Note ↓</option><option>Alter ↑</option><option>Marktwert ↓</option></select>
+      <select class="sort-sel" id="f-sort" onchange="renderPlayers()"><option value="ln">Sortieren: Liga-Note ↓</option><option value="pn">Positions-Note ↓</option><option value="age">Alter ↑</option><option value="mv">Marktwert ↓</option></select>
     </div>
     <div id="player-list"></div>
   </div>
@@ -423,6 +423,7 @@ async function loadScoutData(){
     if(d.ligen&&d.ligen.length)LIGEN=d.ligen;
     dataStand=d.stand;dataSaison=d.saison;dataHinweis=d.hinweis;
     showDataStand(d);
+    fuelleLigaFilter();
     /* Falls der Nutzer schon auf einer Datenseite steht: neu zeichnen. */
     const akt=document.querySelector('.page.active');
     if(akt&&akt.id==='page-ergebnisse')renderPlayers();
@@ -475,12 +476,18 @@ const TN_W={stil:0.70,bedarf:0.20,formation:0.10};
    Ereignisdaten (Pressingaktionen, Passnetzwerke), die nur kostenpflichtig
    angeboten werden. Leere Liste heisst: computeTN meldet die Dimension als
    Datenluecke (neutral 50) statt eine Zahl zu erfinden. */
+/* Wichtig: je Dimension eine EIGENE Kennzahl. Wuerde 'konter' auf
+   Scorerpunkte zeigen, waere es mit 'ballbesitz' (Vorlagen) fast identisch -
+   die Scorerpunkte enthalten die Vorlagen ja bereits. Gegensaetzliche
+   Stilprofile lieferten dann dieselbe Rangfolge.
+     ballbesitz -> Vorlagen / 90  (Kreativitaet, Vorbereitung)
+     konter     -> Tore / 90      (direkter Abschluss)          */
 const TN_MAP={
-  OM:{pressing:[],ballbesitz:['Vorlagen','Scorerpunkte'],konter:['Tore / 90','Scorerpunkte'],aufbau:[],standards:[]},
+  OM:{pressing:[],ballbesitz:['Vorlagen'],konter:['Tore / 90'],aufbau:[],standards:[]},
   IV:{pressing:[],ballbesitz:[],konter:[],aufbau:[],standards:['Torgefahr']},
-  LV:{pressing:[],ballbesitz:['Vorlagen'],konter:['Scorerpunkte'],aufbau:[],standards:[]},
-  DM:{pressing:[],ballbesitz:['Vorlagen','Scorerpunkte'],konter:['Tore / 90'],aufbau:[],standards:[]},
-  ST:{pressing:[],ballbesitz:['Vorlagen'],konter:['Tore / 90','Scorerpunkte'],aufbau:[],standards:['Tore / 90']}
+  LV:{pressing:[],ballbesitz:['Vorlagen'],konter:['Tore / 90'],aufbau:[],standards:[]},
+  DM:{pressing:[],ballbesitz:['Vorlagen'],konter:['Tore / 90'],aufbau:[],standards:[]},
+  ST:{pressing:[],ballbesitz:['Vorlagen'],konter:['Tore / 90'],aufbau:[],standards:[]}
 };
 const FORM_FIT={'4-2-3-1':{IV:100,LV:100,DM:100,OM:100,ST:100},'4-3-3':{IV:100,LV:100,DM:100,OM:90,ST:100},'3-5-2':{IV:100,LV:70,DM:100,OM:60,ST:100},'4-4-2':{IV:100,LV:100,DM:90,OM:90,ST:100},'3-4-3':{IV:100,LV:70,DM:90,OM:100,ST:100},'5-3-2':{IV:100,LV:80,DM:100,OM:50,ST:100},'4-1-4-1':{IV:100,LV:100,DM:100,OM:90,ST:90}};
 function tnKey(pos){if(pos==='IV')return 'IV';if(pos==='DM'||pos==='ZM'||pos==='DM/ZM')return 'DM';if((''+pos).startsWith('ST'))return 'ST';if((''+pos).startsWith('LV')||(''+pos).startsWith('RV'))return 'LV';return 'OM';}
@@ -494,8 +501,12 @@ function pctLookup(pct,label){
   return best!==null?pct[best]:undefined;
 }
 function bedarfNoteFor(pos){
-  const map={'OM':['OM'],'Flügel':['LA','RA'],'IV':['IV L','IV R'],'ST':['ST'],'DM':['DM'],'ZM':['ZM L','ZM R']};
-  const ks=map[pos]||[];const vals=KPOS.filter(k=>ks.includes(k.pos)).map(k=>k.note);
+  /* KPOS enthaelt seit der Datenanbindung echte Positionskuerzel
+     (TW, IV, LV, RV, DM, ZM, OM, LA, RA, ST). */
+  const map={'OM':['OM'],'LA':['LA'],'RA':['RA'],'Flügel':['LA','RA'],
+             'IV':['IV'],'LV':['LV'],'RV':['RV'],'TW':['TW'],
+             'ST':['ST'],'DM':['DM'],'ZM':['ZM']};
+  const ks=map[pos]||[pos];const vals=KPOS.filter(k=>ks.includes(k.pos)).map(k=>k.note);
   if(!vals.length)return null;
   return Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
 }
@@ -602,7 +613,7 @@ function pickVerein(px,name,lid){
     document.getElementById('vm-opt-panel').innerHTML='<div class="panel-title"><span class="idx">03</span> Optionen</div>'+
     '<div class="sel-info"><div class="sl">Ausgewählt</div><div class="sn">'+name+'</div><div class="sm">'+l.name+' · '+l.land+'</div></div>'+
     '<div class="fg"><label>Formation</label><select id="vm-formation"><option>4-2-3-1</option><option>4-3-3</option><option>3-5-2</option><option>4-4-2</option><option>3-4-3</option><option>5-3-2</option><option>4-1-4-1</option></select></div>'+
-    '<div class="fg"><label>Gesuchte Position</label><select><option>Alle Positionen</option><option>IV</option><option>LV / RV</option><option>DM</option><option>ZM</option><option>OM / Flügel</option><option>ST / HS</option></select></div>'+
+    '<div class="fg"><label>Gesuchte Position</label><select id="vm-pos"><option value="">Alle Positionen</option><option value="TW">TW</option><option value="IV">IV</option><option value="LV,RV">LV / RV</option><option value="DM">DM</option><option value="ZM">ZM</option><option value="OM,LA,RA">OM / Flügel</option><option value="ST">ST / HS</option></select></div>'+
     '<div class="fg"><label>Spielstil-Profil</label><div style="margin-top:8px">'+['Pressing','Ballbesitz','Konter','Aufbau hinten','Standards'].map((s,i)=>'<div class="slider-row"><div class="srl"><span>'+s+'</span><span class="srv" id="sv'+i+'">3</span></div><input type="range" min="1" max="5" value="3" oninput="document.getElementById(\'sv'+i+'\').textContent=this.value"></div>').join('')+'</div></div>'+
     '<div class="fg"><label>Max. Alter</label><input type="number" placeholder="z.B. 27"></div>'+
     '<button class="btn-primary" onclick="startMatching()"><i class="ti ti-arrows-shuffle"></i> Matching starten</button>';
@@ -617,14 +628,199 @@ function pickVerein(px,name,lid){
   }
 }
 function renderKadResult(){
-  const name=kadVerein||'Hamburger SV',lid=kadVereinLiga||'buli2',l=LIGEN.find(x=>x.id===lid),ln=l?l.name:'2. Bundesliga';
-  document.getElementById('kad-result-header').innerHTML='<h2>'+name+' <span class="hl">// Scan</span></h2><p>'+ln+' · Budget ~8,5 Mio. € geschätzt · Saison 2024/25</p>';
+  const name=kadVerein||'',lid=kadVereinLiga||'',l=LIGEN.find(x=>x.id===lid),ln=l?l.name:'';
+
+  /* Kaderwerte aus den echten Spielern des gewaehlten Vereins berechnen.
+     Vorher stand hier das feste Demo-Array KPOS - deshalb sah die Analyse
+     fuer jeden Verein gleich aus. */
+  KPOS=kaderNoten(name,lid);
+
+  const kader=PLAYERS.filter(p=>p.club===name);
+  const mwSumme=kader.reduce((a,p)=>a+(p.mv_eur||0),0);
+  const kopf=[ln,
+    kader.length?kader.length+' bewertete Spieler':'keine bewerteten Spieler',
+    mwSumme?'Kaderwert '+(mwSumme/1e6).toFixed(1).replace('.',',')+' Mio. €':null,
+    dataSaison?'Saison '+dataSaison:null].filter(Boolean).join(' · ');
+  document.getElementById('kad-result-header').innerHTML=
+    '<h2>'+(name||'Kein Verein gewählt')+' <span class="hl">// Scan</span></h2><p>'+kopf+'</p>';
+
+  if(!KPOS.length){
+    document.getElementById('kad-bars').innerHTML=
+      '<div class="empty-panel" style="padding:40px 16px"><i class="ti ti-database-off"></i>'
+      +'<p>Für diesen Verein liegen keine bewerteten Spieler vor</p></div>';
+    document.getElementById('kad-recs').innerHTML='';
+    return;
+  }
+
   document.getElementById('kad-bars').innerHTML=KPOS.map(p=>'<div class="kbar-row"><div class="kbar-pos">'+p.pos+'</div><div class="kbar-wrap"><div class="kbar" style="width:'+p.note+'%;background:'+nc(p.note)+'"><span class="kbar-val">'+p.note+'</span></div></div></div>').join('');
-  const weak=KPOS.filter(p=>p.note<60);
-  document.getElementById('kad-recs').innerHTML=weak.map(p=>'<div class="pcard" onclick="go(\'ergebnisse\',\'kaderresult\')" style="grid-template-columns:auto 1fr auto"><div class="av" style="background:rgba(255,91,91,0.1);border-color:rgba(255,91,91,0.3);color:#FF5B5B;font-family:\'JetBrains Mono\',monospace;font-size:20px">'+p.note+'</div><div class="pi"><h4>'+p.pos+' — Verstärkung gesucht</h4><div class="meta"><span>Ligaschnitt ~67</span><span style="color:var(--red)">Rückstand '+(67-p.note)+' Pkt</span></div></div><div style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--lime);text-transform:uppercase;letter-spacing:1px">Spieler →</div></div>').join('');
+
+  /* Ligaschnitt je Position als Vergleichsmassstab - ebenfalls aus echten
+     Daten, nicht mehr die feste 67. */
+  const schnitt=ligaSchnittProPosition(lid);
+  const weak=KPOS.filter(p=>p.note<(schnitt[p.pos]??60));
+  document.getElementById('kad-recs').innerHTML=weak.length?weak.map(p=>{
+    const soll=Math.round(schnitt[p.pos]??60);
+    return '<div class="pcard" onclick="kadWeakClick(\''+p.pos+'\')" style="grid-template-columns:auto 1fr auto"><div class="av" style="background:rgba(255,91,91,0.1);border-color:rgba(255,91,91,0.3);color:#FF5B5B;font-family:\'JetBrains Mono\',monospace;font-size:20px">'+p.note+'</div><div class="pi"><h4>'+p.pos+' — Verstärkung prüfen</h4><div class="meta"><span>'+p.anzahl+' Spieler</span><span>Ligaschnitt '+soll+'</span><span style="color:var(--red)">Rückstand '+(soll-p.note)+' Pkt</span></div></div><div style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--lime);text-transform:uppercase;letter-spacing:1px">Spieler →</div></div>';
+  }).join(''):'<div style="font-size:13px;color:var(--ink-2)">Keine Position unter dem Ligaschnitt.</div>';
 }
+
+/* Durchschnittliche Liga-Note je Position im Kader eines Vereins. */
+function kaderNoten(verein,ligaId){
+  if(!verein)return[];
+  const reihenfolge=['TW','IV','LV','RV','DM','ZM','OM','LA','RA','ST'];
+  const nach={};
+  PLAYERS.filter(p=>p.club===verein).forEach(p=>{
+    (nach[p.pos]=nach[p.pos]||[]).push(p);
+  });
+  return reihenfolge.filter(pos=>nach[pos]).map(pos=>{
+    const g=nach[pos];
+    return {pos,
+      note:Math.round(g.reduce((a,p)=>a+p.ln,0)/g.length),
+      anzahl:g.length,
+      bester:Math.max(...g.map(p=>p.ln))};
+  });
+}
+
+/* Ligaschnitt je Position - Vergleichsmassstab fuer die Bedarfsanalyse. */
+function ligaSchnittProPosition(ligaId){
+  const nach={};
+  PLAYERS.filter(p=>!ligaId||p.liga_id===ligaId).forEach(p=>{
+    (nach[p.pos]=nach[p.pos]||[]).push(p.ln);
+  });
+  const out={};
+  for(const pos in nach)
+    out[pos]=nach[pos].reduce((a,b)=>a+b,0)/nach[pos].length;
+  return out;
+}
+
+/* Klick auf eine Schwachstelle: passende Spieler derselben Position zeigen. */
+window.kadWeakClick=function(pos){
+  const sel=document.getElementById('f-pos');
+  if(sel)sel.value=['LV','RV'].includes(pos)?'LV,RV'
+    :['OM','LA','RA'].includes(pos)?'OM,LA,RA':pos;
+  const liga=document.getElementById('f-liga');
+  if(liga)liga.value='';
+  go('ergebnisse','kaderanalyse');
+};
+/* Werte der Filterleiste einsammeln. Fehlt ein Feld (z. B. weil die Seite
+   noch nicht gezeichnet ist), gilt der Filter als nicht gesetzt. */
+function leseFilter(){
+  const v=id=>{const el=document.getElementById(id);return el?el.value.trim():'';};
+  const an=id=>{const el=document.getElementById(id);return!!(el&&el.checked);};
+  return {name:v('f-name').toLowerCase(),pos:v('f-pos'),liga:v('f-liga'),
+          ageVon:parseInt(v('f-age-von'),10),ageBis:parseInt(v('f-age-bis'),10),
+          maxMw:parseFloat(v('f-mw')),minLn:parseInt(v('f-ln'),10),
+          vertrag:v('f-vertrag'),auslaufend:an('f-auslaufend'),
+          underval:an('f-underval'),sort:v('f-sort')||'ln'};
+}
+
+/* Wendet die Filter auf PLAYERS an. Frueher wurde hier die komplette Liste
+   ausgegeben - deshalb zeigte jede Suche dieselben Spieler. */
+function filterPlayers(f){
+  const posListe=f.pos?f.pos.split(','):null;
+  return PLAYERS.filter(p=>{
+    if(f.name&&!p.name.toLowerCase().includes(f.name))return false;
+    if(posListe&&!posListe.includes(p.pos))return false;
+    if(f.liga&&p.liga_id!==f.liga&&p.liga!==f.liga)return false;
+    if(!isNaN(f.ageVon)&&p.age<f.ageVon)return false;
+    if(!isNaN(f.ageBis)&&p.age>f.ageBis)return false;
+    if(!isNaN(f.maxMw)&&(p.mv_eur??0)>f.maxMw*1e6)return false;
+    if(!isNaN(f.minLn)&&p.ln<f.minLn)return false;
+    if(f.vertrag&&p.contract!==f.vertrag)return false;
+    if(f.auslaufend&&p.contract!=='red')return false;
+    if(f.underval&&!p.underval)return false;
+    return true;
+  });
+}
+
+function sortPlayers(liste,art){
+  const kopie=liste.slice();
+  if(art==='age')kopie.sort((a,b)=>a.age-b.age||b.ln-a.ln);
+  else if(art==='mv')kopie.sort((a,b)=>(b.mv_eur??0)-(a.mv_eur??0));
+  else if(art==='pn')kopie.sort((a,b)=>b.pn-a.pn);
+  else kopie.sort((a,b)=>b.ln-a.ln);
+  return kopie;
+}
+
+/* Kurzbeschreibung der aktiven Filter fuer die Ergebniszeile. */
+function filterText(f){
+  const t=[];
+  if(f.name)t.push('Name „'+f.name+'“');
+  if(f.pos)t.push(f.pos.replace(/,/g,'/'));
+  if(f.liga){const l=LIGEN.find(x=>x.id===f.liga);t.push(l?l.name:f.liga);}
+  if(!isNaN(f.ageVon)||!isNaN(f.ageBis))
+    t.push('Alter '+(isNaN(f.ageVon)?'':f.ageVon)+'–'+(isNaN(f.ageBis)?'':f.ageBis));
+  if(!isNaN(f.maxMw))t.push('max. '+f.maxMw+' Mio. €');
+  if(!isNaN(f.minLn))t.push('Liga-Note '+f.minLn+'+');
+  if(f.vertrag)t.push('Vertrag '+f.vertrag);
+  if(f.auslaufend)t.push('nur Vertragsläufer');
+  if(f.underval)t.push('nur unterbewertet');
+  return t.length?t.join(' · '):'ohne Einschränkung';
+}
+
+/* Liga-Auswahl aus den tatsaechlich geladenen Daten fuellen. */
+function fuelleLigaFilter(){
+  const sel=document.getElementById('f-liga');
+  if(!sel||!LIGEN.length)return;
+  const aktuell=sel.value;
+  sel.innerHTML='<option value="">Alle Ligen</option>'+
+    LIGEN.map(l=>'<option value="'+l.id+'">'+l.name+'</option>').join('');
+  sel.value=aktuell;
+}
+
 function renderPlayers(){
-  document.getElementById('player-list').innerHTML=PLAYERS.map(p=>'<div class="pcard" onclick="showProfile('+p.id+')"><div class="av">'+p.ini+'<span class="num">'+p.number+'</span></div><div class="pi"><h4>'+p.name+'</h4><div class="meta"><span class="pos-tag">'+p.pos+'</span><span>'+p.club+'</span><span>'+p.liga+'</span><span>'+p.age+' J.</span></div><div class="badges">'+cbadge(p.contract)+'<span class="badge b-blue">'+p.mv+' €</span>'+(p.underval?'<span class="badge b-teal"><i class="ti ti-trending-up" style="font-size:10px"></i> Unterbewertet</span>':'')+'</div></div><div class="scores"><div class="score-cap primary"><div class="scl">LN</div><div class="scv">'+p.ln+'</div><div class="scbar" style="width:'+p.ln+'%"></div></div><div class="score-cap"><div class="scl">PN</div><div class="scv">'+p.pn+'</div><div class="scbar" style="width:'+p.pn+'%;background:var(--blue)"></div></div></div></div>').join('');
+  const f=leseFilter();
+  let treffer=sortPlayers(filterPlayers(f),f.sort);
+  let hinweis=filterText(f);
+
+  /* Vereins-Matching: hier zaehlt nicht die Liga-Note, sondern wie gut der
+     Spieler zum eingestellten Stilprofil und zur Formation passt. Ohne
+     diese Sortierung waere das Ergebnis identisch mit der Spielersuche -
+     genau das war vorher der Fall. */
+  if(fromPage==='vereinsmatching'){
+    /* Beim Matching gelten NUR die Einstellungen des Matching-Panels.
+       Die Filterleiste der Spielersuche gehoert zu einem anderen Modus -
+       sonst wirken dort gesetzte Filter unsichtbar weiter. */
+    treffer=PLAYERS.slice();
+    const vp=document.getElementById('vm-pos');
+    const wunsch=vp?vp.value.trim():'';
+    if(wunsch){
+      const liste=wunsch.replace(/\s/g,'').split(/[,/]/);
+      treffer=treffer.filter(p=>liste.includes(p.pos));
+    }
+    treffer=treffer.map(p=>({p,tn:computeTN(p)}))
+                   .sort((a,b)=>b.tn.tn-a.tn.tn||b.p.ln-a.p.ln);
+    const stil=Object.entries(styleProfile)
+      .filter(([,v])=>v>=4).map(([k])=>k);
+    hinweis='Passung zu '+(vmVerein||'Profil')+' · '+chosenFormation
+      +(wunsch?' · '+wunsch:'')
+      +(stil.length?' · Schwerpunkt '+stil.join('/'):'');
+  }
+
+  const num=document.getElementById('res-num');
+  if(num)num.textContent=treffer.length;
+  const filt=document.getElementById('res-filt');
+  if(filt)filt.textContent=hinweis;
+
+  if(!treffer.length){
+    document.getElementById('player-list').innerHTML=
+      '<div class="empty-panel"><i class="ti ti-mood-empty"></i>'+
+      '<p>Kein Spieler passt zu diesen Filtern</p></div>';
+    return;
+  }
+  /* Im Matching-Modus enthaelt treffer Paare {p,tn}, sonst reine Spieler. */
+  document.getElementById('player-list').innerHTML=treffer.map(e=>{
+    const p=e.p||e, tn=e.tn||null;
+    const luecken=tn&&tn.gaps.length
+      ? '<span class="badge" style="border-color:var(--line-bright);color:var(--ink-3)" title="Ohne Ereignisdaten nicht berechenbar: '
+        +tn.gaps.join(', ')+'">'+tn.gaps.length+' Datenlücken</span>' : '';
+    const note=tn
+      ? '<div class="score-cap primary"><div class="scl">Passung</div><div class="scv">'+tn.tn+'</div><div class="scbar" style="width:'+tn.tn+'%"></div></div>'
+        +'<div class="score-cap"><div class="scl">LN</div><div class="scv">'+p.ln+'</div><div class="scbar" style="width:'+p.ln+'%;background:var(--blue)"></div></div>'
+      : '<div class="score-cap primary"><div class="scl">LN</div><div class="scv">'+p.ln+'</div><div class="scbar" style="width:'+p.ln+'%"></div></div>'
+        +'<div class="score-cap"><div class="scl">PN</div><div class="scv">'+p.pn+'</div><div class="scbar" style="width:'+p.pn+'%;background:var(--blue)"></div></div>';
+    return '<div class="pcard" onclick="showProfile('+p.id+')"><div class="av">'+p.ini+'<span class="num">'+p.number+'</span></div><div class="pi"><h4>'+p.name+'</h4><div class="meta"><span class="pos-tag">'+p.pos+'</span><span>'+p.club+'</span><span>'+p.liga+'</span><span>'+p.age+' J.</span></div><div class="badges">'+cbadge(p.contract)+'<span class="badge b-blue">'+p.mv+' €</span>'+(p.underval?'<span class="badge b-teal"><i class="ti ti-trending-up" style="font-size:10px"></i> Unterbewertet</span>':'')+luecken+'</div></div><div class="scores">'+note+'</div></div>';
+  }).join('');
 }
 function showProfile(id){
   const p=PLAYERS.find(x=>x.id===id);activePlayer=p;

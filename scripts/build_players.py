@@ -122,9 +122,15 @@ def _spieler_name(row) -> str:
 
 # ------------------------------------------------------------------- Abschnitte
 
-def vereine_der_liga(tm_id: str) -> list[tuple[str, str]]:
-    """[(verein_id, slug), ...] fuer eine Liga."""
-    page = fetch(f"/x/startseite/wettbewerb/{tm_id}")
+def vereine_der_liga(tm_id: str, saison: int) -> list[tuple[str, str]]:
+    """[(verein_id, slug), ...] der Liga IN DIESER SAISON.
+
+    Ohne saison_id liefert Transfermarkt die aktuelle Spielzeit. Dann landen
+    Aufsteiger faelschlich in der hoeheren Liga, obwohl ihre Saisonwerte in
+    der unteren erzielt wurden - und die Percentile verglichen sie mit der
+    falschen Gruppe.
+    """
+    page = fetch(f"/x/startseite/wettbewerb/{tm_id}/plus/?saison_id={saison}")
     gefunden: dict[str, str] = {}
     for href in page.css("a::attr(href)"):
         m = re.search(r"/([^/]+)/startseite/verein/(\d+)", str(href))
@@ -133,9 +139,9 @@ def vereine_der_liga(tm_id: str) -> list[tuple[str, str]]:
     return sorted(gefunden.items())
 
 
-def kader(verein_id: str, slug: str) -> tuple[str, dict[str, dict]]:
-    """(Vereinsname, Profildaten je Spieler-ID)."""
-    page = fetch(f"/{slug}/kader/verein/{verein_id}/plus/1")
+def kader(verein_id: str, slug: str, saison: int) -> tuple[str, dict[str, dict]]:
+    """(Vereinsname, Profildaten je Spieler-ID) fuer die angegebene Saison."""
+    page = fetch(f"/{slug}/kader/verein/{verein_id}/plus/1?saison_id={saison}")
 
     kopf = page.css("h1.data-header__headline-wrapper") or page.css("h1")
     name = cell_text(kopf[0]) if kopf else slug.replace("-", " ").title()
@@ -206,7 +212,7 @@ def sammle(ligen: list, max_vereine: int | None) -> tuple[list[dict], list[dict]
     for lg in ligen:
         stand = {"liga": lg.name, "id": lg.frontend_id, "land": lg.land}
         try:
-            clubs = vereine_der_liga(lg.tm_id)
+            clubs = vereine_der_liga(lg.tm_id, SAISON)
         except Exception as exc:
             stand.update(status="fehlt", grund=str(exc)[:150], spieler=0)
             bericht.append(stand)
@@ -220,7 +226,7 @@ def sammle(ligen: list, max_vereine: int | None) -> tuple[list[dict], list[dict]
         ok_clubs = 0
         for vid, slug in clubs:
             try:
-                verein_name, profile = kader(vid, slug)
+                verein_name, profile = kader(vid, slug, SAISON)
                 try:
                     stats = leistung(vid, slug, SAISON)
                 except Exception:
