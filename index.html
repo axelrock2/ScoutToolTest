@@ -658,9 +658,15 @@ function renderKadResult(){
 
   const kader=PLAYERS.filter(p=>p.club===name);
   const mwSumme=kader.reduce((a,p)=>a+(p.mv_eur||0),0);
+  const mitMw=kader.filter(p=>p.mv_eur).length;
+  /* Ohne Marktwerte waere "Kaderwert 0,0 Mio. €" eine Falschaussage - in
+     den Oberligen fuehrt die Quelle schlicht keine Werte. */
+  const wert=mitMw>=Math.max(3,kader.length/3)
+    ? 'Kaderwert '+(mwSumme/1e6).toFixed(1).replace('.',',')+' Mio. €'
+    : 'Marktwerte für diese Liga nicht verfügbar';
   const kopf=[ln,
     kader.length?kader.length+' bewertete Spieler':'keine bewerteten Spieler',
-    mwSumme?'Kaderwert '+(mwSumme/1e6).toFixed(1).replace('.',',')+' Mio. €':null,
+    kader.length?wert:null,
     dataSaison?'Saison '+dataSaison:null].filter(Boolean).join(' · ');
   document.getElementById('kad-result-header').innerHTML=
     '<h2>'+(name||'Kein Verein gewählt')+' <span class="hl">// Scan</span></h2><p>'+kopf+'</p>';
@@ -889,6 +895,15 @@ function flagsFuer(p){
     f.push({c:'neu',t:'Marktwert unter Leistungsniveau (Unterbewertet-Index: +'+p.underval_index+')'});
   if(p.age<=21&&p.ln>=60)
     f.push({c:'neu',t:'Mit '+p.age+' Jahren bereits Ligadurchschnitt übertroffen — Entwicklungspotenzial'});
+  /* Einsatz fuer eine zweite Mannschaft. Ein Kurzeinsatz eine Klasse hoeher
+     ist fuer Scouting eine Information, kein Rauschen. */
+  (p.auch_in||[]).forEach(w=>{
+    const hoeher=w.stufe<p.stufe;
+    f.push({c:hoeher?'pos':'neu',
+      t:(hoeher?'Bereits '+w.einsaetze+(w.einsaetze===1?' Einsatz':' Einsätze')
+                +' eine Klasse höher: '
+               :'Zusätzlich ')+w.minuten+' Minuten für '+w.club+' ('+w.liga+')'});
+  });
   return f;
 }
 

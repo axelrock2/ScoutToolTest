@@ -256,6 +256,29 @@ def main() -> int:
                 # dafuer stehen ohnehin im Datensatz.
             })
 
+    # Ein Spieler kann in einer Saison fuer mehrere Mannschaften auflaufen -
+    # typisch Zweitvertretung plus Profikader. Beide Eintraege stehen zu
+    # lassen erzeugt Doppel in der Trefferliste, und showProfile() faende
+    # immer nur den ersten. Massgeblich ist der Einsatz mit den meisten
+    # Minuten; die uebrigen bleiben als Zusatz erhalten, denn ein Kurzeinsatz
+    # in der hoeheren Liga ist fuer Scouting eine Information, kein Rauschen.
+    nach_id: dict[int, list[dict]] = {}
+    for p in spieler_out:
+        nach_id.setdefault(p["id"], []).append(p)
+
+    zusammengefasst = []
+    for eintraege in nach_id.values():
+        eintraege.sort(key=lambda p: -p["minuten"])
+        haupt = eintraege[0]
+        if len(eintraege) > 1:
+            haupt["auch_in"] = [{
+                "liga": w["liga"], "club": w["club"], "stufe": w["stufe"],
+                "minuten": w["minuten"], "einsaetze": w["einsaetze"],
+            } for w in eintraege[1:]]
+        zusammengefasst.append(haupt)
+
+    doppelte = len(spieler_out) - len(zusammengefasst)
+    spieler_out = zusammengefasst
     spieler_out.sort(key=lambda p: (-p["ln"], p["name"]))
 
     # 4) Ligenliste fuer das Frontend (aus den echten Daten)
@@ -305,6 +328,9 @@ def main() -> int:
         }, fh, ensure_ascii=False, separators=(",", ":"))
 
     fest = sum(1 for p in spieler_out if p["belastbar"])
+    if doppelte:
+        print(f"{doppelte} Doppeleintraege zusammengefasst (Spieler mit "
+              f"Einsaetzen fuer mehrere Mannschaften)", file=sys.stderr)
     print(f"{len(spieler_out)} Spieler bewertet, davon {fest} mit belastbarer "
           f"Spielzeit (ab {MIN_MINUTEN} Min) - von {len(roh['spieler'])} "
           f"gesammelt -> {os.path.relpath(ZIEL)}", file=sys.stderr)
