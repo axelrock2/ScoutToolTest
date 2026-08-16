@@ -1,0 +1,10 @@
+# Zwischenspeicher der abgerufenen Seiten (nur lokal, 6 h gueltig)
+.cache/
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+.venv/

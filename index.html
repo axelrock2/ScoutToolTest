@@ -354,7 +354,11 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 </div>
 
 <script>
-const LIGEN=[
+/* LIGEN, PLAYERS und KPOS sind nur Vorgabewerte (Demo). Beim Start werden
+   sie durch die echten Daten aus data/players.json ersetzt - siehe
+   loadScoutData() weiter unten. Schlaegt das Laden fehl, bleibt die Demo
+   sichtbar, die Seite ist also nie leer. */
+let LIGEN=[
   {id:'buli',name:'Bundesliga',land:'GER',vereine:['Bayern München','Borussia Dortmund','Bayer Leverkusen','RB Leipzig','Eintracht Frankfurt','VfB Stuttgart','SC Freiburg','Union Berlin']},
   {id:'buli2',name:'2. Bundesliga',land:'GER',vereine:['Hamburger SV','Fortuna Düsseldorf','Hannover 96','SC Paderborn','1. FC Kaiserslautern','Hertha BSC','Greuther Fürth','Eintr. Braunschweig']},
   {id:'pl',name:'Premier League',land:'ENG',vereine:['Arsenal','Chelsea','Liverpool','Manchester City','Manchester United','Tottenham','Newcastle','Aston Villa']},
@@ -368,7 +372,7 @@ const LIGEN=[
   {id:'oebuli',name:'Österreich Bundesliga',land:'AUT',vereine:['RB Salzburg','Rapid Wien','LASK','Sturm Graz','Austria Wien','Wolfsberger AC','WSG Tirol','A. Lustenau']},
   {id:'superlig',name:'Süper Lig',land:'TUR',vereine:['Galatasaray','Fenerbahçe','Beşiktaş','Trabzonspor','Başakşehir','Kayserispor','Sivasspor','Antalyaspor']}
 ];
-const PLAYERS=[
+let PLAYERS=[
   {id:1,ini:'RO',name:'Robert Okeke',pos:'OM',club:'Fortuna Düsseldorf',liga:'2. Bundesliga',age:23,foot:'rechts',height:'179 cm',weight:'76 kg',number:10,contract:'red',mv:'1,8 Mio.',ln:78,pn:81,underval:true,
     params:[{n:'Schlüsselpässe',p:88,cat:'top'},{n:'xA / Spiel',p:82,cat:'top'},{n:'Erfolgreiche Dribblings',p:74,cat:'top'},{n:'xG / Spiel',p:65,cat:'mid'},{n:'Schüsse / Spiel',p:61,cat:'mid'},{n:'Progressive Carries',p:77,cat:'top'},{n:'Rückweg / Defensivarbeit',p:38,cat:'low'}],
     flags:[{t:'Überdurchschnittliche Passkreativität: Schlüsselpässe Top-12% der Liga',c:'pos'},{t:'Starker Ballträger mit hoher Dribblingquote (74. Percentil)',c:'pos'},{t:'Defensiver Rückweg unter Ligadurchschnitt — typisch für diesen Spielertyp',c:'neg'},{t:'Vertrag läuft in 4 Monaten ab — sofortiger Handlungsbedarf',c:'neg'},{t:'Marktwert deutlich unter Leistungsniveau (Unterbewertet-Index: +23)',c:'neu'}],
@@ -390,14 +394,65 @@ const PLAYERS=[
     flags:[{t:'Überdurchschnittliche xG-Übererfüllung: trifft besser als statistisch erwartet',c:'pos'},{t:'Starke Tiefenläufe — gefährlich bei Kontern',c:'pos'},{t:'Kopfball-Profil ausbaufähig',c:'neg'},{t:'Vertrag läuft in 3 Monaten ab — ablösefrei möglich',c:'neg'},{t:'Marktwert unter Leistungsniveau (Unterbewertet-Index: +18)',c:'neu'}],
     fazit:'Santoro ist ein beweglicher Mittelstürmer mit ausgezeichneter Abschlusseffizienz. Sein ablaufender Vertrag macht ihn zum sofortigen Handlungsfall — ohne Ablöse realistisch verfügbar.'}
 ];
-const KPOS=[{pos:'TW',note:72},{pos:'IV L',note:68},{pos:'IV R',note:71},{pos:'LV',note:54},{pos:'RV',note:62},{pos:'DM',note:57},{pos:'ZM L',note:75},{pos:'ZM R',note:69},{pos:'OM',note:65},{pos:'LA',note:51},{pos:'RA',note:58},{pos:'ST',note:73}];
+let KPOS=[{pos:'TW',note:72},{pos:'IV L',note:68},{pos:'IV R',note:71},{pos:'LV',note:54},{pos:'RV',note:62},{pos:'DM',note:57},{pos:'ZM L',note:75},{pos:'ZM R',note:69},{pos:'OM',note:65},{pos:'LA',note:51},{pos:'RA',note:58},{pos:'ST',note:73}];
 /* ============================================================
-   KONFIGURATION — echte Daten anbinden:
-   Sobald dein Backend läuft (uvicorn, Port 8000), ändere die
-   nächste Zeile in:  const API_URL='http://localhost:8000';
-   Solange API_URL null ist, läuft die Seite mit Demo-Daten.
+   DATENANBINDUNG
+
+   Die Seite braucht KEIN laufendes Backend. Die Daten werden
+   nachts von der GitHub Action gesammelt (scripts/build_players.py
+   + scripts/compute_grades.py) und liegen als data/players.json
+   im Repository. Das Frontend liest nur diese Datei.
+
+   Vorteil gegenueber einem Server auf localhost:8000: funktioniert
+   auf GitHub Pages, kein CORS, keine Ausfaelle, keine Kosten.
+
+   API_URL bleibt null - der Live-Modus weiter unten ist damit
+   inaktiv und wird nur noch als Reserve vorgehalten.
    ============================================================ */
 const API_URL=null;
+const DATA_URL='data/players.json';
+let dataStand=null,dataSaison=null,dataHinweis=null;
+
+async function loadScoutData(){
+  try{
+    const r=await fetch(DATA_URL+'?v='+Date.now());
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const d=await r.json();
+    if(!d.players||!d.players.length)throw new Error('keine Spieler enthalten');
+    PLAYERS=d.players;
+    if(d.ligen&&d.ligen.length)LIGEN=d.ligen;
+    dataStand=d.stand;dataSaison=d.saison;dataHinweis=d.hinweis;
+    showDataStand(d);
+    /* Falls der Nutzer schon auf einer Datenseite steht: neu zeichnen. */
+    const akt=document.querySelector('.page.active');
+    if(akt&&akt.id==='page-ergebnisse')renderPlayers();
+  }catch(e){
+    console.warn('data/players.json nicht geladen — Demo-Daten aktiv:',e);
+    showDataStand(null);
+  }
+}
+
+/* Kleiner Statusstreifen in der Kopfzeile: Stand, Saison, Spielerzahl.
+   Macht sichtbar, ob echte oder Demo-Daten angezeigt werden. */
+function showDataStand(d){
+  const bc=document.querySelector('.breadcrumb');
+  if(!bc)return;
+  if(!d){
+    bc.innerHTML='<span class="dot" style="background:var(--amber);'
+      +'box-shadow:0 0 8px var(--amber)"></span> Demo-Daten';
+    bc.title='data/players.json fehlt oder ist leer.';
+    return;
+  }
+  const datum=new Date(d.stand).toLocaleDateString('de-DE',
+    {day:'2-digit',month:'2-digit',year:'numeric'});
+  const ok=(d.quellen||[]).filter(q=>q.status==='ok').length;
+  const ges=(d.quellen||[]).length;
+  bc.innerHTML='<span class="dot"></span> '+d.players.length+' Spieler · Saison '
+    +(d.saison||'—')+' · Stand '+datum+' · '+ok+'/'+ges+' Ligen';
+  bc.title=(d.hinweis||'')+'\nMindestminuten: '+(d.mindestminuten||'—');
+}
+
+loadScoutData();
 
 let fromPage='spielersuche',vmLiga=null,vmVerein=null,vmVereinLiga=null,kadLiga=null,kadVerein=null,kadVereinLiga=null,activePlayer=null,reportType='kompakt';
 let styleProfile={pressing:3,ballbesitz:3,konter:3,aufbau:3,standards:3};
@@ -412,11 +467,20 @@ async function apiGet(path){
 
 /* ---------- Team-Note (identische Logik wie compute_grades.py) ---------- */
 const TN_W={stil:0.70,bedarf:0.20,formation:0.10};
+/* Zuordnung Stil-Dimension -> Kennzahl.
+   Die Namen muessen zu den params aus compute_grades.py passen.
+
+   Bewusste Luecken: 'pressing' und 'aufbau' lassen sich aus frei
+   verfuegbaren Daten NICHT serioes ableiten - dafuer braeuchte es
+   Ereignisdaten (Pressingaktionen, Passnetzwerke), die nur kostenpflichtig
+   angeboten werden. Leere Liste heisst: computeTN meldet die Dimension als
+   Datenluecke (neutral 50) statt eine Zahl zu erfinden. */
 const TN_MAP={
-  OM:{pressing:['Defensivarbeit','Rückweg'],ballbesitz:['Schlüsselpässe','xA'],konter:['Progressive Carries','Dribbling'],aufbau:['Progressive Carries'],standards:['Kopfball']},
-  IV:{pressing:['Bodenzweikampf','Interceptions'],ballbesitz:['Passquote'],konter:['Klärung'],aufbau:['Passquote','Progressive Pässe'],standards:['Luftzweikampf']},
-  DM:{pressing:['Rückeroberungen','Interceptions','Pressing'],ballbesitz:['Passquote','Schlüsselpässe'],konter:['Progressive Carries'],aufbau:['Passquote'],standards:['Kopfball']},
-  ST:{pressing:['Pressing'],ballbesitz:['Ablagen','xA'],konter:['Tiefenläufe','xG-Über','Tore'],aufbau:['Kopfball'],standards:['Kopfball']}
+  OM:{pressing:[],ballbesitz:['Vorlagen','Scorerpunkte'],konter:['Tore / 90','Scorerpunkte'],aufbau:[],standards:[]},
+  IV:{pressing:[],ballbesitz:[],konter:[],aufbau:[],standards:['Torgefahr']},
+  LV:{pressing:[],ballbesitz:['Vorlagen'],konter:['Scorerpunkte'],aufbau:[],standards:[]},
+  DM:{pressing:[],ballbesitz:['Vorlagen','Scorerpunkte'],konter:['Tore / 90'],aufbau:[],standards:[]},
+  ST:{pressing:[],ballbesitz:['Vorlagen'],konter:['Tore / 90','Scorerpunkte'],aufbau:[],standards:['Tore / 90']}
 };
 const FORM_FIT={'4-2-3-1':{IV:100,LV:100,DM:100,OM:100,ST:100},'4-3-3':{IV:100,LV:100,DM:100,OM:90,ST:100},'3-5-2':{IV:100,LV:70,DM:100,OM:60,ST:100},'4-4-2':{IV:100,LV:100,DM:90,OM:90,ST:100},'3-4-3':{IV:100,LV:70,DM:90,OM:100,ST:100},'5-3-2':{IV:100,LV:80,DM:100,OM:50,ST:100},'4-1-4-1':{IV:100,LV:100,DM:100,OM:90,ST:90}};
 function tnKey(pos){if(pos==='IV')return 'IV';if(pos==='DM'||pos==='ZM'||pos==='DM/ZM')return 'DM';if((''+pos).startsWith('ST'))return 'ST';if((''+pos).startsWith('LV')||(''+pos).startsWith('RV'))return 'LV';return 'OM';}
