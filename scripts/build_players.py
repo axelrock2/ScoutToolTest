@@ -24,6 +24,7 @@ import json
 import os
 import re
 import sys
+import time
 from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -209,8 +210,27 @@ def sammle(ligen: list, max_vereine: int | None) -> tuple[list[dict], list[dict]
     spieler: list[dict] = []
     bericht: list[dict] = []
 
+    # Zeitbudget. Einzelne Abrufe koennen minutenlang haengen: curl beachtet
+    # den gesetzten Timeout beim Verbindungsaufbau nicht zuverlaessig, und
+    # ein blockierender C-Aufruf laesst sich aus Python nicht unterbrechen.
+    # Statt das Ganze abstuerzen zu lassen, hoeren wir geordnet auf - dank
+    # der Zusammenfuehrung behalten die uebrigen Ligen ihren letzten Stand.
+    budget = float(os.environ.get("SCOUT_BUDGET_MIN", "0")) * 60
+    start = time.monotonic()
+
+    def zeit_um() -> bool:
+        return bool(budget) and (time.monotonic() - start) > budget
+
     for lg in ligen:
         stand = {"liga": lg.name, "id": lg.frontend_id, "land": lg.land}
+
+        if zeit_um():
+            stand.update(status="uebersprungen", grund="Zeitbudget erschoepft",
+                         spieler=0)
+            bericht.append(stand)
+            print(f"  [-] {lg.name}: Zeitbudget erschoepft, uebersprungen",
+                  file=sys.stderr)
+            continue
         try:
             clubs = vereine_der_liga(lg.tm_id, SAISON)
         except Exception as exc:
@@ -225,6 +245,10 @@ def sammle(ligen: list, max_vereine: int | None) -> tuple[list[dict], list[dict]
         vor = len(spieler)
         ok_clubs = 0
         for vid, slug in clubs:
+            if zeit_um():
+                print(f"  [-] {lg.name}: Zeitbudget waehrend der Liga erschoepft",
+                      file=sys.stderr)
+                break
             try:
                 verein_name, profile = kader(vid, slug, SAISON)
                 try:

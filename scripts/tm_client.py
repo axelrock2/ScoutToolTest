@@ -18,7 +18,6 @@ from __future__ import annotations
 import hashlib
 import os
 import random
-import signal
 import time
 
 CACHE_DIR = os.path.join(os.path.dirname(__file__), "..", ".cache")
@@ -27,35 +26,19 @@ DELAY = float(os.environ.get("TM_DELAY", "1.2"))   # Sekunden zwischen Abrufen
 RETRIES = 3
 CACHE_TTL = 6 * 3600                                # 6 Stunden
 
-# Harte Obergrenze je Abruf. Noetig, weil der uebergebene timeout in der
-# Praxis nicht zuverlaessig greift: beobachtet wurden Abrufe, die ueber
-# 15 Minuten haengen blieben. Bei ~380 Vereinen sprengt das jede Action.
+# Hinweis zu haengenden Abrufen
+# -----------------------------
+# Vereinzelt bleibt ein Abruf minutenlang stehen (beobachtet: 16 Minuten),
+# obwohl ein Timeout gesetzt ist - curl beachtet ihn beim Verbindungsaufbau
+# nicht zuverlaessig. Aus Python laesst sich das nicht abfangen: SIGALRM
+# erreicht den blockierenden C-Aufruf nicht, und ein Arbeitsthread scheidet
+# aus, weil Scrapling seine Sitzung threadgebunden haelt ("No active session
+# available"). Statt eines wirkungslosen Wachhunds begrenzt daher
+# build_players.py den Gesamtlauf ueber SCOUT_BUDGET_MIN und hoert geordnet
+# auf; nicht erreichte Ligen behalten ihren letzten Stand.
 #
-# Umgesetzt per SIGALRM im Hauptthread. Ein Arbeitsthread scheidet aus:
-# Scrapling haelt seine HTTP-Sitzung threadgebunden und meldet dort
-# "No active session available".
-HARD_TIMEOUT = float(os.environ.get("TM_HARD_TIMEOUT", "60"))
-
-
-class _Zeitgrenze(Exception):
-    pass
-
-
-def _mit_zeitgrenze(fn, grenze: float):
-    """Fuehrt fn aus und bricht nach `grenze` Sekunden ab."""
-    if not hasattr(signal, "SIGALRM"):        # nicht auf Windows
-        return fn()
-
-    def wecker(signum, frame):
-        raise _Zeitgrenze(f"Zeitgrenze {grenze:.0f}s ueberschritten")
-
-    alt = signal.signal(signal.SIGALRM, wecker)
-    signal.setitimer(signal.ITIMER_REAL, grenze)
-    try:
-        return fn()
-    finally:
-        signal.setitimer(signal.ITIMER_REAL, 0)
-        signal.signal(signal.SIGALRM, alt)
+# retries=1 (statt der voreingestellten 3) senkt die Wahrscheinlichkeit,
+# dass sich mehrere solcher Haenger hintereinander addieren.
 
 _last_call = 0.0
 _stealth_needed = False   # einmal blockiert -> direkt Stufe 2 nutzen
@@ -125,9 +108,7 @@ def fetch(path: str, use_cache: bool = True):
                 # entstanden die beobachteten 15-Minuten-Haenger.
                 # retries=0 ist keine Option: dann oeffnet Scrapling gar
                 # keine Sitzung ("No active session available").
-                page = _mit_zeitgrenze(
-                    lambda: Fetcher.get(url, timeout=25, retries=1),
-                    HARD_TIMEOUT)
+                page = Fetcher.get(url, timeout=25, retries=1)
                 if page.status == 200:
                     _write_cache(url, page.html_content)
                     return page
@@ -137,11 +118,9 @@ def fetch(path: str, use_cache: bool = True):
                     last_err = RuntimeError(f"HTTP {page.status}")
 
             if _stealth_needed:
-                page = _mit_zeitgrenze(
-                    lambda: StealthyFetcher.fetch(
-                        url, headless=True, network_idle=True,
-                        solve_cloudflare=True, timeout=120000),
-                    HARD_TIMEOUT * 4)      # Browser braucht laenger
+                page = StealthyFetcher.fetch(
+                    url, headless=True, network_idle=True,
+                    solve_cloudflare=True, timeout=120000)
                 if page.status == 200:
                     _write_cache(url, page.html_content)
                     return page

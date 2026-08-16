@@ -65,15 +65,20 @@ erfundenen Zahl gefüllt.
 Je tiefer die Spielklasse, desto dünner die Quelle. Das Tool bildet das ab,
 statt Lücken zu kaschieren:
 
-| Stufe | Einsätze, Tore, Vorlagen, Minuten | Marktwert | Unterbewertet-Index |
+| Stufe | Einsätze, Tore, Vorlagen, Minuten | Marktwert vorhanden | Unterbewertet-Index |
 |---|---|---|---|
-| 1. – 3. Liga | vollständig | ja | ja |
-| Regionalliga | vollständig | überwiegend | ja |
-| Oberliga | vollständig | **nein** | **entfällt** |
+| 1. Ligen | vollständig | 98 % | ja |
+| 2. Ligen | vollständig | 96 % | ja |
+| 3. Liga | vollständig | 94 % | ja |
+| Regionalliga | vollständig | 86 % | ja |
+| Oberliga | vollständig | **2 %** | **entfällt** |
 
-In der Oberliga führt die Quelle keine Marktwerte. Der Unterbewertet-Index
-wird dort deshalb nicht berechnet — sonst erschiene jeder überdurchschnittliche
-Spieler automatisch als unterbewertet. Die Spielerakte weist das aus.
+Leistungsdaten reichen bis in die 5. Liga hinunter — Einsätze, Tore,
+Vorlagen und Minuten sind dort genauso gepflegt wie oben. Marktwerte
+dagegen brechen in der Oberliga weg. Der Unterbewertet-Index wird deshalb
+je Vergleichsgruppe abgeschaltet, sobald zu wenige Werte vorliegen; sonst
+erschiene dort jeder überdurchschnittliche Spieler automatisch als
+unterbewertet. Die Spielerakte nennt den Grund, die Karte zeigt „k. A.".
 
 Jede Staffel ist eine **eigene Vergleichsgruppe**: ein Stürmer der Oberliga
 Westfalen wird mit Stürmern der Oberliga Westfalen verglichen, nicht mit der
@@ -81,8 +86,13 @@ Bayernliga.
 
 Percentile werden immer innerhalb derselben Liga **und** Positionsgruppe
 gebildet — ein Innenverteidiger der 2. Bundesliga wird mit
-Innenverteidigern der 2. Bundesliga verglichen. Spieler unter 450
-Saisonminuten fallen heraus, weil die Stichprobe sonst zu dünn ist.
+Innenverteidigern der 2. Bundesliga verglichen.
+
+Spieler unter 450 Saisonminuten werden **nicht verworfen**, sondern als
+dünne Stichprobe gekennzeichnet (Hinweis auf der Karte, Schalter „Nur
+belastbare Stichprobe" in der Filterleiste). Der Vergleichsmaßstab selbst
+entsteht aber nur aus Spielern oberhalb der Schwelle — sonst würden
+Kurzeinsätze mit einem Tor die Percentile verzerren.
 
 ## Selbst laufen lassen
 

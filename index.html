@@ -303,6 +303,7 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
       <div class="fg">
         <div class="tr"><label>Nur Vertragsläufer</label><label class="tog"><input type="checkbox" id="f-auslaufend"><span class="tslider"></span></label></div>
         <div class="tr"><label>Nur unterbewertete Spieler</label><label class="tog"><input type="checkbox" id="f-underval"><span class="tslider"></span></label></div>
+        <div class="tr"><label title="Blendet Spieler mit sehr wenig Saisonminuten aus">Nur belastbare Stichprobe</label><label class="tog"><input type="checkbox" id="f-belastbar" checked><span class="tslider"></span></label></div>
       </div>
       <button class="btn-primary" onclick="go('ergebnisse','spielersuche')"><i class="ti ti-search"></i> Suche starten</button>
     </div>
@@ -724,7 +725,8 @@ function leseFilter(){
           ageVon:parseInt(v('f-age-von'),10),ageBis:parseInt(v('f-age-bis'),10),
           maxMw:parseFloat(v('f-mw')),minLn:parseInt(v('f-ln'),10),
           vertrag:v('f-vertrag'),auslaufend:an('f-auslaufend'),
-          underval:an('f-underval'),sort:v('f-sort')||'ln'};
+          underval:an('f-underval'),belastbar:an('f-belastbar'),
+          sort:v('f-sort')||'ln'};
 }
 
 /* Wendet die Filter auf PLAYERS an. Frueher wurde hier die komplette Liste
@@ -742,6 +744,7 @@ function filterPlayers(f){
     if(f.vertrag&&p.contract!==f.vertrag)return false;
     if(f.auslaufend&&p.contract!=='red')return false;
     if(f.underval&&!p.underval)return false;
+    if(f.belastbar&&p.belastbar===false)return false;
     return true;
   });
 }
@@ -837,12 +840,18 @@ function renderPlayers(){
     const luecken=tn&&tn.gaps.length
       ? '<span class="badge" style="border-color:var(--line-bright);color:var(--ink-3)" title="Ohne Ereignisdaten nicht berechenbar: '
         +tn.gaps.join(', ')+'">'+tn.gaps.length+' Datenlücken</span>' : '';
+    /* Spieler mit wenig Einsatzzeit werden gezeigt, aber gekennzeichnet -
+       ihre Percentile beruhen auf einer duennen Stichprobe. */
+    const duenn=(p.belastbar===false)
+      ? '<span class="badge" style="border-color:rgba(245,166,35,0.4);color:var(--amber)" title="'
+        +p.minuten+' Saisonminuten — unter der Schwelle für eine belastbare Bewertung">'
+        +'nur '+p.minuten+ ' Min</span>' : '';
     const note=tn
       ? '<div class="score-cap primary"><div class="scl">Passung</div><div class="scv">'+tn.tn+'</div><div class="scbar" style="width:'+tn.tn+'%"></div></div>'
         +'<div class="score-cap"><div class="scl">LN</div><div class="scv">'+p.ln+'</div><div class="scbar" style="width:'+p.ln+'%;background:var(--blue)"></div></div>'
       : '<div class="score-cap primary"><div class="scl">LN</div><div class="scv">'+p.ln+'</div><div class="scbar" style="width:'+p.ln+'%"></div></div>'
         +'<div class="score-cap"><div class="scl">PN</div><div class="scv">'+p.pn+'</div><div class="scbar" style="width:'+p.pn+'%;background:var(--blue)"></div></div>';
-    return '<div class="pcard" onclick="showProfile('+p.id+')"><div class="av">'+p.ini+'<span class="num">'+p.number+'</span></div><div class="pi"><h4>'+p.name+'</h4><div class="meta"><span class="pos-tag">'+p.pos+'</span><span>'+p.club+'</span><span>'+p.liga+'</span><span>'+p.age+' J.</span></div><div class="badges">'+cbadge(p.contract)+'<span class="badge b-blue">'+p.mv+' €</span>'+(p.underval?'<span class="badge b-teal"><i class="ti ti-trending-up" style="font-size:10px"></i> Unterbewertet</span>':'')+luecken+'</div></div><div class="scores">'+note+'</div></div>';
+    return '<div class="pcard" onclick="showProfile('+p.id+')"><div class="av">'+p.ini+'<span class="num">'+p.number+'</span></div><div class="pi"><h4>'+p.name+'</h4><div class="meta"><span class="pos-tag">'+p.pos+'</span><span>'+p.club+'</span><span>'+p.liga+'</span><span>'+p.age+' J.</span></div><div class="badges">'+cbadge(p.contract)+'<span class="badge b-blue">'+p.mv+' €</span>'+(p.underval?'<span class="badge b-teal"><i class="ti ti-trending-up" style="font-size:10px"></i> Unterbewertet</span>':'')+duenn+luecken+'</div></div><div class="scores">'+note+'</div></div>';
   }).join('');
 }
 function showProfile(id){

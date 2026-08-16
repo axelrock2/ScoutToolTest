@@ -77,13 +77,17 @@ KENNZAHLEN = {
 
 
 def kennwerte(s: dict) -> dict | None:
-    """Leitet die Rohkennzahlen eines Spielers ab."""
+    """Leitet die Rohkennzahlen eines Spielers ab.
+
+    Auch Spieler mit wenig Einsatzzeit werden zurueckgegeben - sie fliegen
+    nicht raus, sondern werden als "duenne Datenbasis" gekennzeichnet. Die
+    Vergleichsverteilung entsteht spaeter trotzdem nur aus Spielern ueber
+    MIN_MINUTEN, sonst wuerden Kurzeinsaetze die Percentile verzerren.
+    """
     L = s.get("leistung")
     if not L or not L.get("minuten"):
         return None
     minuten = L["minuten"]
-    if minuten < MIN_MINUTEN:
-        return None
     p90 = minuten / 90.0
     karten = L["gelbe"] + L["gelbrot"] * 2 + L["rot"] * 3
     return {
@@ -94,6 +98,7 @@ def kennwerte(s: dict) -> dict | None:
         "vorlagen_pro90": L["vorlagen"] / p90,
         "scorer_pro90": (L["tore"] + L["vorlagen"]) / p90,
         "karten_pro90": karten / p90,
+        "belastbar": minuten >= MIN_MINUTEN,
     }
 
 
@@ -142,8 +147,13 @@ def initialen(name: str) -> str:
 
 
 def baue_flags(s: dict, params: list, ln: int, monate: int | None,
-               underval: int) -> list[dict]:
+               underval: int | None, minuten: int = 0,
+               belastbar: bool = True) -> list[dict]:
     flags = []
+
+    if not belastbar:
+        flags.append({"t": f"Nur {minuten} Saisonminuten — Werte sind ein "
+                           f"Hinweis, keine belastbare Bewertung", "c": "neg"})
     top = [p for p in params if p["p"] >= 80]
     low = [p for p in params if p["p"] < 35]
 
@@ -230,15 +240,19 @@ def main() -> int:
     spieler_out = []
     for (liga_id, g), mitglieder in gruppen.items():
         felder = KENNZAHLEN[g]
+
+        # Vergleichsmassstab nur aus Spielern mit belastbarer Spielzeit.
+        # Fehlen die (kleine Staffeln), dient die ganze Gruppe als Notbehelf.
+        basis = [(s, kw) for s, kw in mitglieder if kw["belastbar"]] or mitglieder
         verteilung = {
-            key: [kw[key] for _, kw in mitglieder] for _, key, _ in felder
+            key: [kw[key] for _, kw in basis] for _, key, _ in felder
         }
 
         # Ab der Oberliga fuehrt Transfermarkt keine Marktwerte mehr. Ohne
         # sie ist der Unterbewertet-Index sinnlos - er wuerde jeden Spieler
         # ueber Durchschnitt als unterbewertet ausweisen. Dann lieber weglassen.
-        mw_werte = [s.get("marktwert_eur") for s, _ in mitglieder]
-        hat_marktwerte = sum(1 for m in mw_werte if m) >= max(3, len(mitglieder) // 3)
+        mw_werte = [s.get("marktwert_eur") for s, _ in basis]
+        hat_marktwerte = sum(1 for m in mw_werte if m) >= max(3, len(basis) // 3)
         mw_verteilung = [m or 0 for m in mw_werte]
 
         for s, kw in mitglieder:
@@ -291,8 +305,10 @@ def main() -> int:
                 "underval_index": underval,
                 "minuten": kw["minuten"],
                 "einsaetze": kw["einsaetze"],
+                "belastbar": kw["belastbar"],
                 "params": params,
-                "flags": baue_flags(s, params, ln, monate, underval),
+                "flags": baue_flags(s, params, ln, monate, underval,
+                                    kw["minuten"], kw["belastbar"]),
                 "fazit": baue_fazit(s, params, ln, monate, underval),
             })
 
@@ -314,10 +330,18 @@ def main() -> int:
     for p in spieler_out:
         bewertet_je_liga[p["liga_id"]] = bewertet_je_liga.get(p["liga_id"], 0) + 1
 
+    # Anteil der Spieler mit Marktwert je Liga. Ein blosses "ja/nein" waere
+    # irrefuehrend: in den Oberligen fuehrt die Quelle bei rund 2 Prozent
+    # einen Wert - zu wenig fuer den Unterbewertet-Index, aber nicht null.
+    def mw_anteil(liga_id: str) -> int:
+        gruppe = [p for p in spieler_out if p["liga_id"] == liga_id]
+        if not gruppe:
+            return 0
+        return round(100 * sum(1 for p in gruppe if p["mv_eur"]) / len(gruppe))
+
     ligen_liste = [{**v, "vereine": sorted(v["vereine"]),
                     "bewertet": bewertet_je_liga.get(v["id"], 0),
-                    "marktwerte": any(
-                        p["mv_eur"] for p in spieler_out if p["liga_id"] == v["id"])}
+                    "marktwert_anteil": mw_anteil(v["id"])}
                    for v in ligen.values()]
     ligen_liste.sort(key=lambda l: (l["stufe"], l["land"], l["name"]))
 
@@ -335,9 +359,10 @@ def main() -> int:
             "players": spieler_out,
         }, fh, ensure_ascii=False, separators=(",", ":"))
 
-    print(f"{len(spieler_out)} Spieler bewertet (von {len(roh['spieler'])} "
-          f"gesammelt, Mindestminuten {MIN_MINUTEN}) -> {os.path.relpath(ZIEL)}",
-          file=sys.stderr)
+    fest = sum(1 for p in spieler_out if p["belastbar"])
+    print(f"{len(spieler_out)} Spieler bewertet, davon {fest} mit belastbarer "
+          f"Spielzeit (ab {MIN_MINUTEN} Min) - von {len(roh['spieler'])} "
+          f"gesammelt -> {os.path.relpath(ZIEL)}", file=sys.stderr)
     return 0
 
 

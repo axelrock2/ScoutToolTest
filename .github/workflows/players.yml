@@ -40,7 +40,9 @@ jobs:
         env:
           SCOUT_SAISON: ${{ github.event.inputs.saison || '2025' }}
           TM_DELAY: "1.5"
-          TM_HARD_TIMEOUT: "60"     # haengende Abrufe abbrechen statt warten
+          # Geordnet aufhoeren, bevor die Action in ihr eigenes Limit laeuft.
+          # Nicht erreichte Ligen behalten dank Zusammenfuehrung ihren Stand.
+          SCOUT_BUDGET_MIN: "95"
         run: |
           if [ -n "${{ github.event.inputs.ligen }}" ]; then
             python3 scripts/build_players.py --ligen "${{ github.event.inputs.ligen }}"
