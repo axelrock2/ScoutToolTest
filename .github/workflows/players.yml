@@ -6,9 +6,14 @@ on:
   workflow_dispatch:
     inputs:
       ligen:
-        description: "Nur bestimmte Ligen (z. B. buli,buli2). Leer = alle."
+        description: "Nur bestimmte Ligen (z. B. buli,buli2). Leer = Tagesplan."
         required: false
         default: ""
+      alle:
+        description: "Alle Gruppen statt nur der heutigen (dauert deutlich laenger)"
+        type: boolean
+        required: false
+        default: false
       saison:
         description: "Saison-ID, 2025 = Spielzeit 2025/26"
         required: false
@@ -17,38 +22,72 @@ on:
 permissions:
   contents: write
 
-# Zwei Laeufe gleichzeitig wuerden sich beim Commit in die Quere kommen.
 concurrency:
   group: spielerdaten
   cancel-in-progress: false
 
 jobs:
-  # Die 33 Ligen werden in Gruppen parallel gesammelt. Grund: Transfermarkt
-  # blockt Rechenzentren, der Lauf muss also ueber den Browser gehen - und
-  # der braucht rund 4,5 s je Seite. Bei ~1200 Seiten waere ein einzelner
-  # Lauf an der 90-Minuten-Grenze. Aufgeteilt bleibt jede Gruppe deutlich
-  # darunter und hat Luft fuer langsame Abrufe.
+  # ---------------------------------------------------------------------
+  # Warum nicht alles jede Nacht?
+  #
+  # Transfermarkt blockt Rechenzentren: aus einem GitHub-Runner kommt HTTP
+  # 202, der Lauf muss also ueber den Browser gehen (~4,5 s je Seite). Alle
+  # 33 Ligen am Stueck waeren rund 90 Minuten. Sieben Gruppen gleichzeitig
+  # sind schneller - aber gemessen: vier von sieben liefen in HTTP 403, weil
+  # so viele parallele Zugriffe aus demselben Adressbereich die Abwehr
+  # ausloesen.
+  #
+  # Deshalb rotierend: jede Nacht drei Gruppen, hoechstens zwei davon
+  # gleichzeitig. Der gesamte Bestand ist damit in gut zwei Tagen einmal
+  # durch - fuer Marktwerte und Vertragsdaten reichlich - und die Quelle
+  # wird spuerbar weniger belastet. Nicht erneuerte Ligen behalten ihren
+  # Stand, weil merge_raw.py sie uebernimmt.
+  # ---------------------------------------------------------------------
+  planen:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - id: plan
+        shell: python
+        run: |
+          import datetime, json, os
+
+          gruppen = [
+              {"name": "england",            "ligen": "pl,champ"},
+              {"name": "spanien",            "ligen": "laliga,laliga2"},
+              {"name": "italien",            "ligen": "seriea,serieb"},
+              {"name": "frankreich-benelux", "ligen": "ligue1,ligue2,jupiler,primeira"},
+              {"name": "dach",               "ligen": "buli,buli2,oebuli"},
+              {"name": "deutschland-3-4",    "ligen": "l3,rl-nord,rl-nordost,rl-west,rl-suedwest,rl-bayern"},
+              {"name": "oberliga-nord",      "ligen": "ol-nord,ol-sued,ol-nds,ol-hamburg,ol-bremen,ol-sh,ol-westfalen"},
+              {"name": "oberliga-sued",      "ligen": "ol-niederrhein,ol-mittelrhein,ol-hessen,ol-rps,ol-bw,ol-bayern-n,ol-bayern-s"},
+          ]
+
+          eigene = "${{ github.event.inputs.ligen }}".strip()
+          alle = "${{ github.event.inputs.alle }}" == "true"
+
+          if eigene:
+              plan = [{"name": "auswahl", "ligen": eigene}]
+          elif alle:
+              plan = gruppen
+          else:
+              # Drei Gruppen je Nacht, versetzt nach Tag im Jahr
+              tag = datetime.date.today().timetuple().tm_yday
+              plan = [gruppen[(tag * 3 + i) % len(gruppen)] for i in range(3)]
+
+          print("Heutiger Plan:", ", ".join(g["name"] for g in plan))
+          with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
+              fh.write("matrix=" + json.dumps({"include": plan}) + "\n")
+
   sammeln:
+    needs: planen
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
       fail-fast: false          # eine kaputte Gruppe kippt nicht den Rest
-      matrix:
-        include:
-          - name: england
-            ligen: pl,champ
-          - name: spanien-italien
-            ligen: laliga,laliga2,seriea
-          - name: italien-frankreich
-            ligen: serieb,ligue1,ligue2
-          - name: dach-benelux
-            ligen: buli,buli2,jupiler,primeira,oebuli
-          - name: deutschland-3-4
-            ligen: l3,rl-nord,rl-nordost,rl-west,rl-suedwest,rl-bayern
-          - name: oberliga-nord
-            ligen: ol-nord,ol-sued,ol-nds,ol-hamburg,ol-bremen,ol-sh,ol-westfalen
-          - name: oberliga-sued
-            ligen: ol-niederrhein,ol-mittelrhein,ol-hessen,ol-rps,ol-bw,ol-bayern-n,ol-bayern-s
+      max-parallel: 2           # mehr loest die Bot-Abwehr aus (gemessen)
+      matrix: ${{ fromJSON(needs.planen.outputs.matrix) }}
 
     steps:
       - uses: actions/checkout@v4
@@ -62,9 +101,6 @@ jobs:
       - name: Abhaengigkeiten
         run: pip install -r requirements.txt
 
-      # Transfermarkt beantwortet Anfragen aus Rechenzentren mit HTTP 202
-      # (Bot-Abwehr). Der schnelle HTTP-Weg scheitert hier also, anders als
-      # auf einem privaten Anschluss.
       - name: Browser fuer den Stealth-Weg
         run: |
           scrapling install || true
@@ -73,15 +109,13 @@ jobs:
       - name: Sammeln
         env:
           SCOUT_SAISON: ${{ github.event.inputs.saison || '2025' }}
-          TM_DELAY: "1.5"
+          TM_DELAY: "2.5"       # ruhigeres Tempo, seit die Abwehr zuschlug
           SCOUT_BUDGET_MIN: "45"
           SCOUT_TARGET: teil-${{ matrix.name }}.json.gz
         run: |
-          LIGEN="${{ github.event.inputs.ligen }}"
-          [ -z "$LIGEN" ] && LIGEN="${{ matrix.ligen }}"
-          # --frisch: die Teildatei soll nur diese Gruppe enthalten,
+          # --frisch: die Teildatei enthaelt nur diese Gruppe,
           # zusammengefuehrt wird spaeter in merge_raw.py.
-          python3 scripts/build_players.py --ligen "$LIGEN" --frisch
+          python3 scripts/build_players.py --ligen "${{ matrix.ligen }}" --frisch
 
       - name: Teilergebnis sichern
         uses: actions/upload-artifact@v4
@@ -124,6 +158,5 @@ jobs:
           git add data/players.json data/players_raw.json.gz
           git diff --staged --quiet && echo "keine Aenderungen" && exit 0
           git commit -m "Spielerdaten aktualisiert"
-          # Zwischenzeitliche Commits auf main einarbeiten statt zu scheitern
           git pull --rebase --autostash origin main
           git push

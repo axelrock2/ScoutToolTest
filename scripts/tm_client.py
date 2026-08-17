@@ -132,7 +132,11 @@ def fetch(path: str, use_cache: bool = True):
         except Exception as exc:          # Netzfehler, Zeitueberschreitung
             last_err = exc
 
-        time.sleep(2 ** attempt)          # 1 s, 2 s, 4 s
+        # Nach einer Blockade laenger warten. Sofort erneut anzuklopfen
+        # bestaetigt der Abwehr nur das Muster; mit Ruhepause kommt der
+        # naechste Versuch oft durch.
+        blockiert = "403" in str(last_err) or "429" in str(last_err)
+        time.sleep((20 * (attempt + 1)) if blockiert else (2 ** attempt))
 
     raise RuntimeError(f"{url}: {last_err}")
 
