@@ -167,10 +167,23 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 .sd{background:var(--pitch-2);border:1px solid var(--line);border-radius:10px;padding:13px 15px}
 .sd-lbl{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink-3);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}
 .sd-val{font-size:15px;font-weight:700;color:var(--ink)}
+.kad-hint{font-size:12px;color:var(--ink-2);line-height:1.5;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.kbar-rang{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;width:78px;text-align:right;flex-shrink:0}
+.kbar-rang span{font-weight:400;font-size:10px;color:var(--ink-3)}
+.kbar-note{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-3);width:34px;text-align:right;flex-shrink:0}
 .param-row{display:flex;align-items:center;gap:14px;margin-bottom:14px}
 .param-name{font-size:13px;color:var(--ink-2);width:210px;flex-shrink:0}
-.bar-wrap{flex:1;height:10px;background:var(--pitch-2);border-radius:5px;overflow:hidden;border:1px solid var(--line)}
-.bar{height:100%;border-radius:5px;transition:width 0.5s ease}
+.bar-wrap{flex:1;height:10px;background:var(--pitch-2);border-radius:5px;overflow:hidden;border:1px solid var(--line);position:relative}
+/* Markierung bei 50 = Ligadurchschnitt. Ohne sie sagt eine Balkenlaenge
+   nichts darueber, ob der Spieler ueber oder unter dem Schnitt liegt. */
+.bar-wrap:after{content:'';position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--ink-3);opacity:0.55;z-index:2}
+.bar{height:100%;border-radius:5px;transition:width 0.5s ease;position:relative;z-index:1}
+.param-skala{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink-3);letter-spacing:1px;text-transform:uppercase;margin:2px 0 12px 210px;padding-left:14px}
+.param-erklaerung{font-size:13px;color:var(--ink-2);line-height:1.6;margin-bottom:18px}
+.param-erklaerung strong{color:var(--ink)}
+.param-wert{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink);width:132px;text-align:right;flex-shrink:0}
+.param-wert b{font-weight:700;font-size:14px}
+.param-wert span{color:var(--ink-3)}
 .bar.top{background:var(--lime)}
 .bar.mid{background:var(--blue)}
 .bar.low{background:var(--amber)}
@@ -333,8 +346,9 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
   <button class="nav-back" onclick="go('kaderanalyse')"><i class="ti ti-arrow-left"></i> Eingabe</button>
   <div class="kad-wrap">
     <div class="kad-head" id="kad-result-header"></div>
-    <div class="sec"><div class="sec-title">Kaderstärke nach Position</div><div id="kad-bars"></div><div class="legend"><div class="leg-item"><div class="leg-dot" style="background:var(--green)"></div>Stark ≥ 70</div><div class="leg-item"><div class="leg-dot" style="background:var(--amber)"></div>Solide 60–69</div><div class="leg-item"><div class="leg-dot" style="background:var(--red)"></div>Schwach &lt; 60</div></div></div>
-    <div class="sec"><div class="sec-title">Empfohlene Verstärkungen</div><p style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-2);text-transform:uppercase;letter-spacing:1px;margin-bottom:16px">3 Positionen unter Note 60</p><div id="kad-recs"></div></div>
+    <div class="sec"><div class="sec-title">Einordnung in der Liga</div><div id="kad-gesamt"></div></div>
+    <div class="sec"><div class="sec-title">Position im Vergleich zur Ligakonkurrenz</div><div id="kad-bars"></div><div class="legend"><div class="leg-item"><div class="leg-dot" style="background:var(--green)"></div>obere Ligahälfte</div><div class="leg-item"><div class="leg-dot" style="background:var(--amber)"></div>Mittelfeld</div><div class="leg-item"><div class="leg-dot" style="background:var(--red)"></div>unteres Drittel</div></div></div>
+    <div class="sec"><div class="sec-title">Empfohlene Verstärkungen</div><p style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-2);text-transform:uppercase;letter-spacing:1px;margin-bottom:16px">Positionen im unteren Drittel der Liga</p><div id="kad-recs"></div></div>
   </div>
 </div>
 
@@ -685,16 +699,138 @@ function renderKadResult(){
     return;
   }
 
-  document.getElementById('kad-bars').innerHTML=KPOS.map(p=>'<div class="kbar-row"><div class="kbar-pos">'+p.pos+'</div><div class="kbar-wrap"><div class="kbar" style="width:'+p.note+'%;background:'+nc(p.note)+'"><span class="kbar-val">'+p.note+'</span></div></div></div>').join('');
+  /* Jede Position gegen dieselbe Position der Ligakonkurrenz. Der Balken
+     zeigt jetzt den Rang, nicht die nackte Note - eine 60 kann Platz 2
+     oder Platz 16 bedeuten, je nach Liga. */
+  const mitRang=kaderMitRang(name,lid);
+  const rangAnteil=r=>r.rang&&r.vonWievielen>1
+    ? Math.round(100*(r.vonWievielen-r.rang)/(r.vonWievielen-1)) : 50;
 
-  /* Ligaschnitt je Position als Vergleichsmassstab - ebenfalls aus echten
-     Daten, nicht mehr die feste 67. */
-  const schnitt=ligaSchnittProPosition(lid);
-  const weak=KPOS.filter(p=>p.note<(schnitt[p.pos]??60));
-  document.getElementById('kad-recs').innerHTML=weak.length?weak.map(p=>{
-    const soll=Math.round(schnitt[p.pos]??60);
-    return '<div class="pcard" onclick="kadWeakClick(\''+p.pos+'\')" style="grid-template-columns:auto 1fr auto"><div class="av" style="background:rgba(255,91,91,0.1);border-color:rgba(255,91,91,0.3);color:#FF5B5B;font-family:\'JetBrains Mono\',monospace;font-size:20px">'+p.note+'</div><div class="pi"><h4>'+p.pos+' — Verstärkung prüfen</h4><div class="meta"><span>'+p.anzahl+' Spieler</span><span>Ligaschnitt '+soll+'</span><span style="color:var(--red)">Rückstand '+(soll-p.note)+' Pkt</span></div></div><div style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--lime);text-transform:uppercase;letter-spacing:1px">Spieler →</div></div>';
-  }).join(''):'<div style="font-size:13px;color:var(--ink-2)">Keine Position unter dem Ligaschnitt.</div>';
+  document.getElementById('kad-bars').innerHTML=
+    '<div class="kad-hint">Balkenlänge = Rang unter den '
+    +(mitRang[0]?mitRang[0].vonWievielen:0)+' Vereinen der Liga auf dieser '
+    +'Position. Ganz rechts heißt: bester Kader der Liga.</div>'
+    +mitRang.map(r=>{
+      const a=rangAnteil(r);
+      /* Rangtext neben den Balken, nicht hinein: bei Platz 18 von 18 ist
+         der Balken zu kurz, der Text wurde abgeschnitten. */
+      const farbe=a>=60?'var(--green)':a>=35?'var(--amber)':'var(--red)';
+      return '<div class="kbar-row" title="'+r.pos+': eigener Schnitt '+r.note
+        +', Ligaschnitt '+(r.ligaSchnitt??'—')+', bester Verein '+(r.ligaBester??'—')
+        +' ('+r.anzahl+' eigene Spieler)">'
+        +'<div class="kbar-pos">'+r.pos+'</div>'
+        +'<div class="kbar-wrap"><div class="kbar" style="width:'+Math.max(a,3)
+        +'%;background:'+farbe+'"></div></div>'
+        +'<div class="kbar-rang" style="color:'+farbe+'">'
+        +(r.rang?r.rang+'. <span>von '+r.vonWievielen+'</span>':'—')+'</div>'
+        +'<div class="kbar-note">'+r.note+'</div></div>';
+    }).join('');
+
+  /* Gesamteinordnung des Vereins in der Liga */
+  const schnittRang=mitRang.filter(r=>r.rang)
+    .reduce((a,r)=>a+rangAnteil(r),0)/Math.max(mitRang.filter(r=>r.rang).length,1);
+  const gesamt=document.getElementById('kad-gesamt');
+  if(gesamt){
+    const stufe=schnittRang>=70?['pos','Spitzengruppe der Liga']
+              :schnittRang>=45?['neu','Mittelfeld der Liga']
+              :['neg','Untere Hälfte der Liga'];
+    gesamt.innerHTML='<div class="flag"><div class="fdot '+stufe[0]+'"></div><span>'
+      +'<strong>'+stufe[1]+'</strong> — über alle Positionen gemittelt liegt '
+      +name+' auf Rangwert '+Math.round(schnittRang)+' von 100 '
+      +'(100 = auf jeder Position der beste Kader der Liga).</span></div>';
+  }
+
+  /* Schwachstellen: nicht die niedrigste Note zaehlt, sondern der
+     schlechteste Rang - das ist der Rueckstand auf die Konkurrenz. */
+  const weak=mitRang.filter(r=>r.rang&&rangAnteil(r)<40)
+                    .sort((a,b)=>rangAnteil(a)-rangAnteil(b));
+  document.getElementById('kad-recs').innerHTML=weak.length?weak.map(r=>{
+    const rueckstand=(r.ligaBester??r.note)-r.note;
+    return '<div class="pcard" onclick="kadWeakClick(\''+r.pos+'\')" style="grid-template-columns:auto 1fr auto">'
+      +'<div class="av" style="background:rgba(255,91,91,0.1);border-color:rgba(255,91,91,0.3);color:#FF5B5B;font-family:\'JetBrains Mono\',monospace;font-size:15px">'
+      +r.rang+'.</div>'
+      +'<div class="pi"><h4>'+r.pos+' — Platz '+r.rang+' von '+r.vonWievielen+'</h4>'
+      +'<div class="meta"><span>'+r.anzahl+' eigene Spieler</span>'
+      +'<span>eigener Schnitt '+r.note+'</span>'
+      +'<span>Ligaschnitt '+(r.ligaSchnitt??'—')+'</span>'
+      +'<span style="color:var(--red)">'+rueckstand+' Pkt hinter dem Besten</span></div></div>'
+      +'<div style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--lime);text-transform:uppercase;letter-spacing:1px">Kandidaten →</div></div>';
+  }).join(''):'<div style="font-size:13px;color:var(--ink-2)">Keine Position im unteren Drittel der Liga.</div>';
+}
+
+/* ---------- Vereinskontext ----------------------------------------------
+   Eine nackte Positionsnote sagt wenig: 55 kann in der einen Liga
+   Spitzenwert sein und in der anderen Abstiegsniveau. Deshalb wird jede
+   Position gegen dieselbe Position aller anderen Vereine der Liga gestellt.
+   Aus "IV 60" wird so "IV: Platz 14 von 18". */
+
+/* {pos: [{club, note}]}, je Position absteigend sortiert. */
+function ligaVereinsNoten(ligaId){
+  const proVerein={};
+  PLAYERS.filter(p=>p.liga_id===ligaId).forEach(p=>{
+    (proVerein[p.club]=proVerein[p.club]||{})[p.pos]=
+      (proVerein[p.club][p.pos]||[]).concat(p.ln);
+  });
+  const jePos={};
+  for(const club in proVerein)
+    for(const pos in proVerein[club]){
+      const w=proVerein[club][pos];
+      (jePos[pos]=jePos[pos]||[]).push(
+        {club,note:Math.round(w.reduce((a,b)=>a+b,0)/w.length)});
+    }
+  for(const pos in jePos)jePos[pos].sort((a,b)=>b.note-a.note);
+  return jePos;
+}
+
+/* Kaderwerte des Vereins samt Rang in der Liga. */
+function kaderMitRang(verein,ligaId){
+  const eigene=kaderNoten(verein,ligaId);
+  const liga=ligaVereinsNoten(ligaId);
+  return eigene.map(e=>{
+    const feld=liga[e.pos]||[];
+    const idx=feld.findIndex(x=>x.club===verein);
+    return {...e,
+      rang:idx>=0?idx+1:null,
+      vonWievielen:feld.length,
+      ligaBester:feld.length?feld[0].note:null,
+      ligaSchnitt:feld.length
+        ? Math.round(feld.reduce((a,b)=>a+b.note,0)/feld.length) : null};
+  });
+}
+
+/* Wie stark waere dieser Spieler FUER DIESEN VEREIN?
+   Beruecksichtigt das Liganiveau: eine 90 aus der Oberliga ist fuer einen
+   Zweitligisten nicht dasselbe wie eine 90 aus der 2. Bundesliga. */
+function spielerFuerVerein(p,verein,ligaId){
+  if(!verein||!ligaId)return null;
+  const refNiveau=niveauVonLiga(ligaId);
+  const ein=eingeordneteNote(p,refNiveau);
+  const wert=ein?ein.wert:p.ln;                  // auf Zielliga umgerechnet
+
+  const bestand=PLAYERS.filter(x=>x.club===verein&&x.pos===p.pos)
+                       .map(x=>x.ln).sort((a,b)=>b-a);
+  if(!bestand.length)
+    return {wert,rolle:'Position unbesetzt',klasse:'pos',
+            text:'Auf dieser Position ist derzeit kein bewerteter Spieler im Kader.'};
+
+  const bester=bestand[0];
+  const schnitt=Math.round(bestand.reduce((a,b)=>a+b,0)/bestand.length);
+  const schwaechster=bestand[bestand.length-1];
+  /* Neuer Positionsschnitt, wenn er den schwaechsten Spieler ersetzt. */
+  const neu=Math.round((bestand.reduce((a,b)=>a+b,0)-schwaechster+wert)/bestand.length);
+
+  let rolle,klasse;
+  if(wert>=bester+4){rolle='Sofort die Nummer eins';klasse='pos';}
+  else if(wert>=bester-3){rolle='Auf Augenhöhe mit dem Besten';klasse='pos';}
+  else if(wert>schnitt){rolle='Hebt den Positionsschnitt';klasse='pos';}
+  else if(wert>schwaechster){rolle='Rotationsoption';klasse='neu';}
+  else {rolle='Keine Verstärkung';klasse='neg';}
+
+  return {wert,rolle,klasse,bester,schnitt,neu,
+          delta:neu-schnitt,anzahl:bestand.length,
+          text:'Eingeordnet auf das Niveau der '+(LIGEN.find(l=>l.id===ligaId)||{}).name
+               +' ergibt das '+wert+'. Bester '+p.pos+' im Kader: '+bester
+               +', Schnitt '+schnitt+' aus '+bestand.length+' Spielern.'};
 }
 
 /* Durchschnittliche Liga-Note je Position im Kader eines Vereins. */
@@ -726,15 +862,31 @@ function ligaSchnittProPosition(ligaId){
   return out;
 }
 
-/* Klick auf eine Schwachstelle: passende Spieler derselben Position zeigen. */
+/* Welcher Verein ist gerade der Bezugspunkt? Danach richtet sich, ob und
+   wie Spieler eingeordnet werden. */
+function aktiverVerein(){
+  if(fromPage==='vereinsmatching'&&vmVerein)
+    return {name:vmVerein,liga:vmVereinLiga};
+  if((fromPage==='kaderanalyse'||fromPage==='kaderresult')&&kadVerein)
+    return {name:kadVerein,liga:kadVereinLiga};
+  return null;
+}
+
+/* Klick auf eine Schwachstelle: passende Spieler derselben Position zeigen.
+   Der Vereinsbezug bleibt erhalten, damit jeder Treffer zeigt, was er FUER
+   DIESEN Verein bedeuten wuerde. */
 window.kadWeakClick=function(pos){
   const sel=document.getElementById('f-pos');
   if(sel)sel.value=['LV','RV'].includes(pos)?'LV,RV'
     :['OM','LA','RA'].includes(pos)?'OM,LA,RA':pos;
   const liga=document.getElementById('f-liga');
   if(liga)liga.value='';
+  /* Nur Spieler zeigen, die fuer diesen Verein ueberhaupt erreichbar sind:
+     eigenes Niveau plus ein Stueck darueber. */
+  kadPosFilter=pos;
   go('ergebnisse','kaderanalyse');
 };
+let kadPosFilter=null;
 /* Werte der Filterleiste einsammeln. Fehlt ein Feld (z. B. weil die Seite
    noch nicht gezeichnet ist), gilt der Filter als nicht gesetzt. */
 function leseFilter(){
@@ -842,6 +994,7 @@ function eingeordneteNote(p,referenzNiveau){
 
 function renderPlayers(){
   const f=leseFilter();
+  const verein=aktiverVerein();          // Bezugsverein, falls einer gewaehlt ist
   let treffer=sortPlayers(filterPlayers(f),f.sort);
   let hinweis=filterText(f);
 
@@ -911,6 +1064,40 @@ function renderPlayers(){
       +' · '+radText;
   }
 
+  const refNiv=verein?niveauVonLiga(verein.liga)
+              :(f.liga?niveauVonLiga(f.liga):null);
+
+  /* Aus der Kaderanalyse heraus gilt derselbe Radius wie im Matching:
+     ohne ihn bekaeme ein Oberligist Weltklassespieler vorgeschlagen.
+     Eigene Spieler fliegen raus - sie sind keine Verstaerkung. */
+  if(verein&&fromPage!=='vereinsmatching'){
+    /* Erreichbarkeit statt reiner Staerke. Ohne Obergrenze stuenden
+       Haaland und Mbappe an der Spitze der Werder-Kandidaten - formal
+       richtig, als Vorschlag wertlos. Die Grenze kommt aus dem Verein
+       selbst: das Anderthalbfache seines teuersten Spielers. */
+    const kaderGross=PLAYERS.filter(x=>x.club===verein.name).length;
+    const eigene=PLAYERS.filter(x=>x.club===verein.name&&x.mv_eur)
+                        .map(x=>x.mv_eur);
+    /* Nur wenn genug Marktwerte vorliegen. In den Oberligen fuehrt die
+       Quelle fast keine - dort waere jede Grenze aus der Luft gegriffen. */
+    const obergrenze=eigene.length>=Math.max(3,kaderGross/3)
+      ? Math.max(...eigene)*1.5 : null;
+
+    treffer=treffer.filter(e=>{
+      const p=e.p||e;
+      if(p.club===verein.name)return false;             // eigene Spieler
+      const n=(typeof p.niveau==='number')?p.niveau:niveauVonLiga(p.liga_id);
+      if(n>refNiv+8)return false;      // deutlich staerkere Liga: unrealistisch
+      if(n<refNiv-RADIUS_NAH*2)return false;            // zu weit darunter
+      if(obergrenze&&p.mv_eur&&p.mv_eur>obergrenze)return false;
+      return true;
+    });
+    const grenzText=!obergrenze?''
+      :obergrenze>=1e6?' (bis '+(obergrenze/1e6).toFixed(1).replace('.',',')+' Mio. €)'
+      :' (bis '+Math.round(obergrenze/1000)+' Tsd. €)';
+    hinweis+=' · erreichbar für '+verein.name+grenzText;
+  }
+
   const num=document.getElementById('res-num');
   if(num)num.textContent=treffer.length;
 
@@ -921,7 +1108,7 @@ function renderPlayers(){
   /* Im Matching entfaellt der Hinweis: dort ist die Passung bereits um das
      Liganiveau bereinigt, die Werte sind also vergleichbar. */
   const stufen=new Set(treffer.map(e=>(e.p||e).stufe).filter(x=>x));
-  const mischung=(stufen.size>1&&!f.liga&&fromPage!=='vereinsmatching')
+  const mischung=(stufen.size>1&&!f.liga&&!verein)
     ? ' — Achtung: Treffer aus '+stufen.size+' Spielklassen, Noten gelten je Liga'
     : '';
   const filt=document.getElementById('res-filt');
@@ -940,12 +1127,9 @@ function renderPlayers(){
       '<p>Kein Spieler passt zu diesen Filtern</p></div>';
     return;
   }
-  /* Bezugsniveau fuer die Einordnung: im Matching die Liga des gewaehlten
-     Vereins, in der Suche die gefilterte Liga (sonst keine Einordnung -
-     ohne Bezugspunkt waere sie willkuerlich). */
-  const refNiv=(fromPage==='vereinsmatching'&&vmVereinLiga)?niveauVonLiga(vmVereinLiga)
-              :(f.liga?niveauVonLiga(f.liga):null);
-
+  /* Bezugsniveau fuer die Einordnung: die Liga des gewaehlten Vereins,
+     sonst die gefilterte Liga. Ohne Bezugspunkt keine Einordnung - sie
+     waere sonst willkuerlich. */
   /* Im Matching-Modus enthaelt treffer Paare {p,tn}, sonst reine Spieler. */
   document.getElementById('player-list').innerHTML=treffer.map(e=>{
     const p=e.p||e, tn=e.tn||null;
@@ -956,6 +1140,17 @@ function renderPlayers(){
         +'Auf das Niveau der Zielliga umgerechnet ergibt das rund '+ein.wert
         +' — eine Schätzung, kein gemessener Wert.">'
         +'eingeordnet ≈'+ein.wert+'</span>' : '';
+
+    /* Was wuerde dieser Spieler FUER DIESEN VEREIN bedeuten? */
+    const bew=verein&&p.club!==verein.name
+      ? spielerFuerVerein(p,verein.name,verein.liga) : null;
+    const farbe={pos:'var(--green)',neu:'var(--amber)',neg:'var(--ink-3)'};
+    const bewBadge=bew
+      ? '<span class="badge" style="border-color:'+farbe[bew.klasse]+'55;color:'
+        +farbe[bew.klasse]+'" title="'+bew.text
+        +(bew.delta!==undefined?' Ersetzt er den schwächsten, steigt der Positionsschnitt von '
+          +bew.schnitt+' auf '+bew.neu+'.':'')+'">'+bew.rolle
+        +(bew.delta>0?' (+'+bew.delta+')':'')+'</span>' : '';
     const luecken=tn&&tn.gaps.length
       ? '<span class="badge" style="border-color:var(--line-bright);color:var(--ink-3)" title="Ohne Ereignisdaten nicht berechenbar: '
         +tn.gaps.join(', ')+'">'+tn.gaps.length+' Datenlücken</span>' : '';
@@ -974,7 +1169,7 @@ function renderPlayers(){
         +'<div class="score-cap"><div class="scl">LN</div><div class="scv">'+p.ln+'</div><div class="scbar" style="width:'+p.ln+'%;background:var(--blue)"></div></div>'
       : '<div class="score-cap primary"><div class="scl">LN</div><div class="scv">'+p.ln+'</div><div class="scbar" style="width:'+p.ln+'%"></div></div>'
         +'<div class="score-cap"><div class="scl">PN</div><div class="scv">'+p.pn+'</div><div class="scbar" style="width:'+p.pn+'%;background:var(--blue)"></div></div>';
-    return '<div class="pcard" onclick="showProfile('+p.id+')"><div class="av">'+p.ini+'<span class="num">'+p.number+'</span></div><div class="pi"><h4>'+p.name+'</h4><div class="meta"><span class="pos-tag">'+p.pos+'</span><span>'+p.club+'</span><span>'+p.liga+'</span><span>'+p.age+' J.</span></div><div class="badges">'+cbadge(p.contract)+'<span class="badge b-blue">'+p.mv+' €</span>'+(p.underval?'<span class="badge b-teal"><i class="ti ti-trending-up" style="font-size:10px"></i> Unterbewertet</span>':'')+einBadge+duenn+luecken+'</div></div><div class="scores">'+note+'</div></div>';
+    return '<div class="pcard" onclick="showProfile('+p.id+')"><div class="av">'+p.ini+'<span class="num">'+p.number+'</span></div><div class="pi"><h4>'+p.name+'</h4><div class="meta"><span class="pos-tag">'+p.pos+'</span><span>'+p.club+'</span><span>'+p.liga+'</span><span>'+p.age+' J.</span></div><div class="badges">'+cbadge(p.contract)+'<span class="badge b-blue">'+p.mv+' €</span>'+(p.underval?'<span class="badge b-teal"><i class="ti ti-trending-up" style="font-size:10px"></i> Unterbewertet</span>':'')+bewBadge+einBadge+duenn+luecken+'</div></div><div class="scores">'+note+'</div></div>';
   }).join('');
 }
 /* Flags und Fazit werden hier erzeugt, nicht in der JSON mitgeliefert.
@@ -1047,7 +1242,20 @@ function renderProfile(p,hasV,vN){
     ?ringCard('TN','Team-Note',lastTN.tn,'Passung zu '+vN,'var(--blue)')
     :'<div class="nc locked"><div class="nc-lbl">Team-Note <span>TN</span></div><div class="nc-val">–</div><div class="nc-sub">Nur mit Vereinskontext (via Matching oder Kaderanalyse)</div></div>';
   const tnSec=(hasV&&lastTN)?tnSection(lastTN,vN):'';
-  const bars=p.params.map(pm=>'<div class="param-row"><div class="param-name">'+pm.n+'</div><div class="bar-wrap"><div class="bar '+pm.cat+'" style="width:'+pm.p+'%"></div></div><div class="pct">'+pm.p+'</div></div>').join('');
+  /* "Percentil 92" sagt den meisten Lesern nichts. Ausgeschrieben heisst
+     es: besser als 92 % der Spieler derselben Position in derselben Liga.
+     Genau das steht jetzt da - samt Einordnung in Worten. */
+  const einstufung=v=>v>=90?'Spitzenwert':v>=70?'über dem Schnitt'
+                   :v>=40?'im Schnitt':v>=20?'unter dem Schnitt':'Schwachpunkt';
+  const bars=p.params.map(pm=>
+    '<div class="param-row" title="'+pm.n+': übertrifft '+pm.p+' % aller '+p.pos
+    +' in der '+p.liga+'. 50 wäre genau Ligadurchschnitt.">'
+    +'<div class="param-name">'+pm.n+'</div>'
+    +'<div class="bar-wrap"><div class="bar '+pm.cat+'" style="width:'+pm.p+'%"></div></div>'
+    +'<div class="param-wert"><b>'+pm.p+'%</b> <span>'+einstufung(pm.p)+'</span></div>'
+    +'</div>').join('')
+    +'<div class="param-skala"><span>schwächster</span><span>Ligaschnitt</span>'
+    +'<span>bester</span></div>';
   document.getElementById('profil-content').innerHTML=rb+
   '<div class="ph"><div class="ph-banner"><div class="ph-av">'+p.ini+'</div><div class="ph-id"><div class="ph-name">'+p.name+'</div><div class="ph-sub"><span class="pos-tag">'+p.pos+'</span> · '+p.club+' · '+p.liga+' · #'+p.number+'</div><div class="badges">'+cbadge(p.contract)+'<span class="badge b-blue">'+(p.mv||'k.A.')+' €</span>'+(p.underval?'<span class="badge b-teal"><i class="ti ti-trending-up" style="font-size:10px"></i> Unterbewertet</span>':'')+'</div></div></div>'+
   '<div class="note-grid">'+
@@ -1057,7 +1265,30 @@ function renderProfile(p,hasV,vN){
   '</div></div>'+
   tnSec+
   '<div class="sec"><div class="sec-title">Stammdaten</div><div class="sd-grid"><div class="sd"><div class="sd-lbl">Alter</div><div class="sd-val">'+p.age+' J.</div></div><div class="sd"><div class="sd-lbl">Fuß</div><div class="sd-val">'+p.foot+'</div></div><div class="sd"><div class="sd-lbl">Größe / Gewicht</div><div class="sd-val">'+p.height+' / '+p.weight+'</div></div><div class="sd"><div class="sd-lbl">Rückennummer</div><div class="sd-val">#'+p.number+'</div></div></div></div>'+
-  '<div class="sec"><div class="sec-title">Parameter-Percentile</div><div class="radar-grid"><div class="radar-box">'+radarSVG(p.params)+'</div><div>'+bars+'</div></div><div class="legend"><div class="leg-item"><div class="leg-dot" style="background:var(--lime)"></div>Top 25%</div><div class="leg-item"><div class="leg-dot" style="background:var(--blue)"></div>Norm 25–75%</div><div class="leg-item"><div class="leg-dot" style="background:var(--amber)"></div>Unter 25%</div></div></div>'+
+  (function(){
+    /* Was bedeutet dieser Spieler fuer den gerade betrachteten Verein? */
+    const v=aktiverVerein();
+    const b=(v&&p.club!==v.name)?spielerFuerVerein(p,v.name,v.liga):null;
+    if(!b)return '';
+    const farbe={pos:'var(--green)',neu:'var(--amber)',neg:'var(--ink-3)'}[b.klasse];
+    return '<div class="sec"><div class="sec-title">Einschätzung für '+v.name+'</div>'+
+      '<div class="flag"><div class="fdot '+b.klasse+'"></div><span><strong style="color:'
+      +farbe+'">'+b.rolle+'</strong> — '+b.text+'</span></div>'+
+      (b.neu!==undefined
+        ? '<div class="flag"><div class="fdot neu"></div><span>Ersetzt er den schwächsten '
+          +p.pos+', steigt der Positionsschnitt von <strong>'+b.schnitt+'</strong> auf <strong>'
+          +b.neu+'</strong>'+(b.delta>0?' (+'+b.delta+')':'')+'.</span></div>'
+        : '')+
+      '</div>';
+  })()+
+  '<div class="sec"><div class="sec-title">Stärkenprofil im Ligavergleich</div>'+
+    '<div class="param-erklaerung">Jeder Wert sagt, <strong>wie viel Prozent der '+p.pos
+    +' in der '+p.liga+' dieser Spieler übertrifft</strong>. 88 % heißt: nur 12 % sind besser. '
+    +'Die Linie in der Mitte markiert den Ligadurchschnitt. '
+    +'Verglichen wird immer nur innerhalb dieser Liga und Position — '
+    +'nicht mit anderen Ligen.</div>'+
+    '<div class="radar-grid"><div class="radar-box">'+radarSVG(p.params)+'</div><div>'+bars+'</div></div>'+
+    '<div class="legend"><div class="leg-item"><div class="leg-dot" style="background:var(--lime)"></div>ab 70 % — über dem Schnitt</div><div class="leg-item"><div class="leg-dot" style="background:var(--blue)"></div>40–69 % — im Schnitt</div><div class="leg-item"><div class="leg-dot" style="background:var(--amber)"></div>unter 40 % — Schwachpunkt</div></div></div>'+
   '<div class="sec"><div class="sec-title">Normabweichungs-Flags</div><div class="flag-list">'+flagsArr.map(f=>'<div class="flag"><div class="fdot '+f.c+'"></div><span>'+f.t+'</span></div>').join('')+'</div></div>'+
   '<div class="sec"><div class="sec-title">Scout-Fazit</div><div class="fazit">'+fazitFuer(p)+'</div></div>';
   go('profil');
