@@ -17,12 +17,38 @@ on:
 permissions:
   contents: write
 
+# Zwei Laeufe gleichzeitig wuerden sich beim Commit in die Quere kommen.
+concurrency:
+  group: spielerdaten
+  cancel-in-progress: false
+
 jobs:
-  build:
+  # Die 33 Ligen werden in Gruppen parallel gesammelt. Grund: Transfermarkt
+  # blockt Rechenzentren, der Lauf muss also ueber den Browser gehen - und
+  # der braucht rund 4,5 s je Seite. Bei ~1200 Seiten waere ein einzelner
+  # Lauf an der 90-Minuten-Grenze. Aufgeteilt bleibt jede Gruppe deutlich
+  # darunter und hat Luft fuer langsame Abrufe.
+  sammeln:
     runs-on: ubuntu-latest
-    # Rund 600 Vereine mit je zwei Seiten. Bei 1,5 s Abstand sind das etwa
-    # 35 Minuten; die Reserve faengt langsame Abrufe und Wiederholungen ab.
-    timeout-minutes: 120
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false          # eine kaputte Gruppe kippt nicht den Rest
+      matrix:
+        include:
+          - name: england
+            ligen: pl,champ
+          - name: spanien-italien
+            ligen: laliga,laliga2,seriea
+          - name: italien-frankreich
+            ligen: serieb,ligue1,ligue2
+          - name: dach-benelux
+            ligen: buli,buli2,jupiler,primeira,oebuli
+          - name: deutschland-3-4
+            ligen: l3,rl-nord,rl-nordost,rl-west,rl-suedwest,rl-bayern
+          - name: oberliga-nord
+            ligen: ol-nord,ol-sued,ol-nds,ol-hamburg,ol-bremen,ol-sh,ol-westfalen
+          - name: oberliga-sued
+            ligen: ol-niederrhein,ol-mittelrhein,ol-hessen,ol-rps,ol-bw,ol-bayern-n,ol-bayern-s
 
     steps:
       - uses: actions/checkout@v4
@@ -38,26 +64,55 @@ jobs:
 
       # Transfermarkt beantwortet Anfragen aus Rechenzentren mit HTTP 202
       # (Bot-Abwehr). Der schnelle HTTP-Weg scheitert hier also, anders als
-      # auf einem privaten Anschluss. Deshalb wird der Browser mitinstalliert,
-      # damit der Stealth-Weg ueberhaupt greifen kann.
+      # auf einem privaten Anschluss.
       - name: Browser fuer den Stealth-Weg
         run: |
           scrapling install || true
           patchright install --with-deps chromium || patchright install chromium
 
-      - name: Kader- und Leistungsdaten sammeln
+      - name: Sammeln
         env:
           SCOUT_SAISON: ${{ github.event.inputs.saison || '2025' }}
           TM_DELAY: "1.5"
-          # Geordnet aufhoeren, bevor die Action in ihr eigenes Limit laeuft.
-          # Nicht erreichte Ligen behalten dank Zusammenfuehrung ihren Stand.
-          SCOUT_BUDGET_MIN: "95"
+          SCOUT_BUDGET_MIN: "45"
+          SCOUT_TARGET: teil-${{ matrix.name }}.json.gz
         run: |
-          if [ -n "${{ github.event.inputs.ligen }}" ]; then
-            python3 scripts/build_players.py --ligen "${{ github.event.inputs.ligen }}"
-          else
-            python3 scripts/build_players.py
-          fi
+          LIGEN="${{ github.event.inputs.ligen }}"
+          [ -z "$LIGEN" ] && LIGEN="${{ matrix.ligen }}"
+          # --frisch: die Teildatei soll nur diese Gruppe enthalten,
+          # zusammengefuehrt wird spaeter in merge_raw.py.
+          python3 scripts/build_players.py --ligen "$LIGEN" --frisch
+
+      - name: Teilergebnis sichern
+        uses: actions/upload-artifact@v4
+        with:
+          name: teil-${{ matrix.name }}
+          path: teil-${{ matrix.name }}.json.gz
+          retention-days: 2
+          if-no-files-found: warn
+
+  zusammenfuehren:
+    needs: sammeln
+    if: always()               # auch wenn einzelne Gruppen gescheitert sind
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Python einrichten
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Teilergebnisse holen
+        uses: actions/download-artifact@v4
+        with:
+          path: teile
+          merge-multiple: true
+
+      - name: Zusammenfuehren
+        run: python3 scripts/merge_raw.py "teile/*.json.gz"
 
       - name: Noten und Percentile berechnen
         run: python3 scripts/compute_grades.py
@@ -67,5 +122,8 @@ jobs:
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add data/players.json data/players_raw.json.gz
-          git diff --staged --quiet || git commit -m "Spielerdaten aktualisiert"
+          git diff --staged --quiet && echo "keine Aenderungen" && exit 0
+          git commit -m "Spielerdaten aktualisiert"
+          # Zwischenzeitliche Commits auf main einarbeiten statt zu scheitern
+          git pull --rebase --autostash origin main
           git push

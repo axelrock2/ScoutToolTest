@@ -36,8 +36,12 @@ from tm_client import cell_text, fetch               # noqa: E402
 # Gepackt abgelegt: ungepackt sind es 9 MB, gzip macht daraus 0,7 MB.
 # Die Datei MUSS im Repository liegen, sonst startet ein Lauf in der Action
 # ohne Bestand - und ein Teillauf ueberschriebe dann alle uebrigen Ligen.
-TARGET = os.path.join(os.path.dirname(__file__), "..", "data",
-                      "players_raw.json.gz")
+#
+# SCOUT_TARGET setzt einen anderen Ausgabepfad. Damit koennen mehrere
+# Laeufe parallel je eine Teilmenge sammeln (siehe Matrix in der Action);
+# merge_raw.py fuegt die Teile anschliessend zusammen.
+TARGET = os.environ.get("SCOUT_TARGET") or os.path.join(
+    os.path.dirname(__file__), "..", "data", "players_raw.json.gz")
 
 # Saison, aus der die Leistungsdaten stammen. 2025 = Spielzeit 2025/26.
 SAISON = int(os.environ.get("SCOUT_SAISON", "2025"))
