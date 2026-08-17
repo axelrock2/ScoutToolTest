@@ -112,7 +112,11 @@ def fetch(path: str, use_cache: bool = True):
                 if page.status == 200:
                     _write_cache(url, page.html_content)
                     return page
-                if page.status in (403, 429):
+                # 202 ist bei Transfermarkt keine Erfolgsmeldung, sondern
+                # eine Bot-Abwehrseite - sie erscheint zuverlaessig, sobald
+                # die Anfrage aus einem Rechenzentrum kommt (z. B. von einem
+                # GitHub-Runner). Wie 403/429 behandeln.
+                if page.status in (202, 403, 429):
                     _stealth_needed = True     # ab jetzt Browser verwenden
                 else:
                     last_err = RuntimeError(f"HTTP {page.status}")

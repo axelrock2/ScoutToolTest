@@ -83,6 +83,32 @@ KENNZAHL_NAMEN = sorted({anzeige for felder in KENNZAHLEN.values()
 KENNZAHL_INDEX = {name: i for i, name in enumerate(KENNZAHL_NAMEN)}
 
 
+# Niveau-Skala. Der Median-Marktwert einer Liga ist ein brauchbarer Mass-
+# stab fuer ihre Staerke - und aussagekraeftiger als die blosse Spielklasse:
+# die Championship liegt gleichauf mit der belgischen ersten Liga, die
+# oesterreichische Bundesliga unter der franzoesischen Ligue 2.
+#
+# Abgebildet wird logarithmisch, weil sich die Marktwerte ueber drei
+# Groessenordnungen erstrecken. 20 Tsd. € Median ergibt 0, 20 Mio. € ergibt
+# 100.
+NIVEAU_UNTEN = 20_000
+NIVEAU_OBEN = 20_000_000
+
+# Fuer die Oberligen fuehrt die Quelle keine Marktwerte. Der Wert ist daher
+# geschaetzt (eine Klasse unter der Regionalliga) und wird als solcher
+# gekennzeichnet, statt eine Messung vorzutaeuschen.
+NIVEAU_GESCHAETZT = {5: 12}
+
+
+def niveau_aus_marktwert(median_eur: float) -> int:
+    import math
+    if median_eur <= 0:
+        return 0
+    spanne = math.log10(NIVEAU_OBEN) - math.log10(NIVEAU_UNTEN)
+    roh = (math.log10(median_eur) - math.log10(NIVEAU_UNTEN)) / spanne
+    return max(0, min(100, round(roh * 100)))
+
+
 def kennwerte(s: dict) -> dict | None:
     """Leitet die Rohkennzahlen eines Spielers ab.
 
@@ -306,10 +332,28 @@ def main() -> int:
             return 0
         return round(100 * sum(1 for p in gruppe if p["mv_eur"]) / len(gruppe))
 
-    ligen_liste = [{**v, "vereine": sorted(v["vereine"]),
-                    "bewertet": bewertet_je_liga.get(v["id"], 0),
-                    "marktwert_anteil": mw_anteil(v["id"])}
-                   for v in ligen.values()]
+    def niveau_fuer(liga_id: str, stufe: int) -> tuple[int, bool]:
+        """(Niveau 0-100, geschaetzt?)"""
+        werte = sorted(p["mv_eur"] for p in spieler_out
+                       if p["liga_id"] == liga_id and p["mv_eur"])
+        if len(werte) >= 20:
+            median = werte[len(werte) // 2]
+            return niveau_aus_marktwert(median), False
+        return NIVEAU_GESCHAETZT.get(stufe, 50), True
+
+    ligen_liste = []
+    for v in ligen.values():
+        niv, geschaetzt = niveau_fuer(v["id"], v["stufe"])
+        ligen_liste.append({**v, "vereine": sorted(v["vereine"]),
+                            "bewertet": bewertet_je_liga.get(v["id"], 0),
+                            "marktwert_anteil": mw_anteil(v["id"]),
+                            "niveau": niv,
+                            "niveau_geschaetzt": geschaetzt})
+
+    # Niveau auch am Spieler, damit das Frontend nicht nachschlagen muss
+    niveau_je_liga = {l["id"]: l["niveau"] for l in ligen_liste}
+    for p in spieler_out:
+        p["niveau"] = niveau_je_liga.get(p["liga_id"], 50)
     ligen_liste.sort(key=lambda l: (l["stufe"], l["land"], l["name"]))
 
     os.makedirs(os.path.dirname(ZIEL), exist_ok=True)

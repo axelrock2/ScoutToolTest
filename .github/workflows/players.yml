@@ -36,6 +36,15 @@ jobs:
       - name: Abhaengigkeiten
         run: pip install -r requirements.txt
 
+      # Transfermarkt beantwortet Anfragen aus Rechenzentren mit HTTP 202
+      # (Bot-Abwehr). Der schnelle HTTP-Weg scheitert hier also, anders als
+      # auf einem privaten Anschluss. Deshalb wird der Browser mitinstalliert,
+      # damit der Stealth-Weg ueberhaupt greifen kann.
+      - name: Browser fuer den Stealth-Weg
+        run: |
+          scrapling install || true
+          patchright install --with-deps chromium || patchright install chromium
+
       - name: Kader- und Leistungsdaten sammeln
         env:
           SCOUT_SAISON: ${{ github.event.inputs.saison || '2025' }}
