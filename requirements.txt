@@ -1,1 +1,9 @@
-scrapling>=0.4.14
+# [fetchers] zieht curl_cffi mit - ohne das schlaegt jeder Abruf mit
+# "No module named 'curl_cffi'" fehl. Das blosse "scrapling" reicht nicht.
+#
+# Die Browser-Binaries (scrapling install / patchright install) werden
+# bewusst NICHT geladen: der Lauf nutzt den schnellen HTTP-Weg. Sollte
+# Transfermarkt blockieren, greift der Stealth-Weg mangels Browser nicht -
+# die betroffene Liga wird dann als fehlend gemeldet und behaelt ihren
+# letzten Stand, statt den Lauf zu sprengen.
+scrapling[fetchers]>=0.4.14
