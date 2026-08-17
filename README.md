@@ -1,7 +1,40 @@
 # ScoutToolTest
 
-Scouting-Terminal für 13 europäische Ligen — als reine statische Seite,
-ohne Server und ohne laufende Kosten.
+**→ [axelrock2.github.io/ScoutToolTest](https://axelrock2.github.io/ScoutToolTest/)**
+
+Scouting-Terminal für 33 Wettbewerbe — von der Premier League bis zur
+Oberliga. Reine statische Seite, ohne Server und ohne laufende Kosten.
+
+## Liganiveau statt Spielklasse
+
+Ein Percentil gilt nur innerhalb seiner Liga. Note 85 aus der Oberliga
+neben Note 85 aus der Bundesliga zu stellen, wäre eine stillschweigende
+Gleichsetzung. Das Tool leitet deshalb je Liga ein **Niveau** aus dem
+Median-Marktwert ab — aussagekräftiger als die bloße Spielklasse:
+
+| Niveau | Liga |
+|---|---|
+| 98 | Premier League |
+| 80 | Bundesliga, Serie A |
+| 63 | Championship **und** Jupiler Pro League |
+| 53 | 2. Bundesliga |
+| 47 | Österreich Bundesliga, Ligue 2 |
+| 37 | 3. Liga |
+| 19 | Regionalliga |
+| 12 | Oberliga *(geschätzt, dort fehlen Marktwerte)* |
+
+Die Championship liegt gleichauf mit Belgiens erster Liga, Österreich
+unter der Ligue 2 — das bildet die Spielklasse allein nicht ab.
+
+Im Vereins-Matching wird die Passung um diesen Abstand bereinigt, sonst
+schlüge ein Regionalliga-Torjäger einen soliden Bundesligaspieler. Die
+Karte zeigt zusätzlich eine **eingeordnete Note**, ausdrücklich als
+Schätzung — gemessen ist nur der Wert in der eigenen Liga.
+
+**Suchradius und Budget** begrenzen das Matching auf realistische Ziele.
+Ohne sie empfahl das Tool einem Oberligisten folgerichtig Weltklasse-
+spieler: Freiburg mit 15 Mio. € Budget bekommt jetzt Marc Guiu statt
+Haaland, ein Oberligist Regionalligaspieler für 50–600 Tsd. €.
 
 ## Wie die Daten hereinkommen
 
@@ -120,9 +153,23 @@ Quelle nicht unnötig belasten.
 ## Automatischer Lauf
 
 `.github/workflows/players.yml` läuft täglich um 02:40 UTC und committet
-die aktualisierte `data/players.json`. Über *Actions → Spielerdaten
-aktualisieren → Run workflow* lässt er sich auch von Hand starten, wahlweise
-für einzelne Ligen oder eine andere Saison.
+die aktualisierten Daten. Über *Actions → Spielerdaten aktualisieren →
+Run workflow* lässt er sich auch von Hand starten, wahlweise für einzelne
+Ligen oder eine andere Saison.
+
+Zwei Eigenheiten, die beim Einrichten Zeit gekostet haben:
+
+**Transfermarkt blockt Rechenzentren.** Aus einem GitHub-Runner kommt
+HTTP 202 zurück — eine Bot-Abwehrseite —, während dieselbe Adresse von
+einem privaten Anschluss 200 liefert. Deshalb installiert die Action einen
+Browser und nutzt den Stealth-Weg.
+
+**`data/players_raw.json.gz` gehört ins Repository.** Der Sammellauf
+ergänzt den vorhandenen Bestand; ohne die Datei startet er bei null. Ein
+Lauf mit nur einer Liga hat so einmal 17.296 Spieler durch 346 ersetzt.
+Gepackt sind es 0,7 MB. Zusätzlich bricht `compute_grades.py` ab, wenn ein
+Lauf den Bestand auf unter die Hälfte schrumpfen würde
+(`SCOUT_SCHRUMPFEN_OK=1` übergeht das).
 
 ## Hinweis
 
