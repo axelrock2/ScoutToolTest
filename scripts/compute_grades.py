@@ -16,6 +16,7 @@ Lauf:  python3 scripts/compute_grades.py
 
 from __future__ import annotations
 
+import gzip
 import json
 import os
 import sys
@@ -25,7 +26,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from leagues import by_frontend_id                  # noqa: E402
 
-QUELLE = os.path.join(os.path.dirname(__file__), "..", "data", "players_raw.json")
+QUELLE = os.path.join(os.path.dirname(__file__), "..", "data",
+                      "players_raw.json.gz")
 ZIEL = os.path.join(os.path.dirname(__file__), "..", "data", "players.json")
 
 MIN_MINUTEN = 450          # darunter ist die Stichprobe zu duenn
@@ -185,7 +187,7 @@ def main() -> int:
               file=sys.stderr)
         return 1
 
-    with open(QUELLE, encoding="utf-8") as fh:
+    with gzip.open(QUELLE, "rt", encoding="utf-8") as fh:
         roh = json.load(fh)
 
     # 1) Kennwerte ableiten, Spieler ohne belastbare Stichprobe aussortieren
@@ -355,6 +357,24 @@ def main() -> int:
     for p in spieler_out:
         p["niveau"] = niveau_je_liga.get(p["liga_id"], 50)
     ligen_liste.sort(key=lambda l: (l["stufe"], l["land"], l["name"]))
+
+    # Schutz gegen stillen Datenverlust. Genau das ist einmal passiert: die
+    # Action lief mit nur einer Liga, fand keinen Bestand zum Ergaenzen
+    # (die Rohdatei war nicht eingecheckt) und ersetzte 17296 Spieler durch
+    # 346. Lieber laut abbrechen als eine geschrumpfte Datei schreiben.
+    if os.path.exists(ZIEL) and not os.environ.get("SCOUT_SCHRUMPFEN_OK"):
+        try:
+            with open(ZIEL, encoding="utf-8") as fh:
+                vorher = len(json.load(fh).get("players", []))
+        except (OSError, ValueError):
+            vorher = 0
+        if vorher and len(spieler_out) < vorher * 0.5:
+            print(f"ABBRUCH: {len(spieler_out)} Spieler wuerden {vorher} "
+                  f"ersetzen - das ist weniger als die Haelfte. Fehlt der "
+                  f"Bestand in data/players_raw.json.gz? Mit "
+                  f"SCOUT_SCHRUMPFEN_OK=1 laesst sich das uebergehen.",
+                  file=sys.stderr)
+            return 1
 
     os.makedirs(os.path.dirname(ZIEL), exist_ok=True)
     with open(ZIEL, "w", encoding="utf-8") as fh:

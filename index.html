@@ -635,8 +635,14 @@ function pickVerein(px,name,lid){
     '<div class="sel-info"><div class="sl">Ausgewählt</div><div class="sn">'+name+'</div><div class="sm">'+l.name+' · '+l.land+'</div></div>'+
     '<div class="fg"><label>Formation</label><select id="vm-formation"><option>4-2-3-1</option><option>4-3-3</option><option>3-5-2</option><option>4-4-2</option><option>3-4-3</option><option>5-3-2</option><option>4-1-4-1</option></select></div>'+
     '<div class="fg"><label>Gesuchte Position</label><select id="vm-pos"><option value="">Alle Positionen</option><option value="TW">TW</option><option value="IV">IV</option><option value="LV,RV">LV / RV</option><option value="DM">DM</option><option value="ZM">ZM</option><option value="OM,LA,RA">OM / Flügel</option><option value="ST">ST / HS</option></select></div>'+
+    '<div class="fg"><label>Suchradius</label><select id="vm-radius">'+
+      '<option value="nah">Vergleichbares Niveau (empfohlen)</option>'+
+      '<option value="tiefer">Auch deutlich tiefere Ligen</option>'+
+      '<option value="alle">Alle Ligen</option>'+
+      '</select></div>'+
     '<div class="fg"><label>Spielstil-Profil</label><div style="margin-top:8px">'+['Pressing','Ballbesitz','Konter','Aufbau hinten','Standards'].map((s,i)=>'<div class="slider-row"><div class="srl"><span>'+s+'</span><span class="srv" id="sv'+i+'">3</span></div><input type="range" min="1" max="5" value="3" oninput="document.getElementById(\'sv'+i+'\').textContent=this.value"></div>').join('')+'</div></div>'+
-    '<div class="fg"><label>Max. Alter</label><input type="number" placeholder="z.B. 27"></div>'+
+    '<div class="fg"><label>Max. Alter</label><input type="number" id="vm-alter" placeholder="z.B. 27"></div>'+
+    '<div class="fg"><label>Max. Marktwert (Mio. €)</label><input type="number" id="vm-budget" step="0.1" placeholder="ohne Grenze"></div>'+
     '<button class="btn-primary" onclick="startMatching()"><i class="ti ti-arrows-shuffle"></i> Matching starten</button>';
   }else{
     document.getElementById('kad-opt-panel').innerHTML='<div class="panel-title"><span class="idx">03</span> Analyse</div>'+
@@ -807,6 +813,33 @@ function fuelleLigaFilter(){
   sel.value=aktuell;
 }
 
+/* ---------- Niveau-Einordnung ----------------------------------------
+   Ein Percentil gilt nur innerhalb seiner Liga. Note 85 in der Oberliga
+   und Note 85 in der Bundesliga nebeneinander zu stellen, waere eine
+   stillschweigende Gleichsetzung. Deshalb wird die Note in den Kontext
+   der Zielliga umgerechnet - ausdruecklich als Schaetzung gekennzeichnet,
+   denn gemessen ist nur der Wert in der eigenen Liga.
+
+   Grundlage ist das Liganiveau aus dem Median-Marktwert (siehe
+   compute_grades.py). Der Faktor 0,55 bedeutet: 20 Niveaupunkte Abstand
+   kosten rund 11 Notenpunkte. */
+const NIVEAU_FAKTOR=0.55;
+const RADIUS_NAH=18;          // Niveaupunkte, die als vergleichbar gelten
+
+function niveauVonLiga(ligaId){
+  const l=LIGEN.find(x=>x.id===ligaId);
+  return l&&typeof l.niveau==='number'?l.niveau:50;
+}
+
+function eingeordneteNote(p,referenzNiveau){
+  if(referenzNiveau===null||referenzNiveau===undefined)return null;
+  const eigen=(typeof p.niveau==='number')?p.niveau:niveauVonLiga(p.liga_id);
+  const diff=referenzNiveau-eigen;
+  if(Math.abs(diff)<6)return null;          // gleiches Niveau, nichts zu sagen
+  return {wert:Math.max(1,Math.min(99,Math.round(p.ln-NIVEAU_FAKTOR*diff))),
+          diff:diff, eigen:eigen};
+}
+
 function renderPlayers(){
   const f=leseFilter();
   let treffer=sortPlayers(filterPlayers(f),f.sort);
@@ -827,19 +860,79 @@ function renderPlayers(){
       const liste=wunsch.replace(/\s/g,'').split(/[,/]/);
       treffer=treffer.filter(p=>liste.includes(p.pos));
     }
-    treffer=treffer.map(p=>({p,tn:computeTN(p)}))
-                   .sort((a,b)=>b.tn.tn-a.tn.tn||b.p.ln-a.p.ln);
+
+    /* Suchradius. Ohne Begrenzung schlaegt das Matching einem Oberligisten
+       Weltklassespieler vor - formal korrekt, praktisch nutzlos. */
+    const refNiveau=vmVereinLiga?niveauVonLiga(vmVereinLiga):null;
+    const rad=document.getElementById('vm-radius');
+    const radius=rad?rad.value:'nah';
+    if(refNiveau!==null&&radius!=='alle'){
+      treffer=treffer.filter(p=>{
+        const n=(typeof p.niveau==='number')?p.niveau:niveauVonLiga(p.liga_id);
+        if(n>refNiveau+RADIUS_NAH)return false;      // zu hoch: unrealistisch
+        if(radius==='nah'&&n<refNiveau-RADIUS_NAH)return false;
+        return true;
+      });
+    }
+
+    const alterMax=parseInt((document.getElementById('vm-alter')||{}).value,10);
+    if(!isNaN(alterMax))treffer=treffer.filter(p=>p.age<=alterMax);
+
+    /* Budget. Ohne diese Grenze schlaegt die Niveau-Rechnung einem
+       Mittelstaendler folgerichtig die teuersten Spieler der staerksten
+       Liga vor - rechnerisch sauber, als Transferziel unbrauchbar.
+       Spieler ohne Marktwert (Oberliga) bleiben drin, sonst fiele dort
+       jeder heraus. */
+    const budget=parseFloat((document.getElementById('vm-budget')||{}).value);
+    if(!isNaN(budget))
+      treffer=treffer.filter(p=>!p.mv_eur||p.mv_eur<=budget*1e6);
+    /* Passung um das Liganiveau bereinigen. Ohne das schlaegt ein
+       Regionalliga-Torjaeger einen soliden Bundesligaspieler, weil beide
+       Percentile aus ihrer eigenen Liga stammen und die Rangfolge sie
+       stillschweigend gleichsetzt. */
+    treffer=treffer.map(p=>{
+      const tn=computeTN(p);
+      const eigen=(typeof p.niveau==='number')?p.niveau:niveauVonLiga(p.liga_id);
+      const diff=(refNiveau===null?0:refNiveau-eigen);
+      tn.roh=tn.tn;
+      tn.tn=Math.max(1,Math.min(99,Math.round(tn.tn-NIVEAU_FAKTOR*diff)));
+      tn.niveauDiff=diff;
+      return {p,tn};
+    }).sort((a,b)=>b.tn.tn-a.tn.tn||b.p.ln-a.p.ln);
     const stil=Object.entries(styleProfile)
       .filter(([,v])=>v>=4).map(([k])=>k);
+    const radText={nah:'vergleichbares Niveau',tiefer:'auch tiefere Ligen',
+                   alle:'alle Ligen'}[radius];
     hinweis='Passung zu '+(vmVerein||'Profil')+' · '+chosenFormation
       +(wunsch?' · '+wunsch:'')
-      +(stil.length?' · Schwerpunkt '+stil.join('/'):'');
+      +(!isNaN(alterMax)?' · bis '+alterMax+' J.':'')
+      +(!isNaN(budget)?' · max. '+budget+' Mio. €':'')
+      +(stil.length?' · Schwerpunkt '+stil.join('/'):'')
+      +' · '+radText;
   }
 
   const num=document.getElementById('res-num');
   if(num)num.textContent=treffer.length;
+
+  /* Spannt das Ergebnis mehrere Spielklassen, sind die Noten nicht direkt
+     vergleichbar - Percentile gelten je Liga. Das gehoert dazugesagt,
+     sonst liest sich Note 90 aus der Oberliga wie Note 90 aus der
+     Bundesliga. */
+  /* Im Matching entfaellt der Hinweis: dort ist die Passung bereits um das
+     Liganiveau bereinigt, die Werte sind also vergleichbar. */
+  const stufen=new Set(treffer.map(e=>(e.p||e).stufe).filter(x=>x));
+  const mischung=(stufen.size>1&&!f.liga&&fromPage!=='vereinsmatching')
+    ? ' — Achtung: Treffer aus '+stufen.size+' Spielklassen, Noten gelten je Liga'
+    : '';
   const filt=document.getElementById('res-filt');
-  if(filt)filt.textContent=hinweis;
+  if(filt){
+    filt.textContent=hinweis+mischung;
+    filt.title=mischung
+      ? 'Ein Percentil vergleicht immer nur innerhalb derselben Liga. '
+        +'Für eine Umrechnung auf ein Zielniveau eine Liga wählen oder das '
+        +'Vereins-Matching nutzen — dort steht die eingeordnete Note auf der Karte.'
+      : '';
+  }
 
   if(!treffer.length){
     document.getElementById('player-list').innerHTML=
@@ -847,9 +940,22 @@ function renderPlayers(){
       '<p>Kein Spieler passt zu diesen Filtern</p></div>';
     return;
   }
+  /* Bezugsniveau fuer die Einordnung: im Matching die Liga des gewaehlten
+     Vereins, in der Suche die gefilterte Liga (sonst keine Einordnung -
+     ohne Bezugspunkt waere sie willkuerlich). */
+  const refNiv=(fromPage==='vereinsmatching'&&vmVereinLiga)?niveauVonLiga(vmVereinLiga)
+              :(f.liga?niveauVonLiga(f.liga):null);
+
   /* Im Matching-Modus enthaelt treffer Paare {p,tn}, sonst reine Spieler. */
   document.getElementById('player-list').innerHTML=treffer.map(e=>{
     const p=e.p||e, tn=e.tn||null;
+    const ein=eingeordneteNote(p,refNiv);
+    const einBadge=ein
+      ? '<span class="badge" style="border-color:rgba(77,166,255,0.4);color:var(--blue)" '
+        +'title="Note '+p.ln+' gilt innerhalb '+p.liga+' (Niveau '+ein.eigen+'). '
+        +'Auf das Niveau der Zielliga umgerechnet ergibt das rund '+ein.wert
+        +' — eine Schätzung, kein gemessener Wert.">'
+        +'eingeordnet ≈'+ein.wert+'</span>' : '';
     const luecken=tn&&tn.gaps.length
       ? '<span class="badge" style="border-color:var(--line-bright);color:var(--ink-3)" title="Ohne Ereignisdaten nicht berechenbar: '
         +tn.gaps.join(', ')+'">'+tn.gaps.length+' Datenlücken</span>' : '';
@@ -859,12 +965,16 @@ function renderPlayers(){
       ? '<span class="badge" style="border-color:rgba(245,166,35,0.4);color:var(--amber)" title="'
         +p.minuten+' Saisonminuten — unter der Schwelle für eine belastbare Bewertung">'
         +'nur '+p.minuten+ ' Min</span>' : '';
+    const passTitel=tn&&tn.niveauDiff
+      ? ' title="Rohwert '+tn.roh+', um '+Math.abs(tn.niveauDiff)
+        +' Niveaupunkte Ligaunterschied '+(tn.niveauDiff>0?'nach unten':'nach oben')
+        +' korrigiert."' : '';
     const note=tn
-      ? '<div class="score-cap primary"><div class="scl">Passung</div><div class="scv">'+tn.tn+'</div><div class="scbar" style="width:'+tn.tn+'%"></div></div>'
+      ? '<div class="score-cap primary"'+passTitel+'><div class="scl">Passung</div><div class="scv">'+tn.tn+'</div><div class="scbar" style="width:'+tn.tn+'%"></div></div>'
         +'<div class="score-cap"><div class="scl">LN</div><div class="scv">'+p.ln+'</div><div class="scbar" style="width:'+p.ln+'%;background:var(--blue)"></div></div>'
       : '<div class="score-cap primary"><div class="scl">LN</div><div class="scv">'+p.ln+'</div><div class="scbar" style="width:'+p.ln+'%"></div></div>'
         +'<div class="score-cap"><div class="scl">PN</div><div class="scv">'+p.pn+'</div><div class="scbar" style="width:'+p.pn+'%;background:var(--blue)"></div></div>';
-    return '<div class="pcard" onclick="showProfile('+p.id+')"><div class="av">'+p.ini+'<span class="num">'+p.number+'</span></div><div class="pi"><h4>'+p.name+'</h4><div class="meta"><span class="pos-tag">'+p.pos+'</span><span>'+p.club+'</span><span>'+p.liga+'</span><span>'+p.age+' J.</span></div><div class="badges">'+cbadge(p.contract)+'<span class="badge b-blue">'+p.mv+' €</span>'+(p.underval?'<span class="badge b-teal"><i class="ti ti-trending-up" style="font-size:10px"></i> Unterbewertet</span>':'')+duenn+luecken+'</div></div><div class="scores">'+note+'</div></div>';
+    return '<div class="pcard" onclick="showProfile('+p.id+')"><div class="av">'+p.ini+'<span class="num">'+p.number+'</span></div><div class="pi"><h4>'+p.name+'</h4><div class="meta"><span class="pos-tag">'+p.pos+'</span><span>'+p.club+'</span><span>'+p.liga+'</span><span>'+p.age+' J.</span></div><div class="badges">'+cbadge(p.contract)+'<span class="badge b-blue">'+p.mv+' €</span>'+(p.underval?'<span class="badge b-teal"><i class="ti ti-trending-up" style="font-size:10px"></i> Unterbewertet</span>':'')+einBadge+duenn+luecken+'</div></div><div class="scores">'+note+'</div></div>';
   }).join('');
 }
 /* Flags und Fazit werden hier erzeugt, nicht in der JSON mitgeliefert.

@@ -20,6 +20,7 @@ Lokal testen (eine Liga, schnell):
 from __future__ import annotations
 
 import argparse
+import gzip
 import json
 import os
 import re
@@ -32,7 +33,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from leagues import LEAGUES, by_frontend_id          # noqa: E402
 from tm_client import cell_text, fetch               # noqa: E402
 
-TARGET = os.path.join(os.path.dirname(__file__), "..", "data", "players_raw.json")
+# Gepackt abgelegt: ungepackt sind es 9 MB, gzip macht daraus 0,7 MB.
+# Die Datei MUSS im Repository liegen, sonst startet ein Lauf in der Action
+# ohne Bestand - und ein Teillauf ueberschriebe dann alle uebrigen Ligen.
+TARGET = os.path.join(os.path.dirname(__file__), "..", "data",
+                      "players_raw.json.gz")
 
 # Saison, aus der die Leistungsdaten stammen. 2025 = Spielzeit 2025/26.
 SAISON = int(os.environ.get("SCOUT_SAISON", "2025"))
@@ -311,7 +316,7 @@ def main() -> int:
     # und eine Liga, die heute ausfaellt, behaelt ihren letzten Stand.
     if not args.frisch and os.path.exists(TARGET):
         try:
-            with open(TARGET, encoding="utf-8") as fh:
+            with gzip.open(TARGET, "rt", encoding="utf-8") as fh:
                 alt = json.load(fh)
             neu_ids = {lg.frontend_id for lg in ligen}
             behalten = [s for s in alt.get("spieler", [])
@@ -329,7 +334,7 @@ def main() -> int:
     bericht.sort(key=lambda q: q.get("liga", ""))
 
     os.makedirs(os.path.dirname(TARGET), exist_ok=True)
-    with open(TARGET, "w", encoding="utf-8") as fh:
+    with gzip.open(TARGET, "wt", encoding="utf-8") as fh:
         json.dump({
             "stand": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "saison": f"{SAISON}/{str(SAISON + 1)[2:]}",

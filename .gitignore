@@ -1,9 +1,9 @@
 # Zwischenspeicher der abgerufenen Seiten (nur lokal, 6 h gueltig)
 .cache/
 
-# Zwischenergebnis des Sammellaufs. Wird nicht eingecheckt, weil es taeglich
-# neu entsteht und das Repository sonst um Megabytes pro Tag waechst.
-# compute_grades.py liest es direkt nach dem Sammellauf aus dem Arbeitsordner.
+# players_raw.json.gz wird BEWUSST eingecheckt (0,7 MB gepackt). Ohne den
+# Bestand im Repository startet die Action ohne Vorlage - ein Lauf mit nur
+# einer Liga ueberschriebe dann alle uebrigen. Genau das ist einmal passiert.
 data/players_raw.json
 
 # macOS
