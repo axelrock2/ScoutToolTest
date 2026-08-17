@@ -1,0 +1,62 @@
+name: Spielerdaten aktualisieren
+
+on:
+  schedule:
+    - cron: "40 2 * * *"      # taeglich 02:40 UTC
+  workflow_dispatch:
+    inputs:
+      ligen:
+        description: "Nur bestimmte Ligen (z. B. buli,buli2). Leer = alle."
+        required: false
+        default: ""
+      saison:
+        description: "Saison-ID, 2025 = Spielzeit 2025/26"
+        required: false
+        default: "2025"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # Rund 600 Vereine mit je zwei Seiten. Bei 1,5 s Abstand sind das etwa
+    # 35 Minuten; die Reserve faengt langsame Abrufe und Wiederholungen ab.
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Python einrichten
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Abhaengigkeiten
+        run: pip install -r requirements.txt
+
+      - name: Kader- und Leistungsdaten sammeln
+        env:
+          SCOUT_SAISON: ${{ github.event.inputs.saison || '2025' }}
+          TM_DELAY: "1.5"
+          # Geordnet aufhoeren, bevor die Action in ihr eigenes Limit laeuft.
+          # Nicht erreichte Ligen behalten dank Zusammenfuehrung ihren Stand.
+          SCOUT_BUDGET_MIN: "95"
+        run: |
+          if [ -n "${{ github.event.inputs.ligen }}" ]; then
+            python3 scripts/build_players.py --ligen "${{ github.event.inputs.ligen }}"
+          else
+            python3 scripts/build_players.py
+          fi
+
+      - name: Noten und Percentile berechnen
+        run: python3 scripts/compute_grades.py
+
+      - name: Aenderungen committen
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add data/players.json
+          git diff --staged --quiet || git commit -m "Spielerdaten aktualisiert"
+          git push

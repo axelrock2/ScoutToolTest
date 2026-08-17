@@ -1,0 +1,15 @@
+# Zwischenspeicher der abgerufenen Seiten (nur lokal, 6 h gueltig)
+.cache/
+
+# Zwischenergebnis des Sammellaufs. Wird nicht eingecheckt, weil es taeglich
+# neu entsteht und das Repository sonst um Megabytes pro Tag waechst.
+# compute_grades.py liest es direkt nach dem Sammellauf aus dem Arbeitsordner.
+data/players_raw.json
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+.venv/
