@@ -1,8 +1,14 @@
 name: Spielerdaten aktualisieren
 
+# ACHTUNG: Transfermarkt blockt GitHub-Runner inzwischen zuverlaessig -
+# HTTP 202, spaeter 403, auch ueber den Browser-Weg. Diese Action ist
+# deshalb nur noch der Zweitweg und laeuft woechentlich statt taeglich:
+# falls die Blockade faellt, springt sie von allein wieder an. Der
+# verlaessliche Weg ist scripts/update_local.sh vom eigenen Rechner, wo
+# dieselben Abrufe mit 200 und in 0,6 s statt 4,5 s beantwortet werden.
 on:
   schedule:
-    - cron: "40 2 * * *"      # taeglich 02:40 UTC
+    - cron: "40 2 * * 0"      # sonntags 02:40 UTC
   workflow_dispatch:
     inputs:
       ligen:

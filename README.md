@@ -150,19 +150,35 @@ python3 -m http.server 8777
 Abgerufene Seiten landen 6 Stunden lang in `.cache/`, damit Testläufe die
 Quelle nicht unnötig belasten.
 
-## Automatischer Lauf
+## Aktualisieren
 
-`.github/workflows/players.yml` läuft täglich um 02:40 UTC und committet
-die aktualisierten Daten. Über *Actions → Spielerdaten aktualisieren →
-Run workflow* lässt er sich auch von Hand starten, wahlweise für einzelne
-Ligen oder eine andere Saison.
+**Der verlässliche Weg läuft auf dem eigenen Rechner:**
 
-Zwei Eigenheiten, die beim Einrichten Zeit gekostet haben:
+```bash
+./scripts/update_local.sh
+```
 
-**Transfermarkt blockt Rechenzentren.** Aus einem GitHub-Runner kommt
-HTTP 202 zurück — eine Bot-Abwehrseite —, während dieselbe Adresse von
-einem privaten Anschluss 200 liefert. Deshalb installiert die Action einen
-Browser und nutzt den Stealth-Weg.
+Sammelt alle 33 Ligen, berechnet die Noten, committet und pusht. GitHub
+Pages baut die Seite danach von allein neu. Für einen Teillauf:
+`./scripts/update_local.sh buli,buli2`, zum Ausprobieren ohne Push
+`PUSH=0 ./scripts/update_local.sh`.
+
+### Warum nicht in der GitHub Action?
+
+**Transfermarkt blockt Rechenzentren.** Aus einem GitHub-Runner kommt erst
+HTTP 202 zurück (Bot-Abwehr), inzwischen 403 — auch mit installiertem
+Browser über den Stealth-Weg. Vom privaten Anschluss antwortet dieselbe
+Adresse mit 200, und zwar in 0,6 s statt 4,5 s. Ein voller Durchlauf
+dauert lokal Minuten, im Runner über eine Stunde, sofern er überhaupt
+durchkommt.
+
+Die Action (`.github/workflows/players.yml`) bleibt als Zweitweg
+erhalten und versucht es sonntags. Fällt die Blockade, springt sie von
+allein wieder an. Sie sammelt dann rotierend drei von acht Gruppen pro
+Lauf, höchstens zwei gleichzeitig — sieben parallel lösten die Abwehr
+sofort aus.
+
+### Zwei Fallen, die Daten gekostet haben
 
 **`data/players_raw.json.gz` gehört ins Repository.** Der Sammellauf
 ergänzt den vorhandenen Bestand; ohne die Datei startet er bei null. Ein
@@ -170,6 +186,11 @@ Lauf mit nur einer Liga hat so einmal 17.296 Spieler durch 346 ersetzt.
 Gepackt sind es 0,7 MB. Zusätzlich bricht `compute_grades.py` ab, wenn ein
 Lauf den Bestand auf unter die Hälfte schrumpfen würde
 (`SCOUT_SCHRUMPFEN_OK=1` übergeht das).
+
+**Ein Teillauf darf die übrigen Ligen nicht löschen.** `build_players.py`
+führt deshalb zusammen statt zu überschreiben, `merge_raw.py` tut dasselbe
+für parallele Teilergebnisse. Eine Liga, die heute ausfällt, behält ihren
+letzten Stand.
 
 ## Hinweis
 
