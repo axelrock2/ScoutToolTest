@@ -41,47 +41,69 @@ GRUPPE = {
     "ST": "ST",
 }
 
-# Kennzahlen je Gruppe: (Anzeigename, Schluessel, hoeher_ist_besser)
+# Kennzahlen je Gruppe: (Anzeigename, Schluessel, hoeher_ist_besser, Gewicht)
+#
+# Warum gewichtet? Vorher zaehlte jede Kennzahl gleich viel. Fuer Stuermer
+# ging das auf, fuer Innenverteidiger nicht: deren Note bestand fast nur aus
+# Einsaetzen, Minuten und Karten - also aus Verfuegbarkeit, nicht aus
+# Spielstaerke.
+#
+# Was jetzt dazukommt, stammt aus der Ligatabelle (ein Abruf je Liga):
+#   * Gegentore der Mannschaft je Spiel - der einzige belegbare
+#     Defensivwert. Ausdruecklich ein MANNSCHAFTSWERT, kein individueller;
+#     im Frontend als solcher gekennzeichnet.
+#   * Anteil an den Toren der Mannschaft - zeigt, wie viel der Offensive
+#     ueber diesen Spieler laeuft. Zehn Tore in einem Team mit 30 Toren
+#     wiegen schwerer als zehn in einem Team mit 90.
+#   * Einsatzanteil an den Saisonspielen statt roher Einsatzzahl - so sind
+#     Ligen mit unterschiedlich vielen Spieltagen vergleichbar.
+TEAM_KENNZAHLEN = {"team_gegentore_pro_spiel"}
+
 KENNZAHLEN = {
-    "TW":  [("Einsätze", "einsaetze", True),
-            ("Gespielte Minuten", "minuten", True),
-            ("Minuten je Einsatz", "min_pro_einsatz", True),
-            ("Disziplin (Karten inv.)", "karten_pro90", False)],
-    "IV":  [("Gespielte Minuten", "minuten", True),
-            ("Minuten je Einsatz", "min_pro_einsatz", True),
-            ("Einsätze", "einsaetze", True),
-            ("Disziplin (Karten inv.)", "karten_pro90", False),
-            ("Torgefahr bei Standards", "tore_pro90", True)],
-    "AV":  [("Vorlagen / 90", "vorlagen_pro90", True),
-            ("Gespielte Minuten", "minuten", True),
-            ("Minuten je Einsatz", "min_pro_einsatz", True),
-            ("Scorerpunkte / 90", "scorer_pro90", True),
-            ("Disziplin (Karten inv.)", "karten_pro90", False)],
-    "ZM":  [("Scorerpunkte / 90", "scorer_pro90", True),
-            ("Vorlagen / 90", "vorlagen_pro90", True),
-            ("Gespielte Minuten", "minuten", True),
-            ("Minuten je Einsatz", "min_pro_einsatz", True),
-            ("Tore / 90", "tore_pro90", True),
-            ("Disziplin (Karten inv.)", "karten_pro90", False)],
-    "OFF": [("Scorerpunkte / 90", "scorer_pro90", True),
-            ("Vorlagen / 90", "vorlagen_pro90", True),
-            ("Tore / 90", "tore_pro90", True),
-            ("Gespielte Minuten", "minuten", True),
-            ("Minuten je Einsatz", "min_pro_einsatz", True),
-            ("Disziplin (Karten inv.)", "karten_pro90", False)],
-    "ST":  [("Tore / 90", "tore_pro90", True),
-            ("Scorerpunkte / 90", "scorer_pro90", True),
-            ("Vorlagen / 90", "vorlagen_pro90", True),
-            ("Minuten je Einsatz", "min_pro_einsatz", True),
-            ("Gespielte Minuten", "minuten", True),
-            ("Disziplin (Karten inv.)", "karten_pro90", False)],
+    "TW":  [("Defensive der Mannschaft", "team_gegentore_pro_spiel", False, 3),
+            ("Einsatzanteil der Saison", "einsatz_anteil", True, 3),
+            ("Minuten je Einsatz", "min_pro_einsatz", True, 1),
+            ("Disziplin (Karten inv.)", "karten_pro90", False, 1)],
+
+    "IV":  [("Defensive der Mannschaft", "team_gegentore_pro_spiel", False, 3),
+            ("Einsatzanteil der Saison", "einsatz_anteil", True, 3),
+            ("Minuten je Einsatz", "min_pro_einsatz", True, 1),
+            ("Torgefahr bei Standards", "tore_pro90", True, 1),
+            ("Disziplin (Karten inv.)", "karten_pro90", False, 1)],
+
+    "AV":  [("Defensive der Mannschaft", "team_gegentore_pro_spiel", False, 2),
+            ("Einsatzanteil der Saison", "einsatz_anteil", True, 2),
+            ("Vorlagen / 90", "vorlagen_pro90", True, 2),
+            ("Anteil an Teamtoren", "tor_anteil", True, 1),
+            ("Disziplin (Karten inv.)", "karten_pro90", False, 1)],
+
+    "ZM":  [("Anteil an Teamtoren", "tor_anteil", True, 2),
+            ("Scorerpunkte / 90", "scorer_pro90", True, 2),
+            ("Vorlagen / 90", "vorlagen_pro90", True, 2),
+            ("Einsatzanteil der Saison", "einsatz_anteil", True, 2),
+            ("Defensive der Mannschaft", "team_gegentore_pro_spiel", False, 1),
+            ("Disziplin (Karten inv.)", "karten_pro90", False, 1)],
+
+    "OFF": [("Scorerpunkte / 90", "scorer_pro90", True, 3),
+            ("Anteil an Teamtoren", "tor_anteil", True, 2),
+            ("Vorlagen / 90", "vorlagen_pro90", True, 2),
+            ("Tore / 90", "tore_pro90", True, 2),
+            ("Einsatzanteil der Saison", "einsatz_anteil", True, 1),
+            ("Disziplin (Karten inv.)", "karten_pro90", False, 1)],
+
+    "ST":  [("Tore / 90", "tore_pro90", True, 3),
+            ("Anteil an Teamtoren", "tor_anteil", True, 2),
+            ("Scorerpunkte / 90", "scorer_pro90", True, 2),
+            ("Vorlagen / 90", "vorlagen_pro90", True, 1),
+            ("Einsatzanteil der Saison", "einsatz_anteil", True, 1),
+            ("Disziplin (Karten inv.)", "karten_pro90", False, 1)],
 }
 
 
 # Alle vorkommenden Anzeigenamen, einmalig. Die Reihenfolge ist der
 # Index, den die params der Spieler referenzieren.
 KENNZAHL_NAMEN = sorted({anzeige for felder in KENNZAHLEN.values()
-                         for anzeige, _, _ in felder})
+                         for anzeige, _, _, _ in felder})
 KENNZAHL_INDEX = {name: i for i, name in enumerate(KENNZAHL_NAMEN)}
 
 
@@ -125,7 +147,15 @@ def kennwerte(s: dict) -> dict | None:
     minuten = L["minuten"]
     p90 = minuten / 90.0
     karten = L["gelbe"] + L["gelbrot"] * 2 + L["rot"] * 3
-    return {
+
+    # Mannschaftswerte aus der Ligatabelle. Fehlen sie, bleiben die
+    # betreffenden Kennzahlen leer statt geraten zu werden.
+    T = s.get("team") or {}
+    spiele = T.get("spiele") or 0
+    team_tore = T.get("tore") or 0
+    team_gegen = T.get("gegentore")
+
+    werte = {
         "einsaetze": L["einsaetze"],
         "minuten": minuten,
         "min_pro_einsatz": minuten / max(L["einsaetze"], 1),
@@ -135,6 +165,13 @@ def kennwerte(s: dict) -> dict | None:
         "karten_pro90": karten / p90,
         "belastbar": minuten >= MIN_MINUTEN,
     }
+    if spiele:
+        werte["einsatz_anteil"] = min(1.0, L["einsaetze"] / spiele)
+        if team_gegen is not None:
+            werte["team_gegentore_pro_spiel"] = team_gegen / spiele
+    if team_tore:
+        werte["tor_anteil"] = (L["tore"] + L["vorlagen"]) / team_tore
+    return werte
 
 
 def percentil(wert: float, alle: list[float], hoeher_besser: bool) -> int:
@@ -211,8 +248,11 @@ def main() -> int:
         # Vergleichsmassstab nur aus Spielern mit belastbarer Spielzeit.
         # Fehlen die (kleine Staffeln), dient die ganze Gruppe als Notbehelf.
         basis = [(s, kw) for s, kw in mitglieder if kw["belastbar"]] or mitglieder
+        # Fehlende Werte fliegen aus der Verteilung, statt als 0 zu
+        # verzerren - etwa wenn fuer eine Liga keine Tabelle lesbar war.
         verteilung = {
-            key: [kw[key] for _, kw in basis] for _, key, _ in felder
+            key: [kw[key] for _, kw in basis if key in kw]
+            for _, key, _, _ in felder
         }
 
         # Ab der Oberliga fuehrt Transfermarkt keine Marktwerte mehr. Ohne
@@ -227,13 +267,25 @@ def main() -> int:
             # kennzahlen[] am Dateianfang, statt sich je Spieler zu
             # wiederholen, und "cat" leitet das Frontend aus p ab. Bei
             # 18 000 Spielern spart das mehrere Megabyte.
-            params = [{
-                "i": KENNZAHL_INDEX[anzeige],
-                "p": percentil(kw[key], verteilung[key], hoch),
-            } for anzeige, key, hoch in felder]
+            params = []
+            gewichte = []
+            for anzeige, key, hoch, gewicht in felder:
+                if key not in kw or len(verteilung.get(key, [])) < 5:
+                    continue          # Kennzahl liegt fuer diesen Fall nicht vor
+                wert = percentil(kw[key], verteilung[key], hoch)
+                # Gewicht und Team-Kennzeichen haengen nur an Position und
+                # Kennzahl, nicht am Spieler. Sie stehen einmal unter
+                # "profile" am Dateianfang - je Spieler mitgespeichert waeren
+                # es bei 17000 Spielern rund ein Megabyte.
+                params.append({"i": KENNZAHL_INDEX[anzeige], "p": wert})
+                gewichte.append(gewicht)
+            if not params:
+                continue
 
-            # Leistungsnote: Mittel der Percentile
-            ln = round(sum(p["p"] for p in params) / len(params))
+            # Leistungsnote: gewichtetes Mittel der Percentile. Ungewichtet
+            # bestimmten Verfuegbarkeitswerte die Note der Abwehrspieler.
+            ln = round(sum(p["p"] * g for p, g in zip(params, gewichte))
+                       / sum(gewichte))
 
             # Potenzialnote: Leistung plus Altersbonus
             alter = s.get("alter") or 27
@@ -387,6 +439,13 @@ def main() -> int:
                         "und werden bewusst nicht ausgewiesen."),
             "mindestminuten": MIN_MINUTEN,
             "kennzahlen": KENNZAHL_NAMEN,
+            "profile": {
+                g: [{"i": KENNZAHL_INDEX[a], "g": gew,
+                     **({"team": 1} if k in TEAM_KENNZAHLEN else {})}
+                    for a, k, _, gew in felder]
+                for g, felder in KENNZAHLEN.items()
+            },
+            "positionsgruppe": GRUPPE,
             "ligen": ligen_liste,
             "players": spieler_out,
         }, fh, ensure_ascii=False, separators=(",", ":"))

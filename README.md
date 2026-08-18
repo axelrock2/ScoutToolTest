@@ -79,9 +79,40 @@ Ausgewiesen werden nur Werte, die sich aus frei verfügbaren Quellen
 belegen lassen:
 
 - Tore / 90, Vorlagen / 90, Scorerpunkte / 90
-- Gespielte Minuten, Einsätze, Minuten je Einsatz
-- Disziplin (Karten, invertiert)
+- **Anteil an den Toren der Mannschaft** — zehn Tore in einem Team mit 30
+  Toren wiegen schwerer als zehn in einem Team mit 90
+- **Einsatzanteil an den Saisonspielen** (statt roher Einsatzzahl, so sind
+  Ligen mit unterschiedlich vielen Spieltagen vergleichbar)
+- **Defensive der Mannschaft** — Gegentore je Spiel aus der Ligatabelle
+- Minuten je Einsatz, Disziplin (Karten, invertiert)
 - Profil: Alter, Größe, Fuß, Marktwert, Vertragsende
+
+### Positionsspezifisch gewichtet
+
+Ungewichtet zählte jede Kennzahl gleich viel. Für Stürmer ging das auf, für
+Innenverteidiger nicht: deren Note bestand fast nur aus Einsätzen, Minuten
+und Karten — also aus Verfügbarkeit, nicht aus Spielstärke. Jede Position
+hat deshalb ihr eigenes Profil mit Gewichten:
+
+| Position | dreifach | zweifach |
+|---|---|---|
+| Torwart | Defensive der Mannschaft, Einsatzanteil | — |
+| Innenverteidigung | Defensive der Mannschaft, Einsatzanteil | — |
+| Außenverteidigung | — | Defensive, Einsatzanteil, Vorlagen / 90 |
+| Zentrales Mittelfeld | — | Anteil an Teamtoren, Scorerpunkte, Vorlagen, Einsatzanteil |
+| Offensive | Scorerpunkte / 90 | Anteil an Teamtoren, Vorlagen, Tore / 90 |
+| Sturm | Tore / 90 | Anteil an Teamtoren, Scorerpunkte / 90 |
+
+Der Effekt ist deutlich: Bayerns Innenverteidigung stieg von Platz 8 auf
+**Platz 1 der Liga**, Heidenheim fiel auf Platz 17. Die Abwehrnoten folgen
+jetzt den tatsächlichen Gegentoren — Dortmund (34 Gegentore) führt, Heidenheim
+(72) schließt ab.
+
+**Die Defensive der Mannschaft ist ein Mannschaftswert**, kein individueller.
+Das Profil kennzeichnet sie als solchen. Ein Innenverteidiger einer starken
+Abwehr bekommt davon einen guten Wert, auch wenn sein eigener Anteil daran
+nicht messbar ist — individuelle Zweikampf- und Passdaten führt keine freie
+Quelle.
 
 **Nicht enthalten sind xG, xA und progressive Carries.** Diese Werte stammen
 von kostenpflichtigen Anbietern (Opta, StatsBomb, Wyscout) und sind für 13

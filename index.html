@@ -183,6 +183,8 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 .param-erklaerung strong{color:var(--ink)}
 .param-wert{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink);width:132px;text-align:right;flex-shrink:0}
 .param-wert b{font-weight:700;font-size:14px}
+.param-gew{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--lime);opacity:0.8}
+.param-team{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--amber);border:1px solid rgba(245,166,35,0.4);border-radius:4px;padding:1px 4px;letter-spacing:0.5px}
 .param-wert span{color:var(--ink-3)}
 .bar.top{background:var(--lime)}
 .bar.mid{background:var(--blue)}
@@ -437,10 +439,18 @@ async function loadScoutData(){
     /* params kommen platzsparend als {i,p}. Namen und Kategorie hier einmal
        ergaenzen, damit der uebrige Code unveraendert mit {n,p,cat} arbeitet. */
     const kzNamen=d.kennzahlen||[];
-    if(kzNamen.length)d.players.forEach(p=>(p.params||[]).forEach(x=>{
-      if(x.n===undefined)x.n=kzNamen[x.i]||('Kennzahl '+x.i);
-      if(x.cat===undefined)x.cat=x.p>=70?'top':(x.p<40?'low':'mid');
-    }));
+    /* Gewicht und Team-Kennzeichen stehen einmal je Positionsgruppe unter
+       profile[], nicht bei jedem Spieler. Hier einmalig zusammenfuehren. */
+    const profile=d.profile||{}, posGruppe=d.positionsgruppe||{};
+    if(kzNamen.length)d.players.forEach(p=>{
+      const gruppe=profile[posGruppe[p.pos]]||[];
+      (p.params||[]).forEach(x=>{
+        if(x.n===undefined)x.n=kzNamen[x.i]||('Kennzahl '+x.i);
+        if(x.cat===undefined)x.cat=x.p>=70?'top':(x.p<40?'low':'mid');
+        const def=gruppe.find(y=>y.i===x.i);
+        if(def){if(x.g===undefined)x.g=def.g; if(def.team)x.team=1;}
+      });
+    });
     PLAYERS=d.players;
     if(d.ligen&&d.ligen.length)LIGEN=d.ligen;
     dataStand=d.stand;dataSaison=d.saison;dataHinweis=d.hinweis;
@@ -1247,13 +1257,23 @@ function renderProfile(p,hasV,vN){
      Genau das steht jetzt da - samt Einordnung in Worten. */
   const einstufung=v=>v>=90?'Spitzenwert':v>=70?'über dem Schnitt'
                    :v>=40?'im Schnitt':v>=20?'unter dem Schnitt':'Schwachpunkt';
-  const bars=p.params.map(pm=>
-    '<div class="param-row" title="'+pm.n+': übertrifft '+pm.p+' % aller '+p.pos
-    +' in der '+p.liga+'. 50 wäre genau Ligadurchschnitt.">'
-    +'<div class="param-name">'+pm.n+'</div>'
+  /* Die Kennzahlen zaehlen je Position unterschiedlich viel (pm.g). Fuer
+     einen Stuermer wiegt "Tore / 90" dreifach, "Disziplin" einfach. Das
+     gehoert sichtbar gemacht, sonst wirkt die Note wie ein schlichter
+     Mittelwert. Mannschaftswerte werden zusaetzlich gekennzeichnet - sie
+     beschreiben das Team, nicht den einzelnen Spieler. */
+  const bars=p.params.map(pm=>{
+    const gew=pm.g||1;
+    const istTeam=!!pm.team;
+    return '<div class="param-row" title="'+pm.n+': übertrifft '+pm.p+' % aller '+p.pos
+    +' in der '+p.liga+'. 50 wäre genau Ligadurchschnitt. Zählt '+gew+'-fach'
+    +(istTeam?'. Achtung: Mannschaftswert, kein individuell gemessener Wert.':'.')+'">'
+    +'<div class="param-name">'+pm.n
+    +(istTeam?' <span class="param-team">Team</span>':'')
+    +(gew>1?' <span class="param-gew">×'+gew+'</span>':'')+'</div>'
     +'<div class="bar-wrap"><div class="bar '+pm.cat+'" style="width:'+pm.p+'%"></div></div>'
     +'<div class="param-wert"><b>'+pm.p+'%</b> <span>'+einstufung(pm.p)+'</span></div>'
-    +'</div>').join('')
+    +'</div>';}).join('')
     +'<div class="param-skala"><span>schwächster</span><span>Ligaschnitt</span>'
     +'<span>bester</span></div>';
   document.getElementById('profil-content').innerHTML=rb+
@@ -1286,7 +1306,11 @@ function renderProfile(p,hasV,vN){
     +' in der '+p.liga+' dieser Spieler übertrifft</strong>. 88 % heißt: nur 12 % sind besser. '
     +'Die Linie in der Mitte markiert den Ligadurchschnitt. '
     +'Verglichen wird immer nur innerhalb dieser Liga und Position — '
-    +'nicht mit anderen Ligen.</div>'+
+    +'nicht mit anderen Ligen. <strong>×2</strong> und <strong>×3</strong> zeigen, '
+    +'wie stark eine Kennzahl in die Note dieser Position eingeht. '
+    +'Mit <strong>Team</strong> markierte Werte beschreiben die Mannschaft, '
+    +'nicht den einzelnen Spieler — für Abwehrpositionen gibt es frei keine '
+    +'individuellen Defensivdaten.</div>'+
     '<div class="radar-grid"><div class="radar-box">'+radarSVG(p.params)+'</div><div>'+bars+'</div></div>'+
     '<div class="legend"><div class="leg-item"><div class="leg-dot" style="background:var(--lime)"></div>ab 70 % — über dem Schnitt</div><div class="leg-item"><div class="leg-dot" style="background:var(--blue)"></div>40–69 % — im Schnitt</div><div class="leg-item"><div class="leg-dot" style="background:var(--amber)"></div>unter 40 % — Schwachpunkt</div></div></div>'+
   '<div class="sec"><div class="sec-title">Normabweichungs-Flags</div><div class="flag-list">'+flagsArr.map(f=>'<div class="flag"><div class="fdot '+f.c+'"></div><span>'+f.t+'</span></div>').join('')+'</div></div>'+

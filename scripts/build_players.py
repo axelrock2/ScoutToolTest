@@ -149,6 +149,41 @@ def vereine_der_liga(tm_id: str, saison: int) -> list[tuple[str, str]]:
     return sorted(gefunden.items())
 
 
+def liga_tabelle(tm_id: str, saison: int) -> dict[str, dict]:
+    """Abschlusstabelle der Liga: {verein_id: {spiele, tore, gegentore, punkte}}.
+
+    Ein Abruf je Liga - und die einzige frei verfuegbare Quelle fuer
+    Defensivleistung. Individuelle Zweikampf- oder Passwerte fuehrt
+    Transfermarkt nicht; die Gegentore der Mannschaft sind das Beste, was
+    sich fuer Innenverteidiger und Torhueter belegen laesst.
+    """
+    page = fetch(f"/x/tabelle/wettbewerb/{tm_id}/saison_id/{saison}")
+    out: dict[str, dict] = {}
+    for row in page.css("table.items > tbody > tr"):
+        vid = None
+        for href in row.css("a::attr(href)"):
+            m = re.search(r"/verein/(\d+)", str(href))
+            if m:
+                vid = m.group(1)
+                break
+        if not vid:
+            continue
+        c = [cell_text(td) for td in row.css("td")]
+        tore = next((x for x in c if re.fullmatch(r"\d+:\d+", x)), None)
+        if not tore:
+            continue
+        geschossen, kassiert = (int(x) for x in tore.split(":"))
+        zahlen = [int(x) for x in c if x.isdigit()]
+        spiele = zahlen[1] if len(zahlen) > 1 else None
+        out[vid] = {
+            "spiele": spiele,
+            "tore": geschossen,
+            "gegentore": kassiert,
+            "punkte": zahlen[-1] if zahlen else None,
+        }
+    return out
+
+
 def kader(verein_id: str, slug: str, saison: int) -> tuple[str, dict[str, dict]]:
     """(Vereinsname, Profildaten je Spieler-ID) fuer die angegebene Saison."""
     page = fetch(f"/{slug}/kader/verein/{verein_id}/plus/1?saison_id={saison}")
@@ -251,6 +286,15 @@ def sammle(ligen: list, max_vereine: int | None) -> tuple[list[dict], list[dict]
         if max_vereine:
             clubs = clubs[:max_vereine]
 
+        # Ein Abruf je Liga liefert Spiele, Tore und Gegentore aller Vereine.
+        # Ohne diese Werte gaebe es fuer Abwehrpositionen gar keinen
+        # Leistungsbezug - individuelle Defensivdaten fuehrt die Quelle nicht.
+        try:
+            tabelle = liga_tabelle(lg.tm_id, SAISON)
+        except Exception as exc:
+            tabelle = {}
+            print(f"  [!] {lg.name}: Tabelle nicht lesbar ({exc})", file=sys.stderr)
+
         vor = len(spieler)
         ok_clubs = 0
         for vid, slug in clubs:
@@ -276,6 +320,7 @@ def sammle(ligen: list, max_vereine: int | None) -> tuple[list[dict], list[dict]
                         "land": lg.land,
                         "saison": f"{SAISON}/{str(SAISON + 1)[2:]}",
                         "leistung": stats.get(pid),
+                        "team": tabelle.get(vid),
                     })
                 ok_clubs += 1
             except Exception as exc:
@@ -299,12 +344,47 @@ def main() -> int:
     ap.add_argument("--max-vereine", type=int, help="nur die ersten N je Liga (Test)")
     ap.add_argument("--frisch", action="store_true",
                     help="Bestand verwerfen statt ergaenzen")
+    ap.add_argument("--nur-tabellen", action="store_true",
+                    help="nur die Ligatabellen holen und dem Bestand "
+                         "hinzufuegen (ein Abruf je Liga statt zwei je Verein)")
     args = ap.parse_args()
 
     ligen = LEAGUES
     if args.ligen:
         gewaehlt = [by_frontend_id(x.strip()) for x in args.ligen.split(",")]
         ligen = [lg for lg in gewaehlt if lg]
+
+    # Nur die Mannschaftswerte nachtragen. Die Tabelle einer Liga ist ein
+    # einziger Abruf - fuer alle 33 Ligen also 33 statt rund 1200 Seiten.
+    if args.nur_tabellen:
+        if not os.path.exists(TARGET):
+            print(f"{TARGET} fehlt - zuerst regulaer sammeln.", file=sys.stderr)
+            return 1
+        with gzip.open(TARGET, "rt", encoding="utf-8") as fh:
+            bestand = json.load(fh)
+
+        tabellen: dict[str, dict] = {}
+        for lg in ligen:
+            try:
+                t = liga_tabelle(lg.tm_id, SAISON)
+                tabellen[lg.frontend_id] = t
+                print(f"  [ok] {lg.name}: {len(t)} Vereine", file=sys.stderr)
+            except Exception as exc:
+                print(f"  [X] {lg.name}: {exc}", file=sys.stderr)
+
+        getroffen = 0
+        for sp in bestand["spieler"]:
+            t = tabellen.get(sp.get("liga_id"), {}).get(sp.get("verein_id"))
+            if t:
+                sp["team"] = t
+                getroffen += 1
+
+        bestand["stand"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        with gzip.open(TARGET, "wt", encoding="utf-8") as fh:
+            json.dump(bestand, fh, ensure_ascii=False, separators=(",", ":"))
+        print(f"\n{getroffen} Spieler mit Mannschaftswerten versehen "
+              f"-> {os.path.relpath(TARGET)}", file=sys.stderr)
+        return 0
 
     print(f"Sammle {len(ligen)} Ligen, Saison {SAISON}/{str(SAISON + 1)[2:]} ...",
           file=sys.stderr)
