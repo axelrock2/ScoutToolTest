@@ -114,10 +114,22 @@ Abwehr bekommt davon einen guten Wert, auch wenn sein eigener Anteil daran
 nicht messbar ist — individuelle Zweikampf- und Passdaten führt keine freie
 Quelle.
 
-**Nicht enthalten sind xG, xA und progressive Carries.** Diese Werte stammen
-von kostenpflichtigen Anbietern (Opta, StatsBomb, Wyscout) und sind für 13
-Ligen nicht frei zu bekommen. Sie werden deshalb weder angezeigt noch
-geschätzt.
+### Erweiterte Werte: xG (nur fünf Ligen)
+
+Für Premier League, La Liga, Bundesliga, Serie A und Ligue 1 kommen von
+[Understat](https://understat.com) **xG, xA, Schlüsselpässe, Schüsse und
+Aufbaubeteiligung** dazu — rund 2.200 Spieler. Sie zeigen die *Qualität* der
+Chancen, nicht nur ihre Zahl: Harry Kane traf 36-mal bei 29,58 xG, also
+6,42 Tore über Erwartung.
+
+**Diese Werte gehen bewusst nicht in die Liga-Note ein.** Sie liegen nur für
+5 der 33 Ligen vor; eine Note daraus wäre mit den übrigen 28 nicht
+vergleichbar. Sie stehen als eigener Abschnitt in der Spielerakte.
+
+Nicht verfügbar bleiben **individuelle Defensivdaten** (Zweikämpfe,
+Tacklings, Klärungen). FBref und Sofascore hätten sie, antworten aber mit
+HTTP 403 — auch über den Browser-Weg. OneFootball führt öffentlich gar keine
+Spielerstatistiken.
 
 Dieselbe Ehrlichkeit gilt beim Vereins-Matching: die Stil-Dimensionen
 *Pressing* und *Aufbau* lassen sich ohne Ereignisdaten nicht seriös
@@ -210,6 +222,12 @@ Lauf, höchstens zwei gleichzeitig — sieben parallel lösten die Abwehr
 sofort aus.
 
 ### Zwei Fallen, die Daten gekostet haben
+
+**Werte nur aus der eigenen Liga.** Ohne den Parameter
+`reldata=<Wettbewerb>&<Saison>` liefert Transfermarkt alle Pflichtspiele
+zusammen. Harry Kane stand so mit 51 Einsätzen und 61 Toren in den Daten
+statt mit 31 und 36 aus der Bundesliga. Das maß Spieler mit Europapokal an
+Spielern ohne — Serhou Guirassy fiel nach der Korrektur von Note 83 auf 74.
 
 **`data/players_raw.json.gz` gehört ins Repository.** Der Sammellauf
 ergänzt den vorhandenen Bestand; ohne die Datei startet er bei null. Ein

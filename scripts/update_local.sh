@@ -19,6 +19,12 @@ LIGEN="${1:-}"
 PUSH="${PUSH:-1}"
 PY="${PY:-python3}"
 
+# Einzelne Abrufe bleiben gelegentlich minutenlang haengen (curl beachtet den
+# Timeout beim Verbindungsaufbau nicht). Ohne Obergrenze zog sich ein
+# Volllauf dadurch schon einmal ueber 14 Stunden. Nicht erreichte Ligen
+# behalten ihren Stand, der naechste Lauf holt sie nach.
+export SCOUT_BUDGET_MIN="${SCOUT_BUDGET_MIN:-90}"
+
 # Virtuelle Umgebung nutzen, falls vorhanden
 for kandidat in .venv/bin/python "$HOME/Faceless Channel/.venv/bin/python"; do
   [ -x "$kandidat" ] && PY="$kandidat" && break
@@ -38,6 +44,10 @@ if [ -n "$LIGEN" ]; then
 else
   "$PY" scripts/build_players.py
 fi
+
+echo
+echo "== xG-Werte (Understat, nur Topligen) =="
+"$PY" scripts/understat.py || echo "  xG uebersprungen - Bestand bleibt gueltig"
 
 echo
 echo "== Noten berechnen =="

@@ -328,6 +328,11 @@ def main() -> int:
                 "minuten": kw["minuten"],
                 "einsaetze": kw["einsaetze"],
                 "belastbar": kw["belastbar"],
+                # xG-Werte von Understat, nur fuer die fuenf grossen ersten
+                # Ligen vorhanden. Sie fliessen BEWUSST NICHT in die Note
+                # ein - sonst waeren diese fuenf Ligen anders bewertet als
+                # die uebrigen 28 und der Ligavergleich waere hinfaellig.
+                **({"xg": s["xg"]} if s.get("xg") else {}),
                 "params": params,
                 # flags und fazit entstehen im Frontend (flagsFuer/fazitFuer).
                 # Als Text mitgeliefert waeren sie rund 8 MB - fast die

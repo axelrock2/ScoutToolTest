@@ -215,14 +215,25 @@ def kader(verein_id: str, slug: str, saison: int) -> tuple[str, dict[str, dict]]
     return name, out
 
 
-def leistung(verein_id: str, slug: str, saison: int) -> dict[str, dict]:
-    """Saisonwerte je Spieler-ID.
+def leistung(verein_id: str, slug: str, saison: int,
+             tm_liga: str) -> dict[str, dict]:
+    """Saisonwerte je Spieler-ID - NUR AUS DIESER LIGA.
+
+    Der Parameter reldata=<Wettbewerb>&<Saison> ist entscheidend: ohne ihn
+    liefert Transfermarkt alle Pflichtspiele zusammen. Harry Kane stand so
+    mit 51 Einsaetzen und 61 Toren in den Daten statt mit 31 und 36 aus der
+    Bundesliga - Champions League und Pokal mitgezaehlt.
+
+    Das verzerrte zweierlei: Spieler mit Europapokal wurden an Spielern
+    ohne gemessen, und der Anteil an den Teamtoren rechnete Tore aus allen
+    Wettbewerben gegen die Ligatore der Mannschaft.
 
     Spaltenregel (auf mehreren Vereinen geprueft): ab 'Im Kader' entspricht
     Kopfzeile[i] der Zelle[i+3]; davor liegen Bild- und Namensspalten.
     """
     page = fetch(
-        f"/{slug}/leistungsdaten/verein/{verein_id}/plus/1?saison_id={saison}"
+        f"/{slug}/leistungsdaten/verein/{verein_id}/plus/1"
+        f"?reldata={tm_liga}%26{saison}"
     )
     out: dict[str, dict] = {}
     for row in page.css("table.items > tbody > tr"):
@@ -305,7 +316,7 @@ def sammle(ligen: list, max_vereine: int | None) -> tuple[list[dict], list[dict]
             try:
                 verein_name, profile = kader(vid, slug, SAISON)
                 try:
-                    stats = leistung(vid, slug, SAISON)
+                    stats = leistung(vid, slug, SAISON, lg.tm_id)
                 except Exception:
                     stats = {}                # Leistungsseite optional
                 for pid, prof in profile.items():
@@ -344,6 +355,9 @@ def main() -> int:
     ap.add_argument("--max-vereine", type=int, help="nur die ersten N je Liga (Test)")
     ap.add_argument("--frisch", action="store_true",
                     help="Bestand verwerfen statt ergaenzen")
+    ap.add_argument("--nur-leistung", action="store_true",
+                    help="nur die Leistungsdaten erneuern (eine Seite je "
+                         "Verein statt zwei), Profile bleiben unangetastet")
     ap.add_argument("--nur-tabellen", action="store_true",
                     help="nur die Ligatabellen holen und dem Bestand "
                          "hinzufuegen (ein Abruf je Liga statt zwei je Verein)")
@@ -353,6 +367,51 @@ def main() -> int:
     if args.ligen:
         gewaehlt = [by_frontend_id(x.strip()) for x in args.ligen.split(",")]
         ligen = [lg for lg in gewaehlt if lg]
+
+    # Nur die Leistungsdaten erneuern. Noetig geworden, weil sie bis dahin
+    # alle Wettbewerbe umfassten; die Kaderprofile bleiben gueltig.
+    if args.nur_leistung:
+        if not os.path.exists(TARGET):
+            print(f"{TARGET} fehlt - zuerst regulaer sammeln.", file=sys.stderr)
+            return 1
+        with gzip.open(TARGET, "rt", encoding="utf-8") as fh:
+            bestand = json.load(fh)
+
+        # Vereine je Liga aus dem Bestand, kein zusaetzlicher Abruf noetig
+        clubs_je_liga: dict[str, dict[str, str]] = {}
+        for sp in bestand["spieler"]:
+            clubs_je_liga.setdefault(sp["liga_id"], {})[sp["verein_id"]] = sp["verein"]
+
+        gewaehlt = {lg.frontend_id: lg for lg in ligen}
+        erneuert = 0
+        for fid, clubs in clubs_je_liga.items():
+            lg = gewaehlt.get(fid)
+            if not lg:
+                continue
+            neu_stats: dict[str, dict] = {}
+            ok = 0
+            for vid in clubs:
+                try:
+                    slug = "x"          # Transfermarkt ignoriert den Namensteil
+                    neu_stats.update({(vid, k): v for k, v in
+                                      leistung(vid, slug, SAISON, lg.tm_id).items()})
+                    ok += 1
+                except Exception as exc:
+                    print(f"  [!] {lg.name} / {vid}: {exc}", file=sys.stderr)
+            for sp in bestand["spieler"]:
+                if sp["liga_id"] != fid:
+                    continue
+                treffer = neu_stats.get((sp["verein_id"], sp["id"]))
+                sp["leistung"] = treffer
+                if treffer:
+                    erneuert += 1
+            print(f"  [ok] {lg.name}: {ok}/{len(clubs)} Vereine", file=sys.stderr)
+
+        bestand["stand"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        with gzip.open(TARGET, "wt", encoding="utf-8") as fh:
+            json.dump(bestand, fh, ensure_ascii=False, separators=(",", ":"))
+        print(f"\n{erneuert} Spieler mit Ligawerten erneuert", file=sys.stderr)
+        return 0
 
     # Nur die Mannschaftswerte nachtragen. Die Tabelle einer Liga ist ein
     # einziger Abruf - fuer alle 33 Ligen also 33 statt rund 1200 Seiten.

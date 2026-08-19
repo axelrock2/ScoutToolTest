@@ -1301,6 +1301,36 @@ function renderProfile(p,hasV,vN){
         : '')+
       '</div>';
   })()+
+  (function(){
+    /* Erweiterte Werte von Understat. Nur fuer die fuenf grossen ersten
+       Ligen verfuegbar und bewusst NICHT Teil der Liga-Note - sonst waeren
+       Spieler dieser Ligen anders bewertet als die uebrigen 28. */
+    const x=p.xg;
+    if(!x)return '';
+    /* Deutsche Schreibweise: Komma statt Punkt, hoechstens zwei Stellen. */
+    const zahl=v=>String(typeof v==='number'?Math.round(v*100)/100:v).replace('.',',');
+    const z=(label,wert,zusatz)=>'<div class="sd"><div class="sd-lbl">'+label
+      +'</div><div class="sd-val">'+wert+(zusatz?'<span style="font-size:11px;color:var(--ink-3)"> '+zusatz+'</span>':'')+'</div></div>';
+    const ue=x.ueber_xg;
+    const ueText=(ue>0?'+':'')+String(ue).replace('.',',');
+    const ueFarbe=ue>=1?'var(--green)':ue<=-1?'var(--red)':'var(--ink)';
+    return '<div class="sec"><div class="sec-title">Erweiterte Werte · xG</div>'+
+      '<div class="param-erklaerung">Erwartete Tore (xG) messen die '+
+      '<strong>Qualität der Chancen</strong>, nicht nur ihre Zahl. '+
+      'Quelle: Understat, nur Ligaspiele. '+
+      '<strong>Diese Werte gehen nicht in die Liga-Note ein</strong> — sie liegen '+
+      'nur für die fünf großen ersten Ligen vor, und eine Note daraus wäre mit '+
+      'den übrigen 28 Ligen nicht vergleichbar.</div>'+
+      '<div class="sd-grid">'+
+        z('Erwartete Tore (xG)',zahl(x.xG),'· '+zahl(x.xG90)+' / 90')+
+        z('Tore über Erwartung','<span style="color:'+ueFarbe+'">'+ueText+'</span>',
+          ue>=1?'trifft besser als die Chancen':ue<=-1?'lässt Chancen liegen':'wie erwartet')+
+        z('Erwartete Vorlagen (xA)',zahl(x.xA),'· '+zahl(x.xA90)+' / 90')+
+        z('Schlüsselpässe / 90',zahl(x.schluesselpaesse90),'')+
+        z('Schüsse / 90',zahl(x.schuesse90),'')+
+        z('Aufbaubeteiligung / 90',zahl(x.aufbau90),'xG der Angriffe mit ihm')+
+      '</div></div>';
+  })()+
   '<div class="sec"><div class="sec-title">Stärkenprofil im Ligavergleich</div>'+
     '<div class="param-erklaerung">Jeder Wert sagt, <strong>wie viel Prozent der '+p.pos
     +' in der '+p.liga+' dieser Spieler übertrifft</strong>. 88 % heißt: nur 12 % sind besser. '
