@@ -44,6 +44,11 @@ TARGET = os.environ.get("SCOUT_TARGET") or os.path.join(
     os.path.dirname(__file__), "..", "data", "players_raw.json.gz")
 
 # Saison, aus der die Leistungsdaten stammen. 2025 = Spielzeit 2025/26.
+#
+# Bewusst bei 2025/26 belassen: die Spielzeit 2026/27 hat erst wenige
+# Spieltage, daraus liesse sich nichts Belastbares ableiten - Percentile
+# aus zwei Spielen waeren Zufall. Umstellen lohnt etwa ab dem 10. Spieltag:
+#     SCOUT_SAISON=2026 ./scripts/update_local.sh
 SAISON = int(os.environ.get("SCOUT_SAISON", "2025"))
 
 # Transfermarkt-Positionsbezeichnung -> Kuerzel im Frontend

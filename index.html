@@ -480,9 +480,43 @@ function showDataStand(d){
     {day:'2-digit',month:'2-digit',year:'numeric'});
   const ok=(d.quellen||[]).filter(q=>q.status==='ok').length;
   const ges=(d.quellen||[]).length;
-  bc.innerHTML='<span class="dot"></span> '+d.players.length+' Spieler · Saison '
-    +(d.saison||'—')+' · Stand '+datum+' · '+ok+'/'+ges+' Ligen';
-  bc.title=(d.hinweis||'')+'\nMindestminuten: '+(d.mindestminuten||'—');
+  /* Es laeuft kein Zeitplan - aktualisiert wird bei Bedarf. Deshalb muss
+     die Seite selbst sagen, wie alt ihr Bestand ist, sonst arbeitet man
+     ahnungslos mit veralteten Zahlen. */
+  const tage=Math.floor((Date.now()-new Date(d.stand).getTime())/86400000);
+  const alt=tage>=14?'red':tage>=7?'amber':null;
+  bc.innerHTML='<span class="dot"'+(alt?' style="background:var(--'+alt+');box-shadow:0 0 8px var(--'+alt+')"':'')
+    +'></span> '+d.players.length+' Spieler · Saison '
+    +(d.saison||'—')+' · Stand '+datum
+    +(tage>=7?' <span style="color:var(--'+alt+')">('+tage+' Tage alt)</span>':'')
+    +' · '+ok+'/'+ges+' Ligen';
+  bc.title=(d.hinweis||'')+'\nMindestminuten: '+(d.mindestminuten||'—')
+    +(tage>=7?'\n\nDaten sind '+tage+' Tage alt. Aktualisieren mit:\n'
+      +'cd ~/Projekte/ScoutToolTest && ./scripts/update_local.sh':'');
+  zeigeAltersHinweis(tage);
+}
+
+/* Sichtbarer Hinweis auf der Startseite, sobald der Bestand altert.
+   Bewusst kein Zeitplan im Hintergrund: aktualisiert wird, wenn jemand
+   mit dem Werkzeug arbeitet. */
+function zeigeAltersHinweis(tage){
+  const alt=document.getElementById('alters-hinweis');
+  if(alt)alt.remove();
+  if(tage<7)return;
+  const hero=document.querySelector('#p-home .hero');
+  if(!hero)return;
+  const rot=tage>=14;
+  const el=document.createElement('div');
+  el.id='alters-hinweis';
+  el.style.cssText='margin:26px 0 0;padding:14px 18px;border-radius:12px;'
+    +'border:1px solid '+(rot?'rgba(255,91,91,0.4)':'rgba(245,166,35,0.4)')
+    +';background:'+(rot?'rgba(255,91,91,0.07)':'rgba(245,166,35,0.07)')+';font-size:13px;line-height:1.6';
+  el.innerHTML='<strong style="color:var(--'+(rot?'red':'amber')+')">Daten sind '+tage
+    +' Tage alt.</strong> Marktwerte und Verträge ändern sich laufend. '
+    +'Aktualisieren im Terminal:<br>'
+    +'<code style="font-family:\'JetBrains Mono\',monospace;font-size:12px;color:var(--lime);'
+    +'display:inline-block;margin-top:7px">cd ~/Projekte/ScoutToolTest &amp;&amp; ./scripts/update_local.sh</code>';
+  hero.appendChild(el);
 }
 
 loadScoutData();

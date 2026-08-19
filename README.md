@@ -116,6 +116,10 @@ Quelle.
 
 ### Erweiterte Werte: xG (nur fünf Ligen)
 
+**Saison 2025/26.** Die Spielzeit 2026/27 hat erst wenige Spieltage —
+Percentile aus zwei Spielen wären Zufall. Umstellen lohnt etwa ab dem
+10. Spieltag mit `SCOUT_SAISON=2026 ./scripts/update_local.sh`.
+
 Für Premier League, La Liga, Bundesliga, Serie A und Ligue 1 kommen von
 [Understat](https://understat.com) **xG, xA, Schlüsselpässe, Schüsse und
 Aufbaubeteiligung** dazu — rund 2.200 Spieler. Sie zeigen die *Qualität* der
@@ -126,10 +130,33 @@ Chancen, nicht nur ihre Zahl: Harry Kane traf 36-mal bei 29,58 xG, also
 5 der 33 Ligen vor; eine Note daraus wäre mit den übrigen 28 nicht
 vergleichbar. Sie stehen als eigener Abschnitt in der Spielerakte.
 
-Nicht verfügbar bleiben **individuelle Defensivdaten** (Zweikämpfe,
-Tacklings, Klärungen). FBref und Sofascore hätten sie, antworten aber mit
-HTTP 403 — auch über den Browser-Weg. OneFootball führt öffentlich gar keine
-Spielerstatistiken.
+### Bewusst kostenfrei — und was das kostet
+
+Das Werkzeug nutzt ausschließlich frei zugängliche Quellen. Das ist eine
+Entscheidung, keine Notlage — sie hat aber eine klare Konsequenz:
+**individuelle Defensivdaten gibt es nicht.**
+
+Geprüft wurde systematisch:
+
+| Quelle | Hat Zweikämpfe/Tacklings? | Zugänglich? |
+|---|---|---|
+| Transfermarkt | nein | ✅ |
+| Understat | nein (nur offensiv) | ✅ |
+| fussballdaten.de | nein | ✅ |
+| OneFootball | führt gar keine Spielerstatistiken | — |
+| FBref | **ja** | ❌ HTTP 403, auch per Browser |
+| Sofascore | **ja** | ❌ HTTP 403 |
+| kicker (Zweikampfwerte) | **ja** | ❌ HTTP 403 |
+
+Das Muster: Wer die Daten hat, blockt. Wer offen ist, hat sie nicht.
+Kostenpflichtige Anbieter (Wyscout, StatsBomb, Opta) hätten sie — sind
+aber bewusst ausgeschlossen.
+
+**Für Abwehrpositionen heißt das:** Bewertet wird die Defensive der
+Mannschaft, nicht die Einzelleistung. Innerhalb eines Vereins trennen sich
+Innenverteidiger nur über Einsatzanteil und Disziplin. Das ist eine echte
+Grenze des Werkzeugs, keine Ungenauigkeit — und sie wird im Profil
+ausgewiesen statt kaschiert.
 
 Dieselbe Ehrlichkeit gilt beim Vereins-Matching: die Stil-Dimensionen
 *Pressing* und *Aufbau* lassen sich ohne Ereignisdaten nicht seriös
@@ -194,6 +221,14 @@ Abgerufene Seiten landen 6 Stunden lang in `.cache/`, damit Testläufe die
 Quelle nicht unnötig belasten.
 
 ## Aktualisieren
+
+Es läuft **kein Zeitplan**. Aktualisiert wird bei Benutzung — der Bestand
+einer abgeschlossenen Saison veraltet ohnehin kaum, es ändern sich vor
+allem Marktwerte und Verträge.
+
+Die Seite weist selbst darauf hin: Ab sieben Tagen erscheint das Alter in
+der Kopfzeile, ab vierzehn Tagen zusätzlich ein Hinweis auf der Startseite
+samt Befehl.
 
 **Der verlässliche Weg läuft auf dem eigenen Rechner:**
 
