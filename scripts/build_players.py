@@ -137,6 +137,46 @@ def _spieler_name(row) -> str:
 
 # ------------------------------------------------------------------- Abschnitte
 
+FUSS_WERTE = {"rechts", "links", "beidfüßig", "beidfuessig"}
+
+
+def _felder_aus_zeile(c: list[str]) -> dict:
+    """Groesse, Fuss, Vertrag und Marktwert am Inhalt erkennen.
+
+    Robuster als feste Spaltennummern: die Kaderansicht unterscheidet sich
+    zwischen aktueller und vergangener Saison um eine Spalte.
+
+    Zwei Datumsangaben koennen vorkommen - "im Team seit" und "Vertrag bis".
+    Das spaetere der beiden ist das Vertragsende; liegt nur eines vor und
+    zwar in der Vergangenheit, ist es der Beitritt und kein Vertragsende.
+    """
+    from datetime import date as _date
+
+    groesse = fuss = marktwert = None
+    daten: list[str] = []
+    for zelle in c:
+        z = (zelle or "").strip()
+        if not z:
+            continue
+        if groesse is None and re.fullmatch(r"\d,\d{2}\s*m", z):
+            groesse = _hoehe(z)
+        elif fuss is None and z.lower() in FUSS_WERTE:
+            fuss = z.lower()
+        elif marktwert is None and "€" in z:
+            marktwert = _marktwert(z)
+        elif re.fullmatch(r"\d{2}\.\d{2}\.\d{4}", z):
+            daten.append(z)
+
+    vertrag = None
+    iso = sorted(filter(None, (_datum(d) for d in daten)))
+    if iso:
+        letztes = iso[-1]
+        if letztes > _date.today().isoformat():
+            vertrag = letztes          # in der Zukunft -> Vertragsende
+    return {"groesse_cm": groesse, "fuss": fuss,
+            "vertrag_bis": vertrag, "marktwert_eur": marktwert}
+
+
 def vereine_der_liga(tm_id: str, saison: int) -> list[tuple[str, str]]:
     """[(verein_id, slug), ...] der Liga IN DIESER SAISON.
 
@@ -189,6 +229,27 @@ def liga_tabelle(tm_id: str, saison: int) -> dict[str, dict]:
     return out
 
 
+def aktueller_kader(verein_id: str) -> dict[str, dict]:
+    """Profildaten aus dem HEUTIGEN Kader eines Vereins.
+
+    Die Kaderansicht einer vergangenen Saison fuehrt keine Vertragsspalte -
+    Vertragsenden gibt es nur hier. Marktwerte sind auf beiden Seiten
+    identisch (Transfermarkt zeigt immer den aktuellen Stand), Groesse und
+    Fuss ohnehin.
+    """
+    page = fetch(f"/x/kader/verein/{verein_id}/plus/1")
+    out: dict[str, dict] = {}
+    for row in page.css("table.items > tbody > tr"):
+        tds = row.css("td")
+        if len(tds) < 12:
+            continue
+        pid = _spieler_id(row)
+        if not pid:
+            continue
+        out[pid] = _felder_aus_zeile([cell_text(td) for td in tds])
+    return out
+
+
 def kader(verein_id: str, slug: str, saison: int) -> tuple[str, dict[str, dict]]:
     """(Vereinsname, Profildaten je Spieler-ID) fuer die angegebene Saison."""
     page = fetch(f"/{slug}/kader/verein/{verein_id}/plus/1?saison_id={saison}")
@@ -205,6 +266,11 @@ def kader(verein_id: str, slug: str, saison: int) -> tuple[str, dict[str, dict]]
         if not pid:
             continue
         c = [cell_text(td) for td in tds]
+        # Felder am INHALT erkennen, nicht an der Spaltennummer. Die
+        # Kaderansicht einer vergangenen Saison hat eine Spalte mehr als die
+        # aktuelle - mit festen Indizes landete die Koerpergroesse im Feld
+        # "Fuss", die Groesse blieb leer und der Vertrag fehlte ganz.
+        felder = _felder_aus_zeile(c)
         out[pid] = {
             "id": pid,
             "name": _spieler_name(row),
@@ -212,10 +278,7 @@ def kader(verein_id: str, slug: str, saison: int) -> tuple[str, dict[str, dict]]
             "position": _pos(c[4]),
             "position_lang": c[4],
             "alter": _alter(c[5]),
-            "groesse_cm": _hoehe(c[7]),
-            "fuss": (c[8] or "").lower() or None,
-            "vertrag_bis": _datum(c[11]),
-            "marktwert_eur": _marktwert(c[12]),
+            **felder,
         }
     return name, out
 
@@ -360,6 +423,9 @@ def main() -> int:
     ap.add_argument("--max-vereine", type=int, help="nur die ersten N je Liga (Test)")
     ap.add_argument("--frisch", action="store_true",
                     help="Bestand verwerfen statt ergaenzen")
+    ap.add_argument("--kader-aktuell", action="store_true",
+                    help="Vertraege, Marktwerte und Wechsel aus den heutigen "
+                         "Kadern nachziehen (nach dem Transferschluss)")
     ap.add_argument("--nur-leistung", action="store_true",
                     help="nur die Leistungsdaten erneuern (eine Seite je "
                          "Verein statt zwei), Profile bleiben unangetastet")
@@ -372,6 +438,59 @@ def main() -> int:
     if args.ligen:
         gewaehlt = [by_frontend_id(x.strip()) for x in args.ligen.split(",")]
         ligen = [lg for lg in gewaehlt if lg]
+
+    # Aktuelle Kader nachziehen. Gedacht fuer die Zeit nach dem
+    # Transferschluss: Leistungsdaten der abgelaufenen Saison aendern sich
+    # nie mehr, Vertraege, Marktwerte und Vereinszugehoerigkeit dagegen sehr
+    # wohl. Ein Abruf je Verein.
+    if args.kader_aktuell:
+        if not os.path.exists(TARGET):
+            print(f"{TARGET} fehlt - zuerst regulaer sammeln.", file=sys.stderr)
+            return 1
+        with gzip.open(TARGET, "rt", encoding="utf-8") as fh:
+            bestand = json.load(fh)
+
+        clubs_je_liga: dict[str, dict[str, str]] = {}
+        for sp in bestand["spieler"]:
+            clubs_je_liga.setdefault(sp["liga_id"], {})[sp["verein_id"]] = sp["verein"]
+
+        gewaehlt = {lg.frontend_id: lg for lg in ligen}
+        aktualisiert = abgaenge = 0
+        for fid, clubs in clubs_je_liga.items():
+            lg = gewaehlt.get(fid)
+            if not lg:
+                continue
+            profile: dict[tuple, dict] = {}
+            ok = 0
+            for vid in clubs:
+                try:
+                    for pid, felder in aktueller_kader(vid).items():
+                        profile[(vid, pid)] = felder
+                    ok += 1
+                except Exception as exc:
+                    print(f"  [!] {lg.name} / {vid}: {exc}", file=sys.stderr)
+
+            for sp in bestand["spieler"]:
+                if sp["liga_id"] != fid:
+                    continue
+                felder = profile.get((sp["verein_id"], sp["id"]))
+                if felder:
+                    sp.update({k: v for k, v in felder.items() if v is not None})
+                    sp.pop("nicht_mehr_im_kader", None)
+                    aktualisiert += 1
+                elif ok:
+                    # Steht nicht mehr im Kader seines Vereins - fuer
+                    # Scouting eine Information, kein Fehler.
+                    sp["nicht_mehr_im_kader"] = True
+                    abgaenge += 1
+            print(f"  [ok] {lg.name}: {ok}/{len(clubs)} Vereine", file=sys.stderr)
+
+        bestand["stand"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        with gzip.open(TARGET, "wt", encoding="utf-8") as fh:
+            json.dump(bestand, fh, ensure_ascii=False, separators=(",", ":"))
+        print(f"\n{aktualisiert} Profile aktualisiert, {abgaenge} Spieler nicht "
+              f"mehr im Kader ihres Vereins", file=sys.stderr)
+        return 0
 
     # Nur die Leistungsdaten erneuern. Noetig geworden, weil sie bis dahin
     # alle Wettbewerbe umfassten; die Kaderprofile bleiben gueltig.

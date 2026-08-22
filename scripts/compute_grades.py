@@ -188,13 +188,19 @@ def kategorie(p: int) -> str:
 
 
 def vertrags_ampel(bis: str | None) -> tuple[str, int | None]:
-    """('red'|'yellow'|'green', Restmonate)"""
+    """('none'|'red'|'yellow'|'green', Restmonate)
+
+    Ohne Datum "none", nicht "yellow": ein unbekannter Vertrag darf nicht
+    aussehen wie einer, der in einem Jahr auslaeuft. Betroffen sind vor
+    allem Spieler, die ihren Verein verlassen haben - deren Vertragsende
+    steht nur noch beim neuen Verein.
+    """
     if not bis:
-        return "yellow", None
+        return "none", None
     try:
         ende = datetime.strptime(bis, "%Y-%m-%d").date()
     except ValueError:
-        return "yellow", None
+        return "none", None
     monate = (ende.year - date.today().year) * 12 + (ende.month - date.today().month)
     if monate <= 6:
         return "red", monate
@@ -313,7 +319,12 @@ def main() -> int:
                           if by_frontend_id(s["liga_id"]) else 1),
                 "land": s["land"],
                 "age": alter,
-                "foot": s.get("fuss") or "k. A.",
+                # Absicherung: durch die frueher spaltenbasierte Erkennung
+                # steckte in "fuss" teils die Koerpergroesse. Nur echte
+                # Fusswerte durchlassen, alles andere gilt als unbekannt.
+                "foot": (s.get("fuss")
+                         if s.get("fuss") in ("rechts", "links", "beidfüßig")
+                         else "k. A."),
                 "height": f"{s['groesse_cm']} cm" if s.get("groesse_cm") else "k. A.",
                 "weight": "k. A.",          # Transfermarkt fuehrt kein Gewicht
                 "number": s.get("rueckennummer") or 0,
@@ -328,6 +339,9 @@ def main() -> int:
                 "minuten": kw["minuten"],
                 "einsaetze": kw["einsaetze"],
                 "belastbar": kw["belastbar"],
+                # Steht nach dem Transferschluss nicht mehr im Kader seines
+                # Vereins - fuer Scouting eine Information, kein Fehler.
+                **({"weg": 1} if s.get("nicht_mehr_im_kader") else {}),
                 # xG-Werte von Understat, nur fuer die fuenf grossen ersten
                 # Ligen vorhanden. Sie fliessen BEWUSST NICHT in die Note
                 # ein - sonst waeren diese fuenf Ligen anders bewertet als

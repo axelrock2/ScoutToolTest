@@ -149,6 +149,10 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 .ph-av{width:84px;height:84px;border-radius:16px;background:var(--pitch);border:2px solid var(--lime);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800;color:var(--lime);flex-shrink:0;position:relative;z-index:1}
 .ph-id{position:relative;z-index:1}
 .ph-name{font-size:30px;font-weight:800;letter-spacing:-1px;margin-bottom:6px;text-transform:uppercase}
+.tm-link{color:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:9px;transition:color 0.15s}
+.tm-link:hover{color:var(--lime)}
+.tm-link i{font-size:17px;color:var(--ink-3);transition:color 0.15s}
+.tm-link:hover i{color:var(--lime)}
 .ph-sub{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-2);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
 .ph-sub .pos-tag{color:var(--lime)}
 .note-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line)}
@@ -314,7 +318,7 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
       <div class="fg"><label>Alter</label><div class="age-row"><input type="number" id="f-age-von" placeholder="von"><input type="number" id="f-age-bis" placeholder="bis"></div></div>
       <div class="fg"><label>Max. Marktwert (Mio. €)</label><input type="number" id="f-mw" step="0.1" placeholder="z.B. 10"></div>
       <div class="fg"><label>Mindest-Liga-Note</label><select id="f-ln"><option value="">Keine</option><option value="60">60+</option><option value="65">65+</option><option value="70">70+</option><option value="75">75+</option><option value="80">80+</option></select></div>
-      <div class="fg"><label>Vertragsstatus</label><select id="f-vertrag"><option value="">Alle</option><option value="red">Läuft ab (rot)</option><option value="yellow">Kritisch (gelb)</option><option value="green">Stabil (grün)</option></select></div>
+      <div class="fg"><label>Vertragsstatus</label><select id="f-vertrag"><option value="">Alle</option><option value="red">Läuft ab (rot)</option><option value="yellow">Kritisch (gelb)</option><option value="green">Stabil (grün)</option><option value="none">Ohne Angabe</option></select></div>
       <div class="fg">
         <div class="tr"><label>Nur Vertragsläufer</label><label class="tog"><input type="checkbox" id="f-auslaufend"><span class="tslider"></span></label></div>
         <div class="tr"><label>Nur unterbewertete Spieler</label><label class="tog"><input type="checkbox" id="f-underval"><span class="tslider"></span></label></div>
@@ -1200,6 +1204,12 @@ function renderPlayers(){
         +tn.gaps.join(', ')+'">'+tn.gaps.length+' Datenlücken</span>' : '';
     /* Spieler mit wenig Einsatzzeit werden gezeigt, aber gekennzeichnet -
        ihre Percentile beruhen auf einer duennen Stichprobe. */
+    /* Verein aus der Saison 2025/26 - steht der Spieler dort heute nicht
+       mehr im Kader, hat er gewechselt. Fuer Scouting relevant. */
+    const wegBadge=p.weg
+      ? '<span class="badge" style="border-color:rgba(77,166,255,0.4);color:var(--blue)" '
+        +'title="Der Verein führt ihn heute nicht mehr im Kader — Leistungsdaten '
+        +'stammen aus seiner Zeit dort.">nicht mehr im Kader</span>' : '';
     const duenn=(p.belastbar===false)
       ? '<span class="badge" style="border-color:rgba(245,166,35,0.4);color:var(--amber)" title="'
         +p.minuten+' Saisonminuten — unter der Schwelle für eine belastbare Bewertung">'
@@ -1213,7 +1223,7 @@ function renderPlayers(){
         +'<div class="score-cap"><div class="scl">LN</div><div class="scv">'+p.ln+'</div><div class="scbar" style="width:'+p.ln+'%;background:var(--blue)"></div></div>'
       : '<div class="score-cap primary"><div class="scl">LN</div><div class="scv">'+p.ln+'</div><div class="scbar" style="width:'+p.ln+'%"></div></div>'
         +'<div class="score-cap"><div class="scl">PN</div><div class="scv">'+p.pn+'</div><div class="scbar" style="width:'+p.pn+'%;background:var(--blue)"></div></div>';
-    return '<div class="pcard" onclick="showProfile('+p.id+')"><div class="av">'+p.ini+'<span class="num">'+p.number+'</span></div><div class="pi"><h4>'+p.name+'</h4><div class="meta"><span class="pos-tag">'+p.pos+'</span><span>'+p.club+'</span><span>'+p.liga+'</span><span>'+p.age+' J.</span></div><div class="badges">'+cbadge(p.contract)+'<span class="badge b-blue">'+p.mv+' €</span>'+(p.underval?'<span class="badge b-teal"><i class="ti ti-trending-up" style="font-size:10px"></i> Unterbewertet</span>':'')+bewBadge+einBadge+duenn+luecken+'</div></div><div class="scores">'+note+'</div></div>';
+    return '<div class="pcard" onclick="showProfile('+p.id+')"><div class="av">'+p.ini+''+(p.number?'<span class="num">'+p.number+'</span>':'')+'</div><div class="pi"><h4><a href="'+tmUrl(p)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Profil auf transfermarkt.de öffnen" class="tm-link">'+p.name+'<i class="ti ti-external-link"></i></a></h4><div class="meta"><span class="pos-tag">'+p.pos+'</span><span>'+p.club+'</span><span>'+p.liga+'</span><span>'+p.age+' J.</span></div><div class="badges">'+cbadge(p.contract)+'<span class="badge b-blue">'+p.mv+' €</span>'+(p.underval?'<span class="badge b-teal"><i class="ti ti-trending-up" style="font-size:10px"></i> Unterbewertet</span>':'')+bewBadge+wegBadge+einBadge+duenn+luecken+'</div></div><div class="scores">'+note+'</div></div>';
   }).join('');
 }
 /* Flags und Fazit werden hier erzeugt, nicht in der JSON mitgeliefert.
@@ -1271,6 +1281,28 @@ function fazitFuer(p){
   return t.join('. ')+'.';
 }
 
+/* Link auf das Transfermarkt-Profil. Verwendet die Spieler-ID, mit der
+   die Daten gesammelt wurden - der Link trifft damit immer den richtigen
+   Spieler, unabhaengig von Namensschreibweisen. */
+function tmUrl(p){
+  return 'https://www.transfermarkt.de/spieler/profil/spieler/'+p.id;
+}
+
+/* Vertragsende mit Restlaufzeit. Gewicht fuehrt die Quelle nicht, deshalb
+   steht an dessen Stelle diese fuer Scouting weit nuetzlichere Angabe. */
+function vertragText(p){
+  if(!p.contract_until)return 'k. A.';
+  const m=restmonate(p);
+  const txt=new Date(p.contract_until).toLocaleDateString('de-DE',
+    {day:'2-digit',month:'2-digit',year:'numeric'});
+  return txt+(m!==null&&m<=12
+    ? ' <span style="font-size:11px;color:var(--amber)">(noch '+Math.max(m,0)+' Mon.)</span>' : '');
+}
+
+/* Verweis auf das Transfermarkt-Profil. Die Spieler-ID im Datensatz IST
+   die Transfermarkt-ID; den Namensteil der URL ignoriert die Seite. */
+function tmUrl(p){ return 'https://www.transfermarkt.de/x/profil/spieler/'+p.id; }
+
 function showProfile(id){
   const p=PLAYERS.find(x=>x.id===id);activePlayer=p;
   const hasV=(fromPage==='vereinsmatching'&&vmVerein)||fromPage==='kaderresult';
@@ -1311,14 +1343,14 @@ function renderProfile(p,hasV,vN){
     +'<div class="param-skala"><span>schwächster</span><span>Ligaschnitt</span>'
     +'<span>bester</span></div>';
   document.getElementById('profil-content').innerHTML=rb+
-  '<div class="ph"><div class="ph-banner"><div class="ph-av">'+p.ini+'</div><div class="ph-id"><div class="ph-name">'+p.name+'</div><div class="ph-sub"><span class="pos-tag">'+p.pos+'</span> · '+p.club+' · '+p.liga+' · #'+p.number+'</div><div class="badges">'+cbadge(p.contract)+'<span class="badge b-blue">'+(p.mv||'k.A.')+' €</span>'+(p.underval?'<span class="badge b-teal"><i class="ti ti-trending-up" style="font-size:10px"></i> Unterbewertet</span>':'')+'</div></div></div>'+
+  '<div class="ph"><div class="ph-banner"><div class="ph-av">'+p.ini+'</div><div class="ph-id"><div class="ph-name"><a href="'+tmUrl(p)+'" target="_blank" rel="noopener noreferrer" class="tm-link" title="Profil auf transfermarkt.de öffnen">'+p.name+'<i class="ti ti-external-link"></i></a></div><div class="ph-sub"><span class="pos-tag">'+p.pos+'</span> · '+p.club+' · '+p.liga+(p.number?' · #'+p.number:'')+'</div><div class="badges">'+cbadge(p.contract)+'<span class="badge b-blue">'+(p.mv||'k.A.')+' €</span>'+(p.underval?'<span class="badge b-teal"><i class="ti ti-trending-up" style="font-size:10px"></i> Unterbewertet</span>':'')+'</div></div></div>'+
   '<div class="note-grid">'+
     ringCard('LN','Liga-Note',p.ln,'vs. alle '+p.pos+' der Liga','var(--lime)')+
     ringCard('PN','Positions-Note',p.pn,'Gewichtete Kernparameter','var(--green)')+
     tnCard+
   '</div></div>'+
   tnSec+
-  '<div class="sec"><div class="sec-title">Stammdaten</div><div class="sd-grid"><div class="sd"><div class="sd-lbl">Alter</div><div class="sd-val">'+p.age+' J.</div></div><div class="sd"><div class="sd-lbl">Fuß</div><div class="sd-val">'+p.foot+'</div></div><div class="sd"><div class="sd-lbl">Größe / Gewicht</div><div class="sd-val">'+p.height+' / '+p.weight+'</div></div><div class="sd"><div class="sd-lbl">Rückennummer</div><div class="sd-val">#'+p.number+'</div></div></div></div>'+
+  '<div class="sec"><div class="sec-title">Stammdaten</div><div class="sd-grid"><div class="sd"><div class="sd-lbl">Alter</div><div class="sd-val">'+p.age+' J.</div></div><div class="sd"><div class="sd-lbl">Fuß</div><div class="sd-val">'+p.foot+'</div></div><div class="sd"><div class="sd-lbl">Größe</div><div class="sd-val">'+p.height+'</div></div><div class="sd"><div class="sd-lbl">Vertrag bis</div><div class="sd-val">'+vertragText(p)+'</div></div><div class="sd"><div class="sd-lbl">Rückennummer</div><div class="sd-val">'+(p.number?'#'+p.number:'k. A.')+'</div></div></div></div>'+
   (function(){
     /* Was bedeutet dieser Spieler fuer den gerade betrachteten Verein? */
     const v=aktiverVerein();

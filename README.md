@@ -236,6 +236,35 @@ samt Befehl.
 ./scripts/update_local.sh
 ```
 
+### Nach dem Transferschluss
+
+Leistungsdaten einer abgelaufenen Saison ändern sich nie mehr — Verträge,
+Marktwerte und Vereinszugehörigkeit dagegen sehr wohl. Dafür genügt ein
+Abruf je Verein statt eines vollen Laufs:
+
+```bash
+python3 scripts/build_players.py --kader-aktuell
+python3 scripts/compute_grades.py
+```
+
+Das zieht aus den **heutigen** Kadern nach: Vertragsenden, Marktwerte,
+Größe und Fuß. Wer dort nicht mehr auftaucht, hat den Verein verlassen und
+wird als *„nicht mehr im Kader"* gekennzeichnet — seine Leistungsdaten
+stammen dann erkennbar aus seiner Zeit beim alten Verein.
+
+Der Grund für den eigenen Modus: Die Kaderansicht einer **vergangenen**
+Saison führt gar keine Vertragsspalte. Vertragsenden gibt es nur im
+aktuellen Kader.
+
+Weitere Teilläufe:
+
+| Befehl | Holt |
+|---|---|
+| `--kader-aktuell` | Verträge, Marktwerte, Wechsel (1 Seite je Verein) |
+| `--nur-leistung` | Einsätze, Tore, Minuten (1 Seite je Verein) |
+| `--nur-tabellen` | Ligatabellen (1 Seite je **Liga**, unter 1 Minute) |
+| `--ligen buli,buli2` | nur bestimmte Ligen |
+
 Sammelt alle 33 Ligen, berechnet die Noten, committet und pusht. GitHub
 Pages baut die Seite danach von allein neu. Für einen Teillauf:
 `./scripts/update_local.sh buli,buli2`, zum Ausprobieren ohne Push
