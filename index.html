@@ -1299,10 +1299,6 @@ function vertragText(p){
     ? ' <span style="font-size:11px;color:var(--amber)">(noch '+Math.max(m,0)+' Mon.)</span>' : '');
 }
 
-/* Verweis auf das Transfermarkt-Profil. Die Spieler-ID im Datensatz IST
-   die Transfermarkt-ID; den Namensteil der URL ignoriert die Seite. */
-function tmUrl(p){ return 'https://www.transfermarkt.de/x/profil/spieler/'+p.id; }
-
 function showProfile(id){
   const p=PLAYERS.find(x=>x.id===id);activePlayer=p;
   const hasV=(fromPage==='vereinsmatching'&&vmVerein)||fromPage==='kaderresult';
