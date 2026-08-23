@@ -130,6 +130,19 @@ Chancen, nicht nur ihre Zahl: Harry Kane traf 36-mal bei 29,58 xG, also
 5 der 33 Ligen vor; eine Note daraus wäre mit den übrigen 28 nicht
 vergleichbar. Sie stehen als eigener Abschnitt in der Spielerakte.
 
+### Videomaterial über YouTube
+
+Die Spielerakte verlinkt unter dem Namen zwei YouTube-Suchen — **Highlights**
+und **Name + Verein**. Der Grund für zwei Varianten: Für Profis gibt es
+Zusammenschnitte, im Unterbau nicht. Dort führen Vereinsvideos und
+Spieltagsberichte weiter, und der Vereinsname grenzt mehrdeutige
+Spielernamen ein.
+
+Stichprobe: Selbst ein Oberliga-Spieler liefert 20 Treffer, ein
+Regionalliga-Stürmer 25, ein Bundesligaprofi 48. Bewegtbild ist unterhalb
+der Profiligen oft die einzige frei verfügbare Quelle über die Zahlen
+hinaus — und kostet nichts.
+
 ### Bewusst kostenfrei — und was das kostet
 
 Das Werkzeug nutzt ausschließlich frei zugängliche Quellen. Das ist eine
