@@ -54,6 +54,13 @@ echo "== Noten berechnen =="
 "$PY" scripts/compute_grades.py
 
 echo
+echo "== Frontend pruefen =="
+"$PY" scripts/check_frontend.py || {
+  echo "Syntaxfehler in index.html - nicht uebertragen." >&2
+  exit 1
+}
+
+echo
 echo "== Uebertragen =="
 if [ "$PUSH" != "1" ]; then
   echo "PUSH=0 gesetzt - nur lokal geaendert."

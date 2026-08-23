@@ -261,6 +261,7 @@ Weitere Teilläufe:
 | Befehl | Holt |
 |---|---|
 | `--kader-aktuell` | Verträge, Marktwerte, Wechsel (1 Seite je Verein) |
+| `--nur-kader` | Kaderprofile der Saison: Größe, Fuß, Position |
 | `--nur-leistung` | Einsätze, Tore, Minuten (1 Seite je Verein) |
 | `--nur-tabellen` | Ligatabellen (1 Seite je **Liga**, unter 1 Minute) |
 | `--ligen buli,buli2` | nur bestimmte Ligen |

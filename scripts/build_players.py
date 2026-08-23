@@ -423,6 +423,9 @@ def main() -> int:
     ap.add_argument("--max-vereine", type=int, help="nur die ersten N je Liga (Test)")
     ap.add_argument("--frisch", action="store_true",
                     help="Bestand verwerfen statt ergaenzen")
+    ap.add_argument("--nur-kader", action="store_true",
+                    help="nur die Kaderprofile der Saison neu lesen "
+                         "(eine Seite je Verein), Leistungsdaten unberuehrt")
     ap.add_argument("--kader-aktuell", action="store_true",
                     help="Vertraege, Marktwerte und Wechsel aus den heutigen "
                          "Kadern nachziehen (nach dem Transferschluss)")
@@ -438,6 +441,59 @@ def main() -> int:
     if args.ligen:
         gewaehlt = [by_frontend_id(x.strip()) for x in args.ligen.split(",")]
         ligen = [lg for lg in gewaehlt if lg]
+
+    # Kaderprofile der Saison neu einlesen. Noetig, weil die erste Fassung
+    # feste Spaltennummern verwendete - in der Ansicht einer vergangenen
+    # Saison sind die um eins verschoben, wodurch Groesse und Fuss vertauscht
+    # landeten. Der Parser erkennt die Felder jetzt am Inhalt.
+    if args.nur_kader:
+        if not os.path.exists(TARGET):
+            print(f"{TARGET} fehlt - zuerst regulaer sammeln.", file=sys.stderr)
+            return 1
+        with gzip.open(TARGET, "rt", encoding="utf-8") as fh:
+            bestand = json.load(fh)
+
+        clubs_je_liga: dict[str, set] = {}
+        for sp in bestand["spieler"]:
+            clubs_je_liga.setdefault(sp["liga_id"], set()).add(sp["verein_id"])
+
+        gewaehlt = {lg.frontend_id: lg for lg in ligen}
+        erneuert = 0
+        for fid, clubs in clubs_je_liga.items():
+            if fid not in gewaehlt:
+                continue
+            profile: dict[tuple, dict] = {}
+            ok = 0
+            for vid in clubs:
+                try:
+                    _, spieler = kader(vid, "x", SAISON)
+                    for pid, felder in spieler.items():
+                        profile[(vid, pid)] = felder
+                    ok += 1
+                except Exception as exc:
+                    print(f"  [!] {gewaehlt[fid].name} / {vid}: {exc}",
+                          file=sys.stderr)
+
+            for sp in bestand["spieler"]:
+                if sp["liga_id"] != fid:
+                    continue
+                neu_felder = profile.get((sp["verein_id"], sp["id"]))
+                if not neu_felder:
+                    continue
+                # Nur ergaenzen, was fehlt - aus dem aktuellen Kader
+                # stammende Vertragsdaten bleiben erhalten.
+                for k, v in neu_felder.items():
+                    if v is not None and not sp.get(k):
+                        sp[k] = v
+                erneuert += 1
+            print(f"  [ok] {gewaehlt[fid].name}: {ok}/{len(clubs)} Vereine",
+                  file=sys.stderr)
+
+        bestand["stand"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        with gzip.open(TARGET, "wt", encoding="utf-8") as fh:
+            json.dump(bestand, fh, ensure_ascii=False, separators=(",", ":"))
+        print(f"\n{erneuert} Kaderprofile neu gelesen", file=sys.stderr)
+        return 0
 
     # Aktuelle Kader nachziehen. Gedacht fuer die Zeit nach dem
     # Transferschluss: Leistungsdaten der abgelaufenen Saison aendern sich
