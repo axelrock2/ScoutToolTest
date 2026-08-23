@@ -1509,12 +1509,12 @@ function tmUrl(p){
   return 'https://www.transfermarkt.de/spieler/profil/spieler/'+p.id;
 }
 
-/* YouTube-Suche nach Spielermaterial. Zwei Varianten, weil sie sich je
-   nach Spielklasse stark unterscheiden:
-     - "Highlights" findet Zusammenschnitte, wie es sie fuer Profis gibt.
-     - "Name + Verein" hilft im Unterbau, wo es keine Zusammenschnitte
-       gibt, dafuer aber Spieltagsberichte und Vereinsvideos - und wo
-       blosse Namen oft mehrdeutig sind.
+/* YouTube-Suche nach Spielermaterial. Zwei Varianten:
+     - Der blosse Name laesst YouTube alles zeigen, was es zu ihm gibt.
+       Ein angehaengtes Wort wie "highlights" schnitte Spielszenen,
+       Interviews und Vereinsvideos weg - und liefe im Unterbau, wo es
+       gar keine Zusammenschnitte gibt, oft ins Leere.
+     - "Name + Verein" grenzt ein, wenn der Name mehrdeutig ist.
    Bewegtbild ist gerade unterhalb der Profiligen oft die einzige frei
    verfuegbare Quelle ueber die Zahlen hinaus. */
 function ytUrl(begriff){
@@ -1575,9 +1575,9 @@ function renderProfile(p,hasV,vN){
   '<div class="ph"><div class="ph-banner"><div class="ph-av">'+p.ini+'</div><div class="ph-id"><div class="ph-name"><a href="'+tmUrl(p)+'" target="_blank" rel="noopener noreferrer" class="tm-link" title="Profil auf transfermarkt.de öffnen">'+p.name+'<i class="ti ti-external-link"></i></a></div><div class="ph-sub"><span class="pos-tag">'+p.pos+'</span> · '+p.club+' · '+p.liga+(p.number?' · #'+p.number:'')+'</div>'+
     '<div class="quellen">'+
       '<span class="quellen-lbl">Videomaterial</span>'+
-      '<a href="'+ytUrl(p.name+' highlights')+'" target="_blank" rel="noopener" '+
-        'title="YouTube-Suche nach Zusammenschnitten">'+
-        '<i class="ti ti-brand-youtube"></i> Highlights</a>'+
+      '<a href="'+ytUrl(p.name)+'" target="_blank" rel="noopener" '+
+        'title="YouTube-Suche nach dem Spielernamen">'+
+        '<i class="ti ti-brand-youtube"></i> Suche</a>'+
       '<a href="'+ytUrl(p.name+' '+p.club)+'" target="_blank" rel="noopener" '+
         'title="YouTube-Suche mit Verein — hilft, wenn es keine Zusammenschnitte gibt">'+
         '<i class="ti ti-search"></i> '+p.club+'</a>'+

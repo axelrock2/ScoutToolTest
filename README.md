@@ -166,14 +166,13 @@ vergleichbar. Sie stehen als eigener Abschnitt in der Spielerakte.
 
 ### Videomaterial über YouTube
 
-Die Spielerakte verlinkt unter dem Namen zwei YouTube-Suchen — **Highlights**
-und **Name + Verein**. Der Grund für zwei Varianten: Für Profis gibt es
-Zusammenschnitte, im Unterbau nicht. Dort führen Vereinsvideos und
-Spieltagsberichte weiter, und der Vereinsname grenzt mehrdeutige
-Spielernamen ein.
+Die Spielerakte verlinkt unter dem Namen zwei YouTube-Suchen — einmal
+**nur den Namen**, einmal **Name + Verein**.
 
-Stichprobe: Selbst ein Oberliga-Spieler liefert 20 Treffer, ein
-Regionalliga-Stürmer 25, ein Bundesligaprofi 48. Bewegtbild ist unterhalb
+Bewusst ohne Zusatzwort wie „highlights": Das schnitte Spielszenen,
+Interviews und Vereinsvideos weg und liefe im Unterbau, wo es gar keine
+Zusammenschnitte gibt, oft ins Leere. Der Vereinsname in der zweiten
+Variante grenzt ein, wenn der Spielername mehrdeutig ist. Bewegtbild ist unterhalb
 der Profiligen oft die einzige frei verfügbare Quelle über die Zahlen
 hinaus — und kostet nichts.
 
