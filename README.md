@@ -38,9 +38,14 @@ Haaland, ein Oberligist Regionalligaspieler für 50–600 Tsd. €.
 
 ## Gestaltung
 
-Zurückhaltend gehalten: gedämpfter Grund, ein einziger Akzent, Abstände
-statt Rahmen. Der Rasterhintergrund tritt weit zurück, Leuchteffekte sind
-klaren Kanten gewichen.
+Helle, warme Fläche statt Nachtgrün: Papierton, weiße Karten mit kaum
+sichtbarem Schatten, ein einziges tiefes Grün als Akzent. Abstände tragen
+die Ordnung, nicht Rahmen oder Leuchteffekte.
+
+Die Startseite verzichtet auf einen Slogan. Sie führt mit dem, was das
+Werkzeug tatsächlich hat: bewertete Spieler, Wettbewerbe, Saison und
+Datenstand — live aus den geladenen Daten gefüllt. Der frühere Werbetext
+nannte obendrein veraltete Zahlen (16 Ligen statt 33).
 
 Beim Scrollen blenden Abschnitte und Karten leicht versetzt ein, die
 Kopfzone tritt sanft zurück, Karten heben sich beim Überfahren minimal an.

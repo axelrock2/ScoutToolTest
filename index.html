@@ -268,22 +268,45 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
    ==================================================================== */
 
 :root{
-  /* Etwas entsaettigt und dunkler - ruhiger Grund, auf dem das Limett
-     als einziger Akzent wirkt. */
-  --pitch:#080B0A; --pitch-2:#0C110F;
-  --panel:#0F1513; --panel-2:#131A17;
-  --line:#1B2320; --line-bright:#28332E;
-  --ink:#ECF1EE; --ink-2:#93A29B; --ink-3:#5C6B64;
-  --lime:#C8FA4B; --lime-dim:#9CD130;
+  /* Helle Farbwelt: warmes Papier statt Nachtgruen. Ein einziger
+     Akzent - tiefes Gruen - traegt alle Hervorhebungen; die uebrigen
+     Signalfarben sind fuer hellen Grund nachgedunkelt, damit der
+     Kontrast reicht. Die Variablennamen bleiben unveraendert, damit
+     Skript und Altregeln weiter dieselben Bezuege verwenden. */
+  --pitch:#F6F7F3; --pitch-2:#EDEFE8;
+  --panel:#FFFFFF; --panel-2:#F3F5EF;
+  --line:#E2E6DC; --line-bright:#CBD2C2;
+  --ink:#18231D; --ink-2:#5A695F; --ink-3:#97A29A;
+  --lime:#1E7A46; --lime-dim:#2E9358;
+  --amber:#B26A00; --red:#C43B3B; --green:#1E8A4C; --blue:#2563B6;
 }
 
-/* Raster: von 44 auf 72 Pixel und deutlich blasser - spuerbar, nicht laut. */
-body:before{background-size:72px 72px;opacity:0.07;
+/* Raster: auf hellem Grund nur noch ein Hauch. */
+body:before{background-size:72px 72px;opacity:0.5;
   mask-image:radial-gradient(ellipse 80% 60% at 50% 0%,black 10%,transparent 70%);
   -webkit-mask-image:radial-gradient(ellipse 80% 60% at 50% 0%,black 10%,transparent 70%)}
 
-.topbar{height:64px;padding:0 34px;background:rgba(8,11,10,0.72);
-  border-bottom:1px solid rgba(27,35,32,0.8)}
+.topbar{height:64px;padding:0 34px;background:rgba(246,247,243,0.82);
+  border-bottom:1px solid var(--line)}
+
+/* Weiche, kaum sichtbare Schatten geben den weissen Flaechen Tiefe -
+   auf hellem Grund uebernimmt das die Rolle, die vorher Leuchtraender
+   hatten. */
+.mode-card,.pcard,.sec,.filter-panel,.liga-panel,.opt-panel,
+.verein-panel,.res-header,.kad-head{box-shadow:0 1px 2px rgba(24,35,29,0.05)}
+.mode-card:hover,.pcard:hover{box-shadow:0 4px 14px rgba(24,35,29,0.08)}
+
+/* Kleinteile, deren Original von dunklem Grund ausging. */
+.tog input:checked+.tslider{background:rgba(30,122,70,0.15)}
+input[type=range]::-webkit-slider-thumb{box-shadow:none}
+.breadcrumb .dot{box-shadow:none}
+.btn-primary{color:#FFFFFF}
+.btn-primary:hover{color:#FFFFFF}
+.av .num{color:#FFFFFF;border-color:var(--panel)}
+.kbar-val{color:#FFFFFF}
+.mode-card:hover .mode-ico i{color:#FFFFFF}
+.logo-mark:before{border-color:#FFFFFF}
+.logo-mark:after{background:#FFFFFF}
 .logo{font-size:17px;letter-spacing:-0.3px}
 .breadcrumb{font-size:10px;letter-spacing:2px}
 
@@ -297,6 +320,13 @@ body:before{background-size:72px 72px;opacity:0.07;
 .hero-stats{gap:52px;margin-top:52px;padding-top:34px}
 .hstat-num{font-size:32px;font-weight:500}
 .hstat-lbl{font-size:9px;letter-spacing:2px}
+
+/* Die Datenstand-Reihe im Kopf: festes Raster statt Umbruch, damit die
+   vier Kacheln auf jeder Breite als eine ruhige Zeile stehen. */
+.hero-stats-lead{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:28px 36px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+  padding:30px 0;margin-top:8px}
+.hero-stats-lead .hstat-num{font-size:27px;letter-spacing:-0.5px;white-space:nowrap}
 
 /* Karten: ohne Schlagschatten, dafuer klare Kante und ruhiger Wechsel. */
 .mode-grid{gap:16px;margin-top:56px}
@@ -383,15 +413,18 @@ body:before{background-size:72px 72px;opacity:0.07;
 </div>
 
 <div class="page active" id="p-home">
+  <!-- Kopfbereich: kein Slogan, sondern der tatsaechliche Datenstand.
+       Die Zahlen werden nach dem Laden aus den echten Daten gefuellt
+       (siehe Effektblock am Dateiende); die statischen Werte sind nur
+       die Rueckfallebene ohne Skript. Der fruehere Werbetext nannte
+       obendrein veraltete Zahlen (16 Ligen statt 33). -->
   <div class="hero">
-    <div class="hero-eyebrow">Scouting-Terminal · 16 Ligen live</div>
-    <h1><span class="out">Lies</span> das Spiel.<br><span class="hl">Finde</span> den Spieler.</h1>
-    <p>Datengetriebenes Scouting für Profis. Normabweichungen, Positions-Noten und Vereins-Matching — in einem Werkzeug, das so schnell denkt wie du.</p>
-    <div class="hero-stats">
-      <div class="hstat"><div class="hstat-num"><em>16</em></div><div class="hstat-lbl">Ligen</div></div>
-      <div class="hstat"><div class="hstat-num"><em>11</em></div><div class="hstat-lbl">Länder</div></div>
-      <div class="hstat"><div class="hstat-num">3</div><div class="hstat-lbl">Such-Modi</div></div>
-      <div class="hstat"><div class="hstat-num">0–100</div><div class="hstat-lbl">Bewertungsskala</div></div>
+    <div class="hero-eyebrow">Scouting-Terminal</div>
+    <div class="hero-stats hero-stats-lead">
+      <div class="hstat"><div class="hstat-num"><em id="hs-spieler">16.761</em></div><div class="hstat-lbl">Bewertete Spieler</div></div>
+      <div class="hstat"><div class="hstat-num" id="hs-ligen">33</div><div class="hstat-lbl">Wettbewerbe</div></div>
+      <div class="hstat"><div class="hstat-num" id="hs-saison">2025/26</div><div class="hstat-lbl">Saison</div></div>
+      <div class="hstat"><div class="hstat-num" id="hs-stand">–</div><div class="hstat-lbl">Datenstand</div></div>
     </div>
   </div>
   <div class="mode-grid">
@@ -1728,6 +1761,45 @@ if(API_URL){
      sichtbar.
      ==================================================================== -->
 <script>
+/* Fuellt die Datenstand-Zeile im Kopfbereich aus den geladenen Daten.
+   Liest nur - keine Funktion der Anwendung wird aufgerufen. Bewusst
+   getrennt vom Bewegungsblock darunter: die Zahlen muessen auch dann
+   stimmen, wenn Bewegungseffekte abgeschaltet sind. */
+(function(){
+  "use strict";
+  var versuche = 0;
+  function setzen(){
+    try{
+      var geladen = typeof PLAYERS !== 'undefined' && PLAYERS.length;
+      /* dataStand wird erst gesetzt, wenn die ECHTEN Daten da sind.
+         Vorher zeigt PLAYERS die eingebaute Demo (5 Spieler) - deren
+         Zahlen sollen hier nie stehenbleiben. Also: jedes Mal neu
+         fuellen und weiter nachfragen, bis der echte Stand da ist
+         oder die Versuche erschoepft sind. */
+      var echt = typeof dataStand !== 'undefined' && dataStand;
+      if(geladen){
+        var f = function(id, wert){
+          var el = document.getElementById(id);
+          if(el && wert !== null && wert !== undefined) el.textContent = wert;
+        };
+        f('hs-spieler', PLAYERS.length.toLocaleString('de-DE'));
+        if(typeof LIGEN !== 'undefined' && LIGEN.length) f('hs-ligen', LIGEN.length);
+        if(typeof dataSaison !== 'undefined' && dataSaison) f('hs-saison', dataSaison);
+        if(echt){
+          f('hs-stand', new Date(dataStand).toLocaleDateString('de-DE',
+            {day:'2-digit', month:'2-digit', year:'numeric'}));
+        }
+      }
+      if(!echt && ++versuche < 120) setTimeout(setzen, 250);
+    }catch(e){ /* Anzeige ist Beiwerk - Rueckfallwerte stehen im HTML */ }
+  }
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', setzen);
+  }else{
+    setzen();
+  }
+})();
+
 (function(){
   "use strict";
   try{
