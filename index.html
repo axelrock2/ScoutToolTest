@@ -387,13 +387,92 @@ input[type=range]::-webkit-slider-thumb{box-shadow:none}
   html{scroll-behavior:auto}
 }
 
+
+/* ====================================================================
+   DUNKLE ANSICHT
+   --------------------------------------------------------------------
+   Wird ueber data-theme="dark" am Wurzelelement geschaltet; gesetzt
+   wird das Attribut im Kopf der Seite, bevor gezeichnet wird.
+
+   Hier stehen nur die Umkehrungen: die Farbwerte selbst und jene
+   Stellen, die fuer den hellen Grund eigens gesetzt wurden - Schatten,
+   weisse Schrift auf farbigen Flaechen, Deckkraft des Rasters.
+   ==================================================================== */
+
+:root[data-theme="dark"]{
+  --pitch:#080B0A; --pitch-2:#0C110F;
+  --panel:#0F1513; --panel-2:#131A17;
+  --line:#1B2320; --line-bright:#28332E;
+  --ink:#ECF1EE; --ink-2:#93A29B; --ink-3:#5C6B64;
+  --lime:#C8FA4B; --lime-dim:#9CD130;
+  --amber:#F5A623; --red:#FF5B5B; --green:#5BD37A; --blue:#4DA6FF;
+}
+
+:root[data-theme="dark"] body:before{opacity:0.07}
+:root[data-theme="dark"] .topbar{background:rgba(8,11,10,0.72)}
+
+/* Auf dunklem Grund traegt die Kante, nicht der Schatten. */
+:root[data-theme="dark"] .mode-card,
+:root[data-theme="dark"] .pcard,
+:root[data-theme="dark"] .sec,
+:root[data-theme="dark"] .filter-panel,
+:root[data-theme="dark"] .liga-panel,
+:root[data-theme="dark"] .opt-panel,
+:root[data-theme="dark"] .verein-panel,
+:root[data-theme="dark"] .res-header,
+:root[data-theme="dark"] .kad-head{box-shadow:none}
+:root[data-theme="dark"] .mode-card:hover,
+:root[data-theme="dark"] .pcard:hover{box-shadow:none}
+
+/* Schrift auf farbigen Flaechen: hell braucht Weiss, dunkel den Grund. */
+:root[data-theme="dark"] .btn-primary,
+:root[data-theme="dark"] .btn-primary:hover,
+:root[data-theme="dark"] .av .num,
+:root[data-theme="dark"] .kbar-val,
+:root[data-theme="dark"] .mode-card:hover .mode-ico i{color:var(--pitch)}
+:root[data-theme="dark"] .logo-mark:before{border-color:var(--pitch)}
+:root[data-theme="dark"] .logo-mark:after{background:var(--pitch)}
+:root[data-theme="dark"] .tog input:checked+.tslider{background:rgba(200,250,75,0.2)}
+
+/* ---- Schalter in der Kopfleiste ---------------------------------- */
+.topbar-rechts{display:flex;align-items:center;gap:16px}
+.theme-schalter{display:inline-flex;align-items:center;justify-content:center;
+  width:34px;height:34px;border-radius:9px;cursor:pointer;
+  background:transparent;border:1px solid var(--line);color:var(--ink-2);
+  transition:border-color 0.18s ease,color 0.18s ease,background 0.18s ease}
+.theme-schalter:hover{border-color:var(--lime);color:var(--lime);background:var(--panel-2)}
+.theme-schalter i{font-size:17px}
+
 </style>
+<script>
+/* Farbwahl setzen, bevor irgendetwas gezeichnet wird - sonst blitzt beim
+   Laden kurz die falsche Welt auf. Steht deshalb im Kopf und nicht im
+   Skriptblock am Dateiende. Ohne gespeicherte Wahl entscheidet die
+   Systemeinstellung. */
+(function(){
+  try{
+    var w = localStorage.getItem('scout-theme');
+    if(w !== 'dark' && w !== 'light'){
+      w = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        ? 'dark' : 'light';
+    }
+    document.documentElement.setAttribute('data-theme', w);
+  }catch(e){
+    document.documentElement.setAttribute('data-theme','light');
+  }
+})();
+</script>
 </head>
 <body>
 <h1 class="sr-only">ScoutIQ — Scouting-Terminal</h1>
 <div class="topbar">
   <div class="logo" onclick="go('home')"><span class="logo-mark"></span>SCOUT<span>IQ</span></div>
-  <div class="breadcrumb" id="bc"><span class="dot"></span> TERMINAL // START</div>
+  <div class="topbar-rechts">
+    <div class="breadcrumb" id="bc"><span class="dot"></span> TERMINAL // START</div>
+    <button type="button" class="theme-schalter" id="theme-schalter"
+            title="Zwischen heller und dunkler Ansicht wechseln"
+            aria-label="Ansicht wechseln"><i class="ti ti-moon"></i></button>
+  </div>
 </div>
 
 <div class="modal-overlay" id="modal">
@@ -1761,6 +1840,39 @@ if(API_URL){
      sichtbar.
      ==================================================================== -->
 <script>
+/* Umschalter fuer helle und dunkle Ansicht. Setzt allein das Attribut
+   data-theme und merkt die Wahl - kein Eingriff in die Anwendung. Die
+   Farbwerte selbst stehen im Stilblock. */
+(function(){
+  "use strict";
+  function symbol(w){
+    var b = document.getElementById('theme-schalter');
+    if(!b) return;
+    /* Gezeigt wird, wohin es geht: im Hellen der Mond, im Dunkeln die Sonne. */
+    b.innerHTML = '<i class="ti ti-' + (w === 'dark' ? 'sun' : 'moon') + '"></i>';
+    b.setAttribute('title', w === 'dark'
+      ? 'Zur hellen Ansicht wechseln' : 'Zur dunklen Ansicht wechseln');
+  }
+  function start(){
+    try{
+      var jetzt = document.documentElement.getAttribute('data-theme') || 'light';
+      symbol(jetzt);
+      var b = document.getElementById('theme-schalter');
+      if(!b) return;
+      b.addEventListener('click', function(){
+        var alt = document.documentElement.getAttribute('data-theme') === 'dark';
+        var neu = alt ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', neu);
+        symbol(neu);
+        try{ localStorage.setItem('scout-theme', neu); }catch(e){}
+      });
+    }catch(e){ /* Der Schalter ist Beiwerk - die Seite bleibt nutzbar */ }
+  }
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', start);
+  }else{ start(); }
+})();
+
 /* Fuellt die Datenstand-Zeile im Kopfbereich aus den geladenen Daten.
    Liest nur - keine Funktion der Anwendung wird aufgerufen. Bewusst
    getrennt vom Bewegungsblock darunter: die Zahlen muessen auch dann

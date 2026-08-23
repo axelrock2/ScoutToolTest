@@ -42,6 +42,12 @@ Helle, warme Fläche statt Nachtgrün: Papierton, weiße Karten mit kaum
 sichtbarem Schatten, ein einziges tiefes Grün als Akzent. Abstände tragen
 die Ordnung, nicht Rahmen oder Leuchteffekte.
 
+**Helle und dunkle Ansicht** lassen sich über den Schalter rechts in der
+Kopfleiste wechseln. Beim ersten Besuch entscheidet die Systemeinstellung
+(`prefers-color-scheme`), danach gilt die getroffene Wahl — gespeichert im
+Browser. Gesetzt wird sie im Seitenkopf, bevor gezeichnet wird, damit beim
+Laden nicht kurz die falsche Welt aufblitzt.
+
 Die Startseite verzichtet auf einen Slogan. Sie führt mit dem, was das
 Werkzeug tatsächlich hat: bewertete Spieler, Wettbewerbe, Saison und
 Datenstand — live aus den geladenen Daten gefüllt. Der frühere Werbetext
