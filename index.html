@@ -253,6 +253,110 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 @media(prefers-reduced-motion:reduce){.ring-fg{animation:none}.page.active{animation:none}}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
 @media(max-width:920px){.two-col,.vm-grid{grid-template-columns:1fr}.mode-grid{grid-template-columns:1fr}.filter-panel,.liga-panel,.opt-panel{position:static}.note-grid{grid-template-columns:1fr}.sd-grid{grid-template-columns:1fr 1fr}}
+
+/* ====================================================================
+   GESTALTUNG — nur Aussehen
+   --------------------------------------------------------------------
+   Bewusst ans Ende gestellt und rein ergaenzend: spaeter stehende Regeln
+   gewinnen, ohne dass eine bestehende angefasst werden muss. Keine
+   Klasse und keine Kennung wird umbenannt - das Skript greift auf
+   dieselben Elemente zu wie zuvor.
+
+   Leitgedanke: weniger Beiwerk, mehr Ruhe. Der Rasterhintergrund tritt
+   zurueck, das Leuchten weicht klaren Kanten, Abstaende werden groesser,
+   und die Schrift traegt die Ordnung statt der Rahmen.
+   ==================================================================== */
+
+:root{
+  /* Etwas entsaettigt und dunkler - ruhiger Grund, auf dem das Limett
+     als einziger Akzent wirkt. */
+  --pitch:#080B0A; --pitch-2:#0C110F;
+  --panel:#0F1513; --panel-2:#131A17;
+  --line:#1B2320; --line-bright:#28332E;
+  --ink:#ECF1EE; --ink-2:#93A29B; --ink-3:#5C6B64;
+  --lime:#C8FA4B; --lime-dim:#9CD130;
+}
+
+/* Raster: von 44 auf 72 Pixel und deutlich blasser - spuerbar, nicht laut. */
+body:before{background-size:72px 72px;opacity:0.07;
+  mask-image:radial-gradient(ellipse 80% 60% at 50% 0%,black 10%,transparent 70%);
+  -webkit-mask-image:radial-gradient(ellipse 80% 60% at 50% 0%,black 10%,transparent 70%)}
+
+.topbar{height:64px;padding:0 34px;background:rgba(8,11,10,0.72);
+  border-bottom:1px solid rgba(27,35,32,0.8)}
+.logo{font-size:17px;letter-spacing:-0.3px}
+.breadcrumb{font-size:10px;letter-spacing:2px}
+
+/* Mehr Luft. Minimalismus lebt vom Abstand, nicht von Linien. */
+.page{padding:44px 34px 96px}
+.hero{padding:72px 0 16px}
+.hero h1{letter-spacing:-2.5px;line-height:0.92;margin-bottom:30px}
+.hero h1 .out{-webkit-text-stroke:1px var(--ink-3)}
+.hero p{font-size:16.5px;line-height:1.7;color:var(--ink-2);max-width:540px}
+.hero-eyebrow{font-size:10px;letter-spacing:3.5px;margin-bottom:26px}
+.hero-stats{gap:52px;margin-top:52px;padding-top:34px}
+.hstat-num{font-size:32px;font-weight:500}
+.hstat-lbl{font-size:9px;letter-spacing:2px}
+
+/* Karten: ohne Schlagschatten, dafuer klare Kante und ruhiger Wechsel. */
+.mode-grid{gap:16px;margin-top:56px}
+.mode-card{border-radius:16px;padding:30px;background:var(--panel);
+  transition:border-color 0.25s ease, background 0.25s ease, transform 0.25s ease}
+.mode-card:hover{transform:translateY(-2px) scale(1.006);background:var(--panel-2)}
+.mode-card:before{font-size:10px;letter-spacing:1.5px;opacity:0.5}
+.mode-ico{border-radius:12px;transition:all 0.25s ease}
+.mode-card h3{font-size:18px;letter-spacing:-0.2px;margin-bottom:11px}
+.mode-card p{font-size:13px;line-height:1.65;color:var(--ink-2)}
+
+.sec{border-radius:16px}
+.sec-title{font-size:10px;letter-spacing:2.4px;margin-bottom:22px}
+.panel-title{font-size:10px;letter-spacing:2.2px}
+
+.filter-panel,.liga-panel,.opt-panel,.verein-panel{border-radius:16px;padding:24px}
+.fg select,.fg input{border-radius:10px;padding:10px 12px;font-size:13px;
+  transition:border-color 0.18s ease}
+.btn-primary{border-radius:10px;padding:13px;letter-spacing:0.6px;
+  transition:background 0.2s ease, transform 0.2s ease}
+.btn-primary:hover{box-shadow:none;transform:translateY(-1px)}
+
+/* Trefferkarten: der Griff nach rechts wird zu einem leisen Heranholen. */
+.pcard{border-radius:14px;padding:20px 24px;margin-bottom:10px;
+  transition:border-color 0.22s ease, transform 0.22s ease, background 0.22s ease}
+.pcard:hover{transform:translateX(3px) scale(1.004);background:var(--panel-2)}
+.pcard:after{width:2px}
+.pi h4{font-size:16.5px;letter-spacing:-0.15px}
+.pi .meta{font-size:10.5px;letter-spacing:0.4px}
+.badge{border-radius:7px}
+
+.res-header{border-radius:14px;padding:18px 24px}
+.res-count strong{font-weight:500}
+
+/* Notenringe: Leuchten raus, Form spricht fuer sich. */
+.nc,.score-cap{transition:transform 0.22s ease}
+.scbar{transition:width 0.6s cubic-bezier(0.22,1,0.36,1)}
+.bar{transition:width 0.75s cubic-bezier(0.22,1,0.36,1)}
+.kbar{transition:width 0.75s cubic-bezier(0.22,1,0.36,1)}
+
+.verein-card{border-radius:12px;padding:14px;
+  transition:border-color 0.2s ease, transform 0.2s ease, background 0.2s ease}
+.verein-card:hover{transform:translateY(-2px) scale(1.01)}
+.liga-item{border-radius:9px;transition:all 0.16s ease}
+
+/* ---- Einblenden beim Scrollen -------------------------------------
+   Die Klasse "reveal" wird ausschliesslich per Skript gesetzt. Ohne
+   Skript oder bei abgeschalteten Bewegungseffekten bleibt alles
+   sichtbar - Inhalt darf nie von einer Animation abhaengen. */
+.reveal{opacity:0;transform:translateY(16px) scale(0.994);
+  transition:opacity 0.55s cubic-bezier(0.22,1,0.36,1),
+             transform 0.55s cubic-bezier(0.22,1,0.36,1)}
+.reveal.sichtbar{opacity:1;transform:none}
+
+@media (prefers-reduced-motion: reduce){
+  .reveal,.reveal.sichtbar{opacity:1;transform:none;transition:none}
+  .mode-card:hover,.pcard:hover,.verein-card:hover{transform:none}
+  html{scroll-behavior:auto}
+}
+
 </style>
 </head>
 <body>
@@ -1609,6 +1713,126 @@ if(API_URL){
   };
   window.liveWeakClick=function(pg){livePosFilter=pg;go('ergebnisse','kaderresult');};
 }
+</script>
+
+<!-- ====================================================================
+     Scroll- und Zoomeffekte
+
+     Bewusst ein EIGENER Skriptblock nach dem Hauptskript: faellt hier
+     etwas aus, laeuft die Anwendung unveraendert weiter. Der Block liest
+     nur, setzt Klassen und ruft keine einzige Funktion der Anwendung auf.
+
+     Grundsatz: Inhalt darf nie von einer Animation abhaengen. Die Klasse
+     "reveal" (blendet aus) wird deshalb nur gesetzt, wenn Browser und
+     Nutzereinstellung Bewegung zulassen - sonst bleibt alles sofort
+     sichtbar.
+     ==================================================================== -->
+<script>
+(function(){
+  "use strict";
+  try{
+    var bewegungAus = window.matchMedia
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(bewegungAus || !('IntersectionObserver' in window)) return;
+
+    /* Bei ueber 500 Trefferkarten waere es sinnlos, jede zu beobachten -
+       sichtbar sind ohnehin nur die ersten. */
+    var HOECHSTZAHL = 60;
+
+    var beobachter = new IntersectionObserver(function(eintraege){
+      eintraege.forEach(function(e){
+        if(!e.isIntersecting) return;
+        e.target.classList.add('sichtbar');
+        beobachter.unobserve(e.target);      // einmal eingeblendet, fertig
+      });
+    }, {rootMargin:'0px 0px -8% 0px', threshold:0.06});
+
+    var AUSWAHL = '.sec, .pcard, .mode-card, .hstat, .verein-card, .kbar-row';
+
+    function vorbereiten(wurzel){
+      var gefunden = wurzel.querySelectorAll ? wurzel.querySelectorAll(AUSWAHL) : [];
+      var anzahl = 0;
+      for(var i=0; i<gefunden.length && anzahl<HOECHSTZAHL; i++){
+        var el = gefunden[i];
+        if(el.dataset.revealed) continue;
+        el.dataset.revealed = '1';
+        el.classList.add('reveal');
+        /* Leichter Versatz, damit Listen nacheinander erscheinen statt
+           als Block. Bei 12 Elementen ist Schluss, sonst wartet man. */
+        el.style.transitionDelay = Math.min(anzahl, 11) * 28 + 'ms';
+        beobachter.observe(el);
+        anzahl++;
+      }
+    }
+
+    /* Sicherheitsnetz: was nach zwei Sekunden noch versteckt ist, wird
+       eingeblendet. Ein haengender Beobachter darf nichts verbergen. */
+    function netz(){
+      document.querySelectorAll('.reveal:not(.sichtbar)').forEach(function(el){
+        var k = el.getBoundingClientRect();
+        if(k.top < window.innerHeight && k.bottom > 0) el.classList.add('sichtbar');
+      });
+    }
+
+    function start(){
+      vorbereiten(document);
+      setTimeout(netz, 2000);
+
+      /* Nachgeladene Inhalte - Trefferlisten, Kaderbalken, Spielerakte -
+         entstehen erst beim Klicken. Der Waechter faengt sie ab. */
+      if('MutationObserver' in window){
+        var warten = null;
+        new MutationObserver(function(){
+          clearTimeout(warten);
+          warten = setTimeout(function(){ vorbereiten(document); netz(); }, 60);
+        }).observe(document.body, {childList:true, subtree:true});
+      }
+
+      /* Sanftes Zuruecktreten der Kopfzone beim Scrollen. Rein optisch,
+         ohne Einfluss auf Klickflaechen. */
+      var hero = document.querySelector('.hero');
+      if(hero){
+        /* Drosselung ueber die Uhr, nicht ueber eine Sperre im
+           requestAnimationFrame-Rueckruf: in verborgenen Tabs laeuft rAF
+           nicht: eine dort gesetzte Sperre bliebe fuer immer zu und der
+           Effekt waere endgueltig tot. Die Zeitpruefung kann nicht
+           haengenbleiben. */
+        var zuletzt = 0;
+        var anwenden = function(){
+          var y = window.pageYOffset || document.documentElement.scrollTop || 0;
+          if(y < 420){
+            var t = y / 420;
+            hero.style.transform = 'translateY(' + (t*14).toFixed(1) + 'px) scale(' + (1 - t*0.012).toFixed(4) + ')';
+            hero.style.opacity = (1 - t*0.35).toFixed(3);
+          }else{
+            hero.style.transform = 'translateY(14px) scale(0.988)';
+            hero.style.opacity = '0.65';
+          }
+        };
+        window.addEventListener('scroll', function(){
+          var jetzt = Date.now();
+          if(jetzt - zuletzt < 16) return;   /* hoechstens 60-mal je Sekunde */
+          zuletzt = jetzt;
+          anwenden();
+        }, {passive:true});
+        anwenden();                          /* Ausgangszustand setzen */
+      }
+    }
+
+    if(document.readyState === 'loading'){
+      document.addEventListener('DOMContentLoaded', start);
+    }else{
+      start();
+    }
+  }catch(e){
+    /* Effekte sind Beiwerk. Schlaegt etwas fehl, alles sichtbar lassen. */
+    try{
+      document.querySelectorAll('.reveal').forEach(function(el){
+        el.classList.add('sichtbar');
+      });
+    }catch(_){}
+  }
+})();
 </script>
 </body>
 </html>

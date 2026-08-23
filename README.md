@@ -36,6 +36,29 @@ Ohne sie empfahl das Tool einem Oberligisten folgerichtig Weltklasse-
 spieler: Freiburg mit 15 Mio. € Budget bekommt jetzt Marc Guiu statt
 Haaland, ein Oberligist Regionalligaspieler für 50–600 Tsd. €.
 
+## Gestaltung
+
+Zurückhaltend gehalten: gedämpfter Grund, ein einziger Akzent, Abstände
+statt Rahmen. Der Rasterhintergrund tritt weit zurück, Leuchteffekte sind
+klaren Kanten gewichen.
+
+Beim Scrollen blenden Abschnitte und Karten leicht versetzt ein, die
+Kopfzone tritt sanft zurück, Karten heben sich beim Überfahren minimal an.
+
+Zwei Vorkehrungen, damit daraus kein Schaden entsteht:
+
+- **Inhalt hängt nie von einer Animation ab.** Die ausblendende Klasse
+  setzt allein das Skript — ohne Skript, bei abgeschalteten
+  Bewegungseffekten (`prefers-reduced-motion`) oder bei einem Fehler
+  bleibt alles sofort sichtbar. Ein Sicherheitsnetz blendet nach zwei
+  Sekunden ein, was noch verborgen ist.
+- **Die Effekte liegen in einem eigenen Skriptblock** nach der Anwendung
+  und rufen keine ihrer Funktionen auf. Fällt dieser Block aus, läuft das
+  Werkzeug unverändert weiter.
+
+Das Aussehen ist rein additiv ergänzt — keine bestehende Regel wurde
+umgeschrieben, keine Klasse umbenannt.
+
 ## Wie die Daten hereinkommen
 
 Die Seite braucht **kein Backend**. Die Daten werden nachts serverseitig in
