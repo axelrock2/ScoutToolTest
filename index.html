@@ -149,6 +149,17 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 .ph-av{width:84px;height:84px;border-radius:16px;background:var(--pitch);border:2px solid var(--lime);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800;color:var(--lime);flex-shrink:0;position:relative;z-index:1}
 .ph-id{position:relative;z-index:1}
 .ph-name{font-size:30px;font-weight:800;letter-spacing:-1px;margin-bottom:6px;text-transform:uppercase}
+.herkunft-kurz{margin-top:26px;font-size:12.5px;color:var(--ink-2);line-height:1.7;
+  padding-top:20px;border-top:1px solid var(--line)}
+.herkunft-kurz strong{color:var(--ink)}
+.quelle-block{padding:14px 0;border-bottom:1px solid var(--line)}
+.quelle-block:last-child{border-bottom:none}
+.quelle-kopf{font-size:14px;font-weight:600;color:var(--ink);display:flex;
+  align-items:center;gap:10px;margin-bottom:7px;flex-wrap:wrap}
+.quelle-art{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1.2px;
+  text-transform:uppercase;border:1px solid;border-radius:5px;padding:2px 7px}
+.quelle-felder{font-size:12px;color:var(--ink-2);line-height:1.65}
+.quelle-hinweis{font-size:12px;color:var(--ink-3);line-height:1.6;margin-top:6px;font-style:italic}
 .quellen{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:12px 0 4px}
 .quellen-lbl{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3);text-transform:uppercase;letter-spacing:1.4px}
 .quellen a{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2);text-decoration:none;border:1px solid var(--line);border-radius:8px;padding:5px 11px;transition:all 0.15s;max-width:260px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
@@ -679,6 +690,9 @@ async function loadScoutData(){
     PLAYERS=d.players;
     if(d.ligen&&d.ligen.length)LIGEN=d.ligen;
     dataStand=d.stand;dataSaison=d.saison;dataHinweis=d.hinweis;
+    window.BEREICHE=d.bereiche||{};
+    window.HERKUNFT=d.herkunft||{};
+    zeigeHerkunft();
     showDataStand(d);
     fuelleLigaFilter();
     /* Falls der Nutzer schon auf einer Datenseite steht: neu zeichnen. */
@@ -1509,6 +1523,58 @@ function tmUrl(p){
   return 'https://www.transfermarkt.de/spieler/profil/spieler/'+p.id;
 }
 
+/* ---- Datenherkunft --------------------------------------------------
+   Welche Angabe stammt woher? Ohne das laesst sich nicht beurteilen, wie
+   belastbar eine Zahl ist - eine erhobene Groesse und eine berechnete
+   Note sind zweierlei, und was ganz fehlt, gehoert ebenso benannt. */
+function herkunftAbschnitt(){
+  var h=window.HERKUNFT;
+  if(!h||!Object.keys(h).length) return '';
+  var farbe={erhoben:'var(--green)',abgeleitet:'var(--blue)',fehlt:'var(--ink-3)'};
+  var wort={erhoben:'erhoben',abgeleitet:'berechnet',fehlt:'nicht verfügbar'};
+  var zeilen=Object.keys(h).map(function(k){
+    var q=h[k];
+    var titel=q.url
+      ? '<a href="'+q.url+'" target="_blank" rel="noopener" class="tm-link">'+q.name
+        +'<i class="ti ti-external-link"></i></a>'
+      : q.name;
+    return '<div class="quelle-block">'+
+      '<div class="quelle-kopf"><span class="quelle-art" style="color:'+farbe[q.art]
+      +';border-color:'+farbe[q.art]+'55">'+wort[q.art]+'</span> '+titel+'</div>'+
+      '<div class="quelle-felder">'+q.felder.join(' · ')+'</div>'+
+      (q.hinweis?'<div class="quelle-hinweis">'+q.hinweis+'</div>':'')+
+    '</div>';
+  }).join('');
+  return '<div class="sec"><div class="sec-title">Datenherkunft</div>'+
+    '<div class="param-erklaerung">Jede Angabe im Werkzeug lässt sich einer '+
+    'Quelle zuordnen. <strong>Erhoben</strong> heißt: so von der Quelle '+
+    'übernommen. <strong>Berechnet</strong> heißt: von diesem Werkzeug aus '+
+    'erhobenen Werten abgeleitet.</div>'+zeilen+'</div>';
+}
+
+/* Kurzhinweis auf der Startseite - die ausfuehrliche Aufstellung steht in
+   jeder Spielerakte. */
+function zeigeHerkunft(){
+  try{
+    var alt=document.getElementById('herkunft-kurz');
+    if(alt) alt.remove();
+    var h=window.HERKUNFT;
+    if(!h) return;
+    var hero=document.querySelector('#p-home .hero');
+    if(!hero) return;
+    var erhoben=Object.keys(h).filter(function(k){return h[k].art==='erhoben';})
+      .map(function(k){return h[k].name;});
+    var el=document.createElement('div');
+    el.id='herkunft-kurz';
+    el.className='herkunft-kurz';
+    el.innerHTML='<span class="quellen-lbl">Datenherkunft</span> '+
+      'Erhoben von <strong>'+erhoben.join('</strong> und <strong>')+'</strong>. '+
+      'Noten und Percentile berechnet dieses Werkzeug daraus. '+
+      'Die vollständige Zuordnung steht in jeder Spielerakte.';
+    hero.appendChild(el);
+  }catch(e){}
+}
+
 /* YouTube-Suche nach Spielermaterial. Zwei Varianten:
      - Der blosse Name laesst YouTube alles zeigen, was es zu ihm gibt.
        Ein angehaengtes Wort wie "highlights" schnitte Spielszenen,
@@ -1636,6 +1702,79 @@ function renderProfile(p,hasV,vN){
         z('Aufbaubeteiligung / 90',zahl(x.aufbau90),'xG der Angriffe mit ihm')+
       '</div></div>';
   })()+
+  (function(){
+    /* Notenaufschluesselung. Eine einzelne Zahl verdeckt, woher sie kommt -
+       und genau das laesst Bewertungen zwischen Vereinen schwanken: bei
+       Abwehrspielern stammt ein grosser Teil aus Mannschaftswerten. */
+    if(!p.teilnoten) return '';
+    const namen=(window.BEREICHE||{});
+    const reihe=Object.keys(p.teilnoten).sort();
+    const balken=reihe.map(function(b){
+      const v=p.teilnoten[b];
+      const istTeam=(b==='defensiv');
+      return '<div class="param-row"><div class="param-name">'+(namen[b]||b)
+        +(istTeam?' <span class="param-team">Team</span>':'')+'</div>'
+        +'<div class="bar-wrap"><div class="bar '+(v>=70?'top':v<40?'low':'mid')
+        +'" style="width:'+v+'%"></div></div>'
+        +'<div class="param-wert"><b>'+v+'</b></div></div>';
+    }).join('');
+    const t=p.anteil_team||0;
+    const warnung=t>=30
+      ? '<div class="flag"><div class="fdot neg"></div><span><strong>'+t
+        +' % der Note stammen aus Mannschaftswerten.</strong> Bei dieser '
+        +'Position gibt es keine individuellen Defensivdaten — ein Spieler '
+        +'einer starken Abwehr profitiert davon, ohne dass sein eigener '
+        +'Beitrag messbar wäre. Zwischen Vereinen schwankt die Note deshalb '
+        +'spürbar.</span></div>'
+      : '<div class="flag"><div class="fdot pos"></div><span>'+(t?t:'0')
+        +' % der Note stammen aus Mannschaftswerten — sie beschreibt also '
+        +'überwiegend den Spieler selbst.</span></div>';
+    const basis=p.basis
+      ? '<div class="flag"><div class="fdot neu"></div><span>Verglichen mit '
+        +'<strong>'+p.basis.gruppe+'</strong> Spielern derselben Position in '
+        +'derselben Liga, auf Grundlage von <strong>'+p.basis.minuten
+        +'</strong> Spielminuten.</span></div>' : '';
+    return '<div class="sec"><div class="sec-title">Woraus die Note entsteht</div>'+
+      '<div class="param-erklaerung">Die Liga-Note <strong>'+p.ln+'</strong> ist ein '
+      +'gewichtetes Mittel dieser Bereiche. Aufgeschlüsselt zeigt sich, worauf '
+      +'sie beruht.</div>'+
+      balken+'<div style="margin-top:18px">'+warnung+basis+'</div></div>';
+  })()+
+  (function(){
+    /* Verletzungshistorie - fuer Scouting oft entscheidender als eine
+       Kennzahl mehr. Wird nur fuer Spieler ab Note 70 geholt (ein Abruf
+       je Spieler), deshalb fehlt sie bei vielen. */
+    const v=p.verletzungen;
+    if(!v) return '';
+    const jahre=function(){
+      if(!v.anzahl) return '<div class="flag"><div class="fdot pos"></div>'
+        +'<span>Keine Verletzung verzeichnet.</span></div>';
+      return '<div class="flag"><div class="fdot '+(v.tage_3j>120?'neg':v.tage_3j>40?'neu':'pos')
+        +'"></div><span><strong>'+v.anzahl_3j+' Ausfälle in drei Jahren</strong> — '
+        +v.tage_3j+' Tage, '+v.spiele_3j+' verpasste Spiele. '
+        +'Insgesamt verzeichnet: '+v.anzahl+' Ausfälle über '+v.tage_gesamt
+        +' Tage.</span></div>';
+    }();
+    const aktuell=v.aktuell_verletzt
+      ? '<div class="flag"><div class="fdot neg"></div><span><strong>Aktuell '
+        +'verletzt</strong> — laut Quelle noch ohne Enddatum.</span></div>' : '';
+    const arten=(v.haeufigste&&v.haeufigste.length)
+      ? '<div class="flag"><div class="fdot neu"></div><span>Häufigste Ursachen: '
+        +v.haeufigste.map(function(a){return a[0]+' ('+a[1]+'×)';}).join(', ')
+        +'</span></div>' : '';
+    const liste=(v.faelle||[]).slice(0,6).map(function(f){
+      return '<div class="param-row"><div class="param-name">'+f.saison+' · '+f.art
+        +'</div><div class="bar-wrap"><div class="bar '
+        +((f.tage||0)>60?'low':(f.tage||0)>20?'mid':'top')
+        +'" style="width:'+Math.min(100,(f.tage||0))+'%"></div></div>'
+        +'<div class="param-wert"><b>'+(f.tage||'?')+'</b> <span>Tage</span></div></div>';
+    }).join('');
+    return '<div class="sec"><div class="sec-title">Verletzungshistorie</div>'+
+      '<div class="param-erklaerung">Quelle: Transfermarkt, Stand '+(v.geholt||'—')
+      +'. Balkenlänge = Ausfalltage (ab 100 abgeschnitten).</div>'+
+      aktuell+jahre+arten+
+      (liste?'<div style="margin-top:16px">'+liste+'</div>':'')+'</div>';
+  })()+
   '<div class="sec"><div class="sec-title">Stärkenprofil im Ligavergleich</div>'+
     '<div class="param-erklaerung">Jeder Wert sagt, <strong>wie viel Prozent der '+p.pos
     +' in der '+p.liga+' dieser Spieler übertrifft</strong>. 88 % heißt: nur 12 % sind besser. '
@@ -1649,7 +1788,8 @@ function renderProfile(p,hasV,vN){
     '<div class="radar-grid"><div class="radar-box">'+radarSVG(p.params)+'</div><div>'+bars+'</div></div>'+
     '<div class="legend"><div class="leg-item"><div class="leg-dot" style="background:var(--lime)"></div>ab 70 % — über dem Schnitt</div><div class="leg-item"><div class="leg-dot" style="background:var(--blue)"></div>40–69 % — im Schnitt</div><div class="leg-item"><div class="leg-dot" style="background:var(--amber)"></div>unter 40 % — Schwachpunkt</div></div></div>'+
   '<div class="sec"><div class="sec-title">Normabweichungs-Flags</div><div class="flag-list">'+flagsArr.map(f=>'<div class="flag"><div class="fdot '+f.c+'"></div><span>'+f.t+'</span></div>').join('')+'</div></div>'+
-  '<div class="sec"><div class="sec-title">Scout-Fazit</div><div class="fazit">'+fazitFuer(p)+'</div></div>';
+  '<div class="sec"><div class="sec-title">Scout-Fazit</div><div class="fazit">'+fazitFuer(p)+'</div></div>'+
+  herkunftAbschnitt();
   go('profil');
 }
 function openModal(){

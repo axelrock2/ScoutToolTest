@@ -133,6 +133,84 @@ def niveau_aus_marktwert(median_eur: float) -> int:
     return max(0, min(100, round(roh * 100)))
 
 
+# Kennzahl -> Bereich. Damit laesst sich die Note aufschluesseln, statt
+# sie als eine Zahl stehen zu lassen: eine 66 aus lauter
+# Mannschaftswerten sagt etwas anderes als eine 66 aus eigenen Toren.
+BEREICH = {
+    "tore_pro90": "offensiv",
+    "vorlagen_pro90": "offensiv",
+    "scorer_pro90": "offensiv",
+    "tor_anteil": "offensiv",
+    "team_gegentore_pro_spiel": "defensiv",
+    "einsatz_anteil": "verfuegbarkeit",
+    "min_pro_einsatz": "verfuegbarkeit",
+    "minuten": "verfuegbarkeit",
+    "einsaetze": "verfuegbarkeit",
+    "karten_pro90": "disziplin",
+}
+BEREICH_NAME = {
+    "offensiv": "Offensive",
+    "defensiv": "Defensive (Mannschaft)",
+    "verfuegbarkeit": "Verfügbarkeit",
+    "disziplin": "Disziplin",
+}
+
+
+# ---------------------------------------------------------------------
+# Datenherkunft
+#
+# Jede Zahl im Werkzeug muss sich einer Quelle zuordnen lassen - sonst
+# laesst sich nicht beurteilen, wie belastbar sie ist. Die Uebersicht
+# wandert in die Ausgabedatei und wird im Frontend angezeigt.
+#
+# "abgeleitet" heisst: von diesem Werkzeug berechnet, nicht gemessen.
+# ---------------------------------------------------------------------
+HERKUNFT = {
+    "transfermarkt": {
+        "name": "Transfermarkt",
+        "url": "https://www.transfermarkt.de",
+        "art": "erhoben",
+        "felder": ["Name", "Alter", "Position", "Größe", "Fuß", "Rückennummer",
+                   "Marktwert", "Vertragsende", "Verein", "Liga",
+                   "Einsätze", "Tore", "Vorlagen", "Karten", "Minuten",
+                   "Spiele/Tore/Gegentore der Mannschaft",
+                   "Verletzungshistorie"],
+        "hinweis": "Leistungsdaten nur aus der jeweiligen Liga "
+                   "(ohne Pokal und Europapokal).",
+    },
+    "understat": {
+        "name": "Understat",
+        "url": "https://understat.com",
+        "art": "erhoben",
+        "felder": ["xG", "npxG", "xA", "Schlüsselpässe", "Schüsse",
+                   "Aufbaubeteiligung"],
+        "hinweis": "Nur die fünf großen ersten Ligen. Geht bewusst NICHT "
+                   "in die Liga-Note ein.",
+    },
+    "abgeleitet": {
+        "name": "Von diesem Werkzeug berechnet",
+        "url": None,
+        "art": "abgeleitet",
+        "felder": ["Liga-Note", "Positions-Note", "Team-Note", "Percentile",
+                   "Anteil an Teamtoren", "Einsatzanteil", "Liganiveau",
+                   "Eingeordnete Note", "Unterbewertet-Index",
+                   "Verletzungsanfälligkeit"],
+        "hinweis": "Berechnet aus den erhobenen Werten. Percentile gelten "
+                   "je Liga und Position.",
+    },
+    "fehlt": {
+        "name": "Nicht verfügbar",
+        "url": None,
+        "art": "fehlt",
+        "felder": ["Zweikämpfe", "Tacklings", "Klärungen", "Passquote",
+                   "Laufleistung", "Charakter", "Gewicht"],
+        "hinweis": "Individuelle Defensiv- und Laufdaten führen nur "
+                   "kostenpflichtige Anbieter; frei zugängliche Quellen "
+                   "(FBref, Sofascore, kicker) sperren den Zugriff.",
+    },
+}
+
+
 def kennwerte(s: dict) -> dict | None:
     """Leitet die Rohkennzahlen eines Spielers ab.
 
@@ -275,6 +353,7 @@ def main() -> int:
             # 18 000 Spielern spart das mehrere Megabyte.
             params = []
             gewichte = []
+            bereiche = []
             for anzeige, key, hoch, gewicht in felder:
                 if key not in kw or len(verteilung.get(key, [])) < 5:
                     continue          # Kennzahl liegt fuer diesen Fall nicht vor
@@ -285,6 +364,8 @@ def main() -> int:
                 # es bei 17000 Spielern rund ein Megabyte.
                 params.append({"i": KENNZAHL_INDEX[anzeige], "p": wert})
                 gewichte.append(gewicht)
+                bereiche.append((BEREICH.get(key, "sonstiges"), wert, gewicht,
+                                 key in TEAM_KENNZAHLEN))
             if not params:
                 continue
 
@@ -292,6 +373,20 @@ def main() -> int:
             # bestimmten Verfuegbarkeitswerte die Note der Abwehrspieler.
             ln = round(sum(p["p"] * g for p, g in zip(params, gewichte))
                        / sum(gewichte))
+
+            # Note aufschluesseln: je Bereich ein gewichtetes Mittel, dazu
+            # der Anteil, den Mannschaftswerte an der Gesamtnote haben.
+            # Genau daher ruehrt das Schwanken von Verein zu Verein - ein
+            # Innenverteidiger einer starken Abwehr profitiert davon, ohne
+            # dass sein eigener Beitrag messbar waere.
+            teilnoten = {}
+            for bereich in set(b[0] for b in bereiche):
+                teile = [(w, g) for b, w, g, _ in bereiche if b == bereich]
+                if teile:
+                    teilnoten[bereich] = round(
+                        sum(w * g for w, g in teile) / sum(g for _, g in teile))
+            team_gewicht = sum(g for _, _, g, ist_team in bereiche if ist_team)
+            anteil_team = round(100 * team_gewicht / sum(gewichte))
 
             # Potenzialnote: Leistung plus Altersbonus
             alter = s.get("alter") or 27
@@ -348,6 +443,15 @@ def main() -> int:
                 # die uebrigen 28 und der Ligavergleich waere hinfaellig.
                 **({"xg": s["xg"]} if s.get("xg") else {}),
                 "params": params,
+                "teilnoten": teilnoten,
+                # Wie viel der Note stammt aus Mannschaftswerten?
+                "anteil_team": anteil_team,
+                # Worauf die Note beruht - Groesse der Vergleichsgruppe und
+                # eigene Spielzeit. Eine 90 aus einer Gruppe von acht ist
+                # etwas anderes als eine 90 aus einer Gruppe von achtzig.
+                "basis": {"gruppe": len(basis), "minuten": kw["minuten"]},
+                **({"verletzungen": s["verletzungen"]}
+                   if s.get("verletzungen") else {}),
                 # flags und fazit entstehen im Frontend (flagsFuer/fazitFuer).
                 # Als Text mitgeliefert waeren sie rund 8 MB - fast die
                 # Haelfte der Datei - obwohl sie nur beim Oeffnen eines
@@ -458,6 +562,8 @@ def main() -> int:
                         "und werden bewusst nicht ausgewiesen."),
             "mindestminuten": MIN_MINUTEN,
             "kennzahlen": KENNZAHL_NAMEN,
+            "herkunft": HERKUNFT,
+            "bereiche": BEREICH_NAME,
             "profile": {
                 g: [{"i": KENNZAHL_INDEX[a], "g": gew,
                      **({"team": 1} if k in TEAM_KENNZAHLEN else {})}

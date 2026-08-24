@@ -107,6 +107,55 @@ vierzehn Oberligen — zusammen 33 Wettbewerbe und rund 620 Vereine.
 
 Eine Liga ergänzen = eine Zeile in `scripts/leagues.py`.
 
+## Datenherkunft
+
+Jede Angabe lässt sich einer Quelle zuordnen — nachlesbar in jeder
+Spielerakte unter *Datenherkunft*, in Kurzform auf der Startseite.
+
+| Art | Quelle | Was daher stammt |
+|---|---|---|
+| **erhoben** | [Transfermarkt](https://www.transfermarkt.de) | Stammdaten, Marktwert, Vertrag, Einsätze, Tore, Vorlagen, Karten, Minuten, Mannschaftswerte, Verletzungshistorie |
+| **erhoben** | [Understat](https://understat.com) | xG, npxG, xA, Schlüsselpässe, Schüsse, Aufbaubeteiligung *(nur 5 Ligen)* |
+| **berechnet** | dieses Werkzeug | Liga-Note, Positions-Note, Team-Note, Percentile, Liganiveau, Unterbewertet-Index |
+| **fehlt** | — | Zweikämpfe, Tacklings, Klärungen, Passquote, Laufleistung, Gewicht |
+
+Die Trennung ist wichtig: Eine **erhobene** Körpergröße und eine
+**berechnete** Note sind zweierlei — und was gar nicht vorliegt, gehört
+ebenso benannt wie das Vorhandene.
+
+## Verletzungshistorie
+
+Aus Transfermarkt, kostenlos: Art, Zeitraum, Ausfalltage und verpasste
+Spiele je Verletzung, dazu die Summen der letzten drei Jahre.
+
+Das kostet **einen Abruf je Spieler** — für alle 16.761 wären es gut
+sieben Stunden. Geholt wird deshalb nach Note absteigend und in Portionen;
+wer schon erfasst ist, wird übersprungen:
+
+```bash
+python3 scripts/verletzungen.py                # ab Note 70, 600 Stück
+python3 scripts/verletzungen.py --ab-note 80
+```
+
+## Woraus eine Note entsteht
+
+Eine einzelne Zahl verdeckt, worauf sie beruht. Die Spielerakte schlüsselt
+sie deshalb auf — nach Bereichen (Offensive, Defensive, Verfügbarkeit,
+Disziplin), mit der Größe der Vergleichsgruppe und den zugrunde liegenden
+Spielminuten.
+
+**Entscheidend dabei: der Mannschaftsanteil.** Für Abwehrpositionen gibt es
+keine individuellen Daten, dort trägt die Defensive der Mannschaft einen
+großen Teil der Note. Genau daher schwanken Bewertungen zwischen Vereinen.
+Die Akte beziffert das:
+
+| Spieler | Liga-Note | davon aus Mannschaftswerten |
+|---|---|---|
+| Erling Haaland (ST) | 94 | **0 %** — ganz seine eigene Leistung |
+| Filip Stanković (TW) | 90 | **38 %** — gut ein Drittel vom Verein |
+
+Ab 30 Prozent erscheint ein ausdrücklicher Warnhinweis.
+
 ## Kennzahlen — und was bewusst fehlt
 
 Ausgewiesen werden nur Werte, die sich aus frei verfügbaren Quellen
