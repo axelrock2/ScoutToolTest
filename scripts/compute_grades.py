@@ -24,7 +24,7 @@ from datetime import date, datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from leagues import by_frontend_id                  # noqa: E402
+from leagues import LEAGUES, by_frontend_id         # noqa: E402
 
 QUELLE = os.path.join(os.path.dirname(__file__), "..", "data",
                       "players_raw.json.gz")
@@ -154,6 +154,68 @@ BEREICH_NAME = {
     "verfuegbarkeit": "Verfügbarkeit",
     "disziplin": "Disziplin",
 }
+
+
+# ---------------------------------------------------------------------
+# Liganiveau: UEFA-Koeffizient und Marktwert gemischt
+#
+# Der Marktwert allein verzerrte systematisch. La Liga und Serie A haben
+# niedrigere Median-Marktwerte als die Bundesliga, sind im Europapokal
+# aber erfolgreicher - tiefere Kader, mehr Wettbewerb. Portugal stand bei
+# 57, liegt im UEFA-Ranking aber vor Belgien.
+#
+# Quelle: UEFA-Fuenfjahreskoeffizient, Laenderwertung 2025/26
+# (kassiesa.net/uefa, Methode 5), Einzeljahre 21/22 bis 25/26.
+#
+# JUENGERE JAHRE WIEGEN SCHWERER. Das Werkzeug bewertet Spieler der Saison
+# 2025/26; Ergebnisse aus 2021/22 sagen wenig ueber die Staerke einer Liga
+# heute. Mit dieser Gewichtung zieht Spanien an Italien vorbei - im
+# juengsten Jahr liegt Italien mit 19,0 hinter Spanien (22,1) und
+# Deutschland (21,8), sein Vorsprung in der Fuenfjahressumme stammt aus
+# den aelteren Jahren.
+#
+# Zu beachten: der Abstand zwischen 84, 85 und 86 liegt innerhalb der
+# Messgenauigkeit. Diese Ligen sind praktisch gleich stark - die
+# Rangfolge dazwischen sollte niemand ueberdeuten.
+UEFA_JAHRE = {                    # 21/22, 22/23, 23/24, 24/25, 25/26
+    "ENG": [21.000, 23.000, 17.375, 29.464, 28.680],
+    "ITA": [15.714, 22.357, 21.000, 21.875, 19.000],
+    "ESP": [18.428, 16.571, 16.062, 23.892, 22.093],
+    "GER": [16.214, 17.125, 19.357, 18.421, 21.785],
+    "FRA": [18.416, 12.583, 16.250, 17.928, 18.321],
+    "POR": [12.916, 12.500, 11.000, 16.250, 20.500],
+    "BEL": [6.600, 14.200, 14.400, 15.650, 11.400],
+    "AUT": [10.400, 4.900, 4.800, 9.650, 4.100],
+}
+UEFA_GEWICHTE = [1, 2, 4, 6, 9]
+ANTEIL_UEFA = 0.6                 # Rest: Marktwert
+
+# Ligen ohne UEFA-Wert haengen an ihrer ersten Liga. Ihr Abstand dorthin
+# bleibt, wie ihn die Marktwerte ausweisen - dieses Verhaeltnis ist
+# bemerkenswert stabil (Championship/PL 0,65, 2. BL/BL 0,66,
+# LaLiga2/LaLiga 0,65).
+ELTERNLIGA = {
+    "champ": "pl", "buli2": "buli", "laliga2": "laliga",
+    "serieb": "seriea", "ligue2": "ligue1",
+    "l3": "buli2",
+    "rl-nord": "buli2", "rl-nordost": "buli2", "rl-west": "buli2",
+    "rl-suedwest": "buli2", "rl-bayern": "buli2",
+}
+
+
+def uefa_niveau() -> dict[str, float]:
+    """Gewichteter UEFA-Koeffizient je Land, auf 0-100 gestaucht.
+
+    Gestaucht per Wurzel, weil der Koeffizient von wenigen Spitzenvereinen
+    getrieben wird: linear uebersetzt fiele Oesterreich unter die deutsche
+    3. Liga, was die Breite der Liga voellig verfehlt.
+    """
+    import math
+    roh = {land: sum(v * g for v, g in zip(werte, UEFA_GEWICHTE))
+                 / sum(UEFA_GEWICHTE)
+           for land, werte in UEFA_JAHRE.items()}
+    hoechster = max(roh.values())
+    return {land: 100 * math.sqrt(v / hoechster) for land, v in roh.items()}
 
 
 # ---------------------------------------------------------------------
@@ -509,8 +571,8 @@ def main() -> int:
             return 0
         return round(100 * sum(1 for p in gruppe if p["mv_eur"]) / len(gruppe))
 
-    def niveau_fuer(liga_id: str, stufe: int) -> tuple[int, bool]:
-        """(Niveau 0-100, geschaetzt?)"""
+    def marktwert_niveau(liga_id: str, stufe: int) -> tuple[int, bool]:
+        """Niveau allein aus dem Median-Marktwert. (Wert, geschaetzt?)"""
         werte = sorted(p["mv_eur"] for p in spieler_out
                        if p["liga_id"] == liga_id and p["mv_eur"])
         if len(werte) >= 20:
@@ -518,14 +580,47 @@ def main() -> int:
             return niveau_aus_marktwert(median), False
         return NIVEAU_GESCHAETZT.get(stufe, 50), True
 
+    unorm = uefa_niveau()
+
+    def niveau_fuer(liga_id: str, stufe: int, land: str) -> tuple[int, bool, str]:
+        """(Niveau 0-100, geschaetzt?, Grundlage)
+
+        Erste Ligen mit UEFA-Wert: Mischung aus Europapokalerfolg und
+        Marktwert. Alle uebrigen erben den Abstand zu ihrer ersten Liga,
+        wie ihn die Marktwerte ausweisen - fuer sie gibt es keinen
+        eigenen UEFA-Wert.
+        """
+        mw, geschaetzt = marktwert_niveau(liga_id, stufe)
+
+        if stufe == 1 and land in unorm:
+            gemischt = round(ANTEIL_UEFA * unorm[land] + (1 - ANTEIL_UEFA) * mw)
+            return gemischt, False, "uefa+marktwert"
+
+        eltern = ELTERNLIGA.get(liga_id)
+        if eltern:
+            eltern_mw, _ = marktwert_niveau(eltern, 1 if eltern in
+                                            ("pl", "buli", "laliga", "seriea",
+                                             "ligue1") else 2)
+            eltern_land = next((l.land for l in LEAGUES
+                                if l.frontend_id == eltern), None)
+            eltern_neu = niveau_fuer(eltern, 1 if eltern_land in unorm and
+                                     eltern not in ELTERNLIGA else 2,
+                                     eltern_land)[0]
+            if eltern_mw:
+                verhaeltnis = mw / eltern_mw
+                return round(eltern_neu * verhaeltnis), geschaetzt, "abgeleitet"
+
+        return mw, geschaetzt, "marktwert"
+
     ligen_liste = []
     for v in ligen.values():
-        niv, geschaetzt = niveau_fuer(v["id"], v["stufe"])
+        niv, geschaetzt, grundlage = niveau_fuer(v["id"], v["stufe"], v["land"])
         ligen_liste.append({**v, "vereine": sorted(v["vereine"]),
                             "bewertet": bewertet_je_liga.get(v["id"], 0),
                             "marktwert_anteil": mw_anteil(v["id"]),
                             "niveau": niv,
-                            "niveau_geschaetzt": geschaetzt})
+                            "niveau_geschaetzt": geschaetzt,
+                            "niveau_grundlage": grundlage})
 
     # Niveau auch am Spieler, damit das Frontend nicht nachschlagen muss
     niveau_je_liga = {l["id"]: l["niveau"] for l in ligen_liste}

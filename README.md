@@ -9,22 +9,51 @@ Oberliga. Reine statische Seite, ohne Server und ohne laufende Kosten.
 
 Ein Percentil gilt nur innerhalb seiner Liga. Note 85 aus der Oberliga
 neben Note 85 aus der Bundesliga zu stellen, wäre eine stillschweigende
-Gleichsetzung. Das Tool leitet deshalb je Liga ein **Niveau** aus dem
-Median-Marktwert ab — aussagekräftiger als die bloße Spielklasse:
+Gleichsetzung. Das Tool weist deshalb jeder Liga ein **Niveau** zu — aus
+zwei Quellen gemischt:
+
+**60 % UEFA-Fünfjahreskoeffizient** (Länderwertung 2025/26, Europapokal-
+ergebnisse) und **40 % Median-Marktwert**. Jüngere Jahre wiegen dabei
+deutlich schwerer (Gewichte 1·2·4·6·9 für 21/22 bis 25/26): Das Werkzeug
+bewertet Spieler der Saison 2025/26, Ergebnisse von 2021/22 sagen wenig
+über die Stärke einer Liga heute.
 
 | Niveau | Liga |
 |---|---|
-| 98 | Premier League |
-| 80 | Bundesliga, Serie A |
-| 63 | Championship **und** Jupiler Pro League |
-| 53 | 2. Bundesliga |
-| 47 | Österreich Bundesliga, Ligue 2 |
-| 37 | 3. Liga |
-| 19 | Regionalliga |
+| 100 | Premier League |
+| 86 | Bundesliga |
+| 85 | Serie A |
+| 84 | La Liga |
+| 80 | Ligue 1 |
+| 71 | Liga Portugal |
+| 68 | Jupiler Pro League |
+| 65 | Championship |
+| 57 | 2. Bundesliga |
+| 55 | LaLiga 2 |
+| 52 | Serie B |
+| 49 | Ligue 2 |
+| 48 | Österreich Bundesliga |
+| 38 | 3. Liga |
+| 20 | Regionalliga |
 | 12 | Oberliga *(geschätzt, dort fehlen Marktwerte)* |
 
-Die Championship liegt gleichauf mit Belgiens erster Liga, Österreich
-unter der Ligue 2 — das bildet die Spielklasse allein nicht ab.
+**Warum nicht Marktwert allein?** Der verzerrte systematisch: La Liga und
+Serie A haben niedrigere Median-Marktwerte als die Bundesliga, sind im
+Europapokal aber erfolgreicher. Portugal stand bei 57, liegt im
+UEFA-Ranking aber vor Belgien.
+
+**Der Abstand zwischen 84, 85 und 86 liegt innerhalb der Messgenauigkeit.**
+Diese drei Ligen sind praktisch gleich stark — die Rangfolge dazwischen
+sollte niemand überdeuten.
+
+Ligen ohne eigenen UEFA-Wert (zweite Ligen, deutscher Unterbau) erben den
+Abstand zu ihrer ersten Liga, wie ihn die Marktwerte ausweisen. Dieses
+Verhältnis ist bemerkenswert stabil: Championship/PL 0,65, 2. BL/BL 0,66,
+LaLiga2/LaLiga 0,65.
+
+Der UEFA-Koeffizient wird dabei per Wurzel gestaucht — er wird von wenigen
+Spitzenvereinen getrieben; linear übersetzt fiele Österreich unter die
+deutsche 3. Liga, was die Breite der Liga völlig verfehlt.
 
 Im Vereins-Matching wird die Passung um diesen Abstand bereinigt, sonst
 schlüge ein Regionalliga-Torjäger einen soliden Bundesligaspieler. Die
