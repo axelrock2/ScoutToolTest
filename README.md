@@ -137,6 +137,13 @@ python3 scripts/verletzungen.py                # ab Note 70, 600 Stück
 python3 scripts/verletzungen.py --ab-note 80
 ```
 
+Aktuell erfasst: **1.019 Spieler** (alle mit Note 70+, soweit im Zeitbudget
+erreicht). Wer 90 Ausfalltage oder mehr in drei Jahren hat, trägt das
+Kennzeichen bereits auf der Trefferkarte — dafür muss man kein Profil
+öffnen. Ein Schalter in der Filterleiste blendet solche Spieler aus;
+Spieler **ohne** Historie fallen dabei nicht heraus, fehlende Daten dürfen
+niemanden aussortieren.
+
 ## Woraus eine Note entsteht
 
 Eine einzelne Zahl verdeckt, worauf sie beruht. Die Spielerakte schlüsselt

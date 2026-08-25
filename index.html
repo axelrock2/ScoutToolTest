@@ -555,6 +555,7 @@ input[type=range]::-webkit-slider-thumb{box-shadow:none}
         <div class="tr"><label>Nur Vertragsläufer</label><label class="tog"><input type="checkbox" id="f-auslaufend"><span class="tslider"></span></label></div>
         <div class="tr"><label>Nur unterbewertete Spieler</label><label class="tog"><input type="checkbox" id="f-underval"><span class="tslider"></span></label></div>
         <div class="tr"><label title="Blendet Spieler mit sehr wenig Saisonminuten aus">Nur belastbare Stichprobe</label><label class="tog"><input type="checkbox" id="f-belastbar" checked><span class="tslider"></span></label></div>
+        <div class="tr"><label title="Blendet Spieler mit 90+ Ausfalltagen in drei Jahren aus. Betrifft nur Spieler, für die eine Historie vorliegt.">Verletzungsanfällige ausblenden</label><label class="tog"><input type="checkbox" id="f-fit"><span class="tslider"></span></label></div>
       </div>
       <button class="btn-primary" onclick="go('ergebnisse','spielersuche')"><i class="ti ti-search"></i> Suche starten</button>
     </div>
@@ -1179,7 +1180,7 @@ function leseFilter(){
           ageVon:parseInt(v('f-age-von'),10),ageBis:parseInt(v('f-age-bis'),10),
           maxMw:parseFloat(v('f-mw')),minLn:parseInt(v('f-ln'),10),
           vertrag:v('f-vertrag'),auslaufend:an('f-auslaufend'),
-          underval:an('f-underval'),belastbar:an('f-belastbar'),
+          underval:an('f-underval'),belastbar:an('f-belastbar'),fit:an('f-fit'),
           sort:v('f-sort')||'ln'};
 }
 
@@ -1199,6 +1200,9 @@ function filterPlayers(f){
     if(f.auslaufend&&p.contract!=='red')return false;
     if(f.underval&&!p.underval)return false;
     if(f.belastbar&&p.belastbar===false)return false;
+    /* Nur wer eine Historie hat, kann daran scheitern - fehlende Daten
+       duerfen niemanden aussortieren. */
+    if(f.fit&&p.verletzungen&&p.verletzungen.tage_3j>=90)return false;
     return true;
   });
 }
@@ -1445,6 +1449,19 @@ function renderPlayers(){
       ? '<span class="badge" style="border-color:rgba(77,166,255,0.4);color:var(--blue)" '
         +'title="Der Verein führt ihn heute nicht mehr im Kader — Leistungsdaten '
         +'stammen aus seiner Zeit dort.">nicht mehr im Kader</span>' : '';
+    /* Verletzungsanfaelligkeit gehoert auf die Karte, nicht nur ins
+       Profil - sonst muesste man jeden Treffer einzeln oeffnen, um eine
+       Warnung zu sehen, die ueber einen Transfer entscheiden kann. */
+    const v=p.verletzungen;
+    const verlBadge=(v&&v.tage_3j>=90)
+      ? '<span class="badge" style="border-color:rgba(196,59,59,0.45);color:var(--red)" '
+        +'title="'+v.anzahl_3j+' Ausfälle in drei Jahren, zusammen '+v.tage_3j
+        +' Tage und '+v.spiele_3j+' verpasste Spiele. Quelle: Transfermarkt.">'
+        +v.tage_3j+' Ausfalltage</span>'
+      : (v&&v.aktuell_verletzt
+        ? '<span class="badge" style="border-color:rgba(196,59,59,0.45);color:var(--red)" '
+          +'title="Laut Transfermarkt derzeit ohne Enddatum verletzt.">aktuell verletzt</span>'
+        : '');
     const duenn=(p.belastbar===false)
       ? '<span class="badge" style="border-color:rgba(245,166,35,0.4);color:var(--amber)" title="'
         +p.minuten+' Saisonminuten — unter der Schwelle für eine belastbare Bewertung">'
@@ -1458,7 +1475,7 @@ function renderPlayers(){
         +'<div class="score-cap"><div class="scl">LN</div><div class="scv">'+p.ln+'</div><div class="scbar" style="width:'+p.ln+'%;background:var(--blue)"></div></div>'
       : '<div class="score-cap primary"><div class="scl">LN</div><div class="scv">'+p.ln+'</div><div class="scbar" style="width:'+p.ln+'%"></div></div>'
         +'<div class="score-cap"><div class="scl">PN</div><div class="scv">'+p.pn+'</div><div class="scbar" style="width:'+p.pn+'%;background:var(--blue)"></div></div>';
-    return '<div class="pcard" onclick="showProfile('+p.id+')"><div class="av">'+p.ini+''+(p.number?'<span class="num">'+p.number+'</span>':'')+'</div><div class="pi"><h4><a href="'+tmUrl(p)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Profil auf transfermarkt.de öffnen" class="tm-link">'+p.name+'<i class="ti ti-external-link"></i></a></h4><div class="meta"><span class="pos-tag">'+p.pos+'</span><span>'+p.club+'</span><span>'+p.liga+'</span><span>'+p.age+' J.</span></div><div class="badges">'+cbadge(p.contract)+'<span class="badge b-blue">'+p.mv+' €</span>'+(p.underval?'<span class="badge b-teal"><i class="ti ti-trending-up" style="font-size:10px"></i> Unterbewertet</span>':'')+bewBadge+wegBadge+einBadge+duenn+luecken+'</div></div><div class="scores">'+note+'</div></div>';
+    return '<div class="pcard" onclick="showProfile('+p.id+')"><div class="av">'+p.ini+''+(p.number?'<span class="num">'+p.number+'</span>':'')+'</div><div class="pi"><h4><a href="'+tmUrl(p)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Profil auf transfermarkt.de öffnen" class="tm-link">'+p.name+'<i class="ti ti-external-link"></i></a></h4><div class="meta"><span class="pos-tag">'+p.pos+'</span><span>'+p.club+'</span><span>'+p.liga+'</span><span>'+p.age+' J.</span></div><div class="badges">'+cbadge(p.contract)+'<span class="badge b-blue">'+p.mv+' €</span>'+(p.underval?'<span class="badge b-teal"><i class="ti ti-trending-up" style="font-size:10px"></i> Unterbewertet</span>':'')+bewBadge+verlBadge+wegBadge+einBadge+duenn+luecken+'</div></div><div class="scores">'+note+'</div></div>';
   }).join('');
 }
 /* Flags und Fazit werden hier erzeugt, nicht in der JSON mitgeliefert.
