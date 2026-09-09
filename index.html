@@ -203,6 +203,74 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 /* Herkunftszeile unter der Auslaeufer-Suche: leise, aber lesbar - sie
    sagt, worauf die Auskunft beruht und wo sie aufhoert. */
 .a-quelle{font-size:11px;line-height:1.6;color:var(--ink-3);margin:14px 0 0;font-style:italic}
+
+/* ---- Mehrfachauswahl (Ligen) --------------------------------------
+   Ein natives <select multiple> verlangt Strg-Klick und zeigt bei 35
+   Eintraegen entweder eine winzige Liste oder eine sehr lange. Deshalb
+   ein Knopf, der ein Feld mit Kaestchen aufklappt - nach Spielklasse
+   gruppiert, jede Gruppe als Ganzes schaltbar. */
+.mehrfach{position:relative}
+.mehrfach-knopf{width:100%;text-align:left;background:var(--input);border:1px solid var(--line);
+  border-radius:9px;padding:11px 30px 11px 13px;font:inherit;font-size:13px;color:var(--ink);
+  cursor:pointer;transition:border-color 0.15s}
+.mehrfach-knopf:hover{border-color:var(--line-bright)}
+.mehrfach-knopf::after{content:'';position:absolute;right:13px;top:50%;width:6px;height:6px;
+  border-right:1.5px solid var(--ink-3);border-bottom:1.5px solid var(--ink-3);
+  transform:translateY(-70%) rotate(45deg);pointer-events:none}
+.mehrfach.offen .mehrfach-knopf{border-color:var(--lime);color:var(--ink)}
+.mehrfach-panel{position:absolute;z-index:60;top:calc(100% + 6px);left:0;right:0;max-height:340px;
+  overflow-y:auto;background:var(--panel);border:1px solid var(--line-bright);border-radius:11px;
+  padding:8px;box-shadow:0 14px 34px rgba(0,0,0,0.28)}
+.mehrfach-kopf{display:flex;gap:8px;padding:4px 6px 8px;border-bottom:1px solid var(--line)}
+.mehrfach-kopf button{flex:1;background:none;border:1px solid var(--line);border-radius:7px;
+  padding:5px 8px;font:inherit;font-size:11px;color:var(--ink-2);cursor:pointer}
+.mehrfach-kopf button:hover{border-color:var(--lime);color:var(--ink)}
+.mehrfach-gruppe{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;
+  letter-spacing:1px;color:var(--ink-3);padding:11px 6px 5px;cursor:pointer;display:flex;
+  justify-content:space-between;align-items:center}
+.mehrfach-gruppe:hover{color:var(--lime)}
+/* Die Zeilen sind <label> und liegen in .fg - dessen Regel setzt
+   display:block, Großschreibung und Sperrsatz. Ohne diese Rücknahme
+   bricht das Flex-Layout und die Zahl klebt am Ligennamen. */
+.fg .mehrfach-zeile,.ordner-pop .mehrfach-zeile{display:flex;align-items:center;gap:9px;
+  padding:6px 8px;border-radius:7px;font-family:inherit;font-size:12.5px;color:var(--ink-2);
+  cursor:pointer;text-transform:none;letter-spacing:0;margin-bottom:0}
+.fg .mehrfach-zeile:hover,.ordner-pop .mehrfach-zeile:hover{background:var(--pitch-2);color:var(--ink)}
+.mehrfach-zeile input{accent-color:var(--lime);width:14px;height:14px;flex-shrink:0;cursor:pointer;
+  margin:0}
+.mehrfach-zeile>span:first-of-type{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap}
+.mehrfach-zeile .anzahl{flex:none;margin-left:auto;padding-left:8px;
+  font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3)}
+
+/* ---- Merkliste: Stern und Ordner ----------------------------------- */
+.stern-knopf{background:none;border:1px solid var(--line);border-radius:9px;padding:8px 12px;
+  font:inherit;font-size:12px;color:var(--ink-2);cursor:pointer;display:inline-flex;
+  align-items:center;gap:7px;transition:all 0.15s}
+.stern-knopf:hover{border-color:var(--lime);color:var(--ink)}
+.stern-knopf.gemerkt{border-color:var(--lime);color:var(--lime)}
+.stern-knopf i{font-size:15px}
+/* Fixiert und direkt am body: der Profilkopf (.ph, .ph-banner) hat
+   overflow:hidden, ein Fenster darin waere unten abgeschnitten. */
+.ordner-pop{position:fixed;z-index:200;width:270px;
+  background:var(--panel);border:1px solid var(--line-bright);border-radius:12px;padding:12px;
+  box-shadow:0 16px 40px rgba(0,0,0,0.3)}
+.ordner-pop h5{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;
+  letter-spacing:1px;color:var(--ink-3);margin:0 0 8px;font-weight:400}
+.ordner-leer{font-size:12px;color:var(--ink-3);padding:4px 2px 10px;line-height:1.5}
+.ordner-neu{display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.ordner-neu input{flex:1;min-width:0;background:var(--input);border:1px solid var(--line);
+  border-radius:7px;padding:7px 9px;font:inherit;font-size:12px;color:var(--ink)}
+.ordner-neu button{background:var(--lime);border:none;border-radius:7px;padding:7px 11px;
+  font:inherit;font-size:12px;font-weight:600;color:var(--pitch);cursor:pointer}
+.ordner-karte{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;
+  display:flex;align-items:center;gap:14px;margin-bottom:10px;transition:border-color 0.15s}
+.ordner-karte:hover{border-color:var(--line-bright)}
+.ordner-karte .ok-name{font-size:15px;font-weight:600;color:var(--ink);cursor:pointer;flex:1}
+.ordner-karte .ok-zahl{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3)}
+.ordner-karte button{background:none;border:1px solid var(--line);border-radius:7px;padding:5px 9px;
+  font:inherit;font-size:11px;color:var(--ink-3);cursor:pointer}
+.ordner-karte button:hover{border-color:var(--red);color:var(--red)}
 .param-erklaerung strong{color:var(--ink)}
 .param-wert{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink);width:132px;text-align:right;flex-shrink:0}
 .param-wert b{font-weight:700;font-size:14px}
@@ -545,6 +613,12 @@ input[type=range]::-webkit-slider-thumb{box-shadow:none}
       <p>Spieler mit auslaufendem Vertrag — samt Verlängerungsoption und Leihe, direkt von Transfermarkt.</p>
       <div class="mode-go">Öffnen <i class="ti ti-arrow-right"></i></div>
     </div>
+    <div class="mode-card" data-num="05" onclick="go('ordner')">
+      <div class="mode-ico"><i class="ti ti-star"></i></div>
+      <h3>Merkliste</h3>
+      <p>Eigene Ordner mit gemerkten Spielern — angelegt über den Stern in jeder Spielerakte.</p>
+      <div class="mode-go">Öffnen <i class="ti ti-arrow-right"></i></div>
+    </div>
   </div>
 </div>
 
@@ -555,7 +629,7 @@ input[type=range]::-webkit-slider-thumb{box-shadow:none}
       <div class="panel-title"><span class="idx">//</span> Filter</div>
       <div class="fg"><label>Name</label><input type="text" id="f-name" placeholder="z.B. Müller"></div>
       <div class="fg"><label>Position</label><select id="f-pos"><option value="">Alle Positionen</option><option value="TW">TW</option><option value="IV">IV</option><option value="LV,RV">LV / RV</option><option value="DM">DM</option><option value="ZM">ZM</option><option value="OM,LA,RA">OM / Flügel</option><option value="ST">ST</option></select></div>
-      <div class="fg"><label>Liga</label><select id="f-liga"><option value="">Alle Ligen</option></select></div>
+      <div class="fg"><label>Ligen</label><div class="mehrfach" id="mf-f-liga"><button type="button" class="mehrfach-knopf" onclick="ligaAuswahlUmschalten('f-liga')">Alle Ligen</button></div></div>
       <div class="fg"><label>Alter</label><div class="age-row"><input type="number" id="f-age-von" placeholder="von"><input type="number" id="f-age-bis" placeholder="bis"></div></div>
       <div class="fg"><label>Max. Marktwert (Mio. €)</label><input type="number" id="f-mw" step="0.1" placeholder="z.B. 10"></div>
       <div class="fg"><label>Mindest-Liga-Note</label><select id="f-ln"><option value="">Keine</option><option value="60">60+</option><option value="65">65+</option><option value="70">70+</option><option value="75">75+</option><option value="80">80+</option></select></div>
@@ -583,7 +657,7 @@ input[type=range]::-webkit-slider-thumb{box-shadow:none}
       <div class="panel-title"><span class="idx">//</span> Vertragsende</div>
       <div class="fg"><label>Vertrag endet</label><select id="a-fenster"><option value="">Wird geladen …</option></select></div>
       <div class="fg"><label>Position</label><select id="a-pos"><option value="">Alle Positionen</option><option value="TW">TW</option><option value="IV">IV</option><option value="LV,RV">LV / RV</option><option value="DM">DM</option><option value="ZM">ZM</option><option value="OM,LA,RA">OM / Flügel</option><option value="ST">ST</option></select></div>
-      <div class="fg"><label>Liga</label><select id="a-liga"><option value="">Alle Ligen</option></select></div>
+      <div class="fg"><label>Ligen</label><div class="mehrfach" id="mf-a-liga"><button type="button" class="mehrfach-knopf" onclick="ligaAuswahlUmschalten('a-liga')">Alle Ligen</button></div></div>
       <div class="fg"><label>Alter</label><div class="age-row"><input type="number" id="a-age-von" placeholder="von"><input type="number" id="a-age-bis" placeholder="bis"></div></div>
       <div class="fg"><label>Max. Marktwert (Mio. €)</label><input type="number" id="a-mw" step="0.1" placeholder="z.B. 10"></div>
       <div class="fg"><label>Mindest-Liga-Note</label><select id="a-ln"><option value="">Keine</option><option value="60">60+</option><option value="65">65+</option><option value="70">70+</option><option value="75">75+</option><option value="80">80+</option></select></div>
@@ -625,6 +699,19 @@ input[type=range]::-webkit-slider-thumb{box-shadow:none}
     <div class="sec"><div class="sec-title">Einordnung in der Liga</div><div id="kad-gesamt"></div></div>
     <div class="sec"><div class="sec-title">Position im Vergleich zur Ligakonkurrenz</div><div id="kad-bars"></div><div class="legend"><div class="leg-item"><div class="leg-dot" style="background:var(--green)"></div>obere Ligahälfte</div><div class="leg-item"><div class="leg-dot" style="background:var(--amber)"></div>Mittelfeld</div><div class="leg-item"><div class="leg-dot" style="background:var(--red)"></div>unteres Drittel</div></div></div>
     <div class="sec"><div class="sec-title">Empfohlene Verstärkungen</div><p style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-2);text-transform:uppercase;letter-spacing:1px;margin-bottom:16px">Positionen im unteren Drittel der Liga</p><div id="kad-recs"></div></div>
+  </div>
+</div>
+
+<!-- Merkliste. Eigene Seite, weil ein Stern ohne Wiederfinden nutzlos
+     waere. Die Trefferliste selbst wird von renderPlayers gezeichnet -
+     derselbe Aufbau wie in jeder anderen Suche. -->
+<div class="page" id="p-ordner">
+  <button class="nav-back" onclick="go('home')"><i class="ti ti-arrow-left"></i> Terminal</button>
+  <div class="results-wrap">
+    <div class="res-header">
+      <div class="res-count"><strong id="ordner-num">0</strong> Ordner<span class="filt" id="ordner-hinweis"></span></div>
+    </div>
+    <div id="ordner-liste"></div>
   </div>
 </div>
 
@@ -704,7 +791,18 @@ const API_URL=null;
 const DATA_URL='data/players.json';
 let dataStand=null,dataSaison=null,dataHinweis=null;
 
+/* Merkliste. Steht hier oben und nicht bei den zugehoerigen Funktionen,
+   weil loadScoutData() weiter unten ordnerLaden() aufruft - eine mit let
+   oder const weiter unten deklarierte Bindung waere zu diesem Zeitpunkt
+   noch in der temporalen Totzone und wuerde werfen. */
+const ORDNER_SCHLUESSEL='scoutiq.ordner.v1';
+let ORDNER={};                     // {Name: [SpielerId, ...]}
+let offenerOrdner=null;            // Name des Ordners in der Trefferliste
+
 async function loadScoutData(){
+  /* Ordner zuerst und ausserhalb des try: sie haengen nicht an den Daten,
+     und die Merkliste soll auch dann stehen, wenn das Laden scheitert. */
+  ordnerLaden();
   try{
     const r=await fetch(DATA_URL+'?v='+Date.now());
     if(!r.ok)throw new Error('HTTP '+r.status);
@@ -929,13 +1027,14 @@ function go(page,from){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('p-'+page).classList.add('active');
   window.scrollTo(0,0);
-  const lbl={home:'TERMINAL // START',spielersuche:'SPIELERSUCHE',vereinsmatching:'VEREINS-MATCHING',kaderanalyse:'KADERANALYSE',kaderresult:'KADER // REPORT',ergebnisse:'TREFFER',profil:'SPIELERAKTE',auslaufer:'VERTRAGSAUSLÄUFER'};
+  const lbl={home:'TERMINAL // START',spielersuche:'SPIELERSUCHE',vereinsmatching:'VEREINS-MATCHING',kaderanalyse:'KADERANALYSE',kaderresult:'KADER // REPORT',ergebnisse:'TREFFER',profil:'SPIELERAKTE',auslaufer:'VERTRAGSAUSLÄUFER',ordner:'MERKLISTE'};
   document.getElementById('bc').innerHTML='<span class="dot"></span> '+(lbl[page]||page);
   if(page==='ergebnisse'){document.getElementById('ergebnis-bk').onclick=()=>go(fromPage);renderPlayers();}
   if(page==='kaderresult')renderKadResult();
   if(page==='vereinsmatching'){vmLiga=null;vmVerein=null;renderLigen('vm');resetPanels('vm');}
   if(page==='kaderanalyse'){kadLiga=null;kadVerein=null;renderLigen('kad');resetPanels('kad');}
   if(page==='auslaufer')fuelleAuslaufPanel();
+  if(page==='ordner')renderOrdnerListe();
 }
 function resetPanels(px){
   document.getElementById(px+'-verein-panel').innerHTML='<div class="panel-title"><span class="idx">02</span> Verein</div><div class="empty-panel" style="padding:48px 16px"><i class="ti ti-shield"></i><p>Liga wählen</p></div>';
@@ -1201,8 +1300,8 @@ window.kadWeakClick=function(pos){
   const sel=document.getElementById('f-pos');
   if(sel)sel.value=['LV','RV'].includes(pos)?'LV,RV'
     :['OM','LA','RA'].includes(pos)?'OM,LA,RA':pos;
-  const liga=document.getElementById('f-liga');
-  if(liga)liga.value='';
+  LIGA_WAHL['f-liga'].clear();
+  zeichneLigaAuswahl('f-liga');
   /* Nur Spieler zeigen, die fuer diesen Verein ueberhaupt erreichbar sind:
      eigenes Niveau plus ein Stueck darueber. */
   kadPosFilter=pos;
@@ -1214,7 +1313,7 @@ let kadPosFilter=null;
 function leseFilter(){
   const v=id=>{const el=document.getElementById(id);return el?el.value.trim():'';};
   const an=id=>{const el=document.getElementById(id);return!!(el&&el.checked);};
-  return {name:v('f-name').toLowerCase(),pos:v('f-pos'),liga:v('f-liga'),
+  return {name:v('f-name').toLowerCase(),pos:v('f-pos'),ligen:gewaehlteLigen('f-liga'),
           ageVon:parseInt(v('f-age-von'),10),ageBis:parseInt(v('f-age-bis'),10),
           maxMw:parseFloat(v('f-mw')),minLn:parseInt(v('f-ln'),10),
           vertrag:v('f-vertrag'),auslaufend:an('f-auslaufend'),
@@ -1229,7 +1328,7 @@ function filterPlayers(f){
   return PLAYERS.filter(p=>{
     if(f.name&&!p.name.toLowerCase().includes(f.name))return false;
     if(posListe&&!posListe.includes(p.pos))return false;
-    if(f.liga&&p.liga_id!==f.liga&&p.liga!==f.liga)return false;
+    if(f.ligen.length&&!f.ligen.includes(p.liga_id))return false;
     if(!isNaN(f.ageVon)&&p.age<f.ageVon)return false;
     if(!isNaN(f.ageBis)&&p.age>f.ageBis)return false;
     if(!isNaN(f.maxMw)&&(p.mv_eur??0)>f.maxMw*1e6)return false;
@@ -1260,12 +1359,20 @@ function sortPlayers(liste,art){
   return kopie;
 }
 
+/* Ligen in der Ergebniszeile. Bei vielen nur die Zahl - sonst wuechse die
+   Zeile ins Unlesbare. */
+function ligenText(ids){
+  if(ids.length<=3)
+    return ids.map(id=>{const l=LIGEN.find(x=>x.id===id);return l?l.name:id;}).join(' + ');
+  return ids.length+' Ligen';
+}
+
 /* Kurzbeschreibung der aktiven Filter fuer die Ergebniszeile. */
 function filterText(f){
   const t=[];
   if(f.name)t.push('Name „'+f.name+'“');
   if(f.pos)t.push(f.pos.replace(/,/g,'/'));
-  if(f.liga){const l=LIGEN.find(x=>x.id===f.liga);t.push(l?l.name:f.liga);}
+  if(f.ligen.length)t.push(ligenText(f.ligen));
   if(!isNaN(f.ageVon)||!isNaN(f.ageBis))
     t.push('Alter '+(isNaN(f.ageVon)?'':f.ageVon)+'–'+(isNaN(f.ageBis)?'':f.ageBis));
   if(!isNaN(f.maxMw))t.push('max. '+f.maxMw+' Mio. €');
@@ -1280,27 +1387,110 @@ function filterText(f){
 const STUFEN_NAME={1:'Erste Ligen',2:'Zweite Ligen',3:'3. Liga',
                    4:'Regionalliga (4. Liga)',5:'Oberliga (5. Liga)'};
 
+/* ---------- Mehrfachauswahl der Ligen -------------------------------
+   Eine leere Menge heisst "alle" - das ist der haeufigste Fall und
+   erspart es, 35 Kaestchen anzuhaken, nur um nichts einzuschraenken. */
+const LIGA_WAHL={'f-liga':new Set(),'a-liga':new Set()};
+
 function fuelleLigaFilter(){
-  /* Beide Liga-Auswahlen bekommen dieselbe Liste - die der Spielersuche
-     und die der Auslaeufer-Suche. */
-  ['f-liga','a-liga'].forEach(fuelleEineLigaAuswahl);
+  ['f-liga','a-liga'].forEach(zeichneLigaAuswahl);
 }
 
-function fuelleEineLigaAuswahl(feld){
-  const sel=document.getElementById(feld);
-  if(!sel||!LIGEN.length)return;
-  const aktuell=sel.value;
-  /* Nach Spielklasse gruppieren - bei ueber 30 Ligen sonst unuebersichtlich. */
+function ligenNachStufe(){
   const stufen={};
   LIGEN.forEach(l=>{(stufen[l.stufe||1]=stufen[l.stufe||1]||[]).push(l);});
-  sel.innerHTML='<option value="">Alle Ligen</option>'+
-    Object.keys(stufen).sort((a,b)=>a-b).map(st=>
-      '<optgroup label="'+(STUFEN_NAME[st]||'Stufe '+st)+'">'+
-      stufen[st].map(l=>'<option value="'+l.id+'">'+l.name
-        +(l.bewertet?' ('+l.bewertet+')':'')+'</option>').join('')+
-      '</optgroup>').join('');
-  sel.value=aktuell;
+  return stufen;
 }
+
+function gewaehlteLigen(feld){
+  return [...(LIGA_WAHL[feld]||[])];
+}
+
+function ligaWahlText(feld){
+  const w=gewaehlteLigen(feld);
+  if(!w.length)return 'Alle Ligen';
+  if(w.length===1){
+    const l=LIGEN.find(x=>x.id===w[0]);
+    return l?l.name:w[0];
+  }
+  return w.length+' Ligen ausgewählt';
+}
+
+function zeichneLigaAuswahl(feld){
+  const box=document.getElementById('mf-'+feld);
+  if(!box||!LIGEN.length)return;
+  const knopf=box.querySelector('.mehrfach-knopf');
+  if(knopf)knopf.textContent=ligaWahlText(feld);
+  const panel=box.querySelector('.mehrfach-panel');
+  if(!panel)return;                       // zugeklappt: nichts zu zeichnen
+  const wahl=LIGA_WAHL[feld];
+  const stufen=ligenNachStufe();
+  panel.innerHTML=
+    '<div class="mehrfach-kopf">'+
+      '<button type="button" onclick="ligaWahlAlle(\''+feld+'\',false)">Alle</button>'+
+      '<button type="button" onclick="ligaWahlStufe(\''+feld+'\',1,true)">Nur erste Ligen</button>'+
+    '</div>'+
+    Object.keys(stufen).sort((a,b)=>a-b).map(st=>{
+      const drin=stufen[st].filter(l=>wahl.has(l.id)).length;
+      return '<div class="mehrfach-gruppe" onclick="ligaWahlStufe(\''+feld+'\','+st+','
+        +(drin<stufen[st].length)+')"><span>'+(STUFEN_NAME[st]||'Stufe '+st)+'</span>'+
+        '<span>'+(drin?drin+'/'+stufen[st].length:'')+'</span></div>'+
+        stufen[st].map(l=>
+          '<label class="mehrfach-zeile"><input type="checkbox" value="'+l.id+'"'+
+          (wahl.has(l.id)?' checked':'')+' onchange="ligaWahlSchalten(\''+feld+
+          '\',\''+l.id+'\',this.checked)"><span>'+l.name+'</span>'+
+          (l.bewertet?'<span class="anzahl">'+l.bewertet+'</span>':'')+'</label>').join('');
+    }).join('');
+}
+
+function ligaWahlSchalten(feld,id,an){
+  an?LIGA_WAHL[feld].add(id):LIGA_WAHL[feld].delete(id);
+  zeichneLigaAuswahl(feld);
+  ligaWahlGeaendert(feld);
+}
+
+function ligaWahlAlle(feld,an){
+  LIGA_WAHL[feld].clear();
+  if(an)LIGEN.forEach(l=>LIGA_WAHL[feld].add(l.id));
+  zeichneLigaAuswahl(feld);
+  ligaWahlGeaendert(feld);
+}
+
+function ligaWahlStufe(feld,stufe,an){
+  (ligenNachStufe()[stufe]||[]).forEach(l=>
+    an?LIGA_WAHL[feld].add(l.id):LIGA_WAHL[feld].delete(l.id));
+  zeichneLigaAuswahl(feld);
+  ligaWahlGeaendert(feld);
+}
+
+/* Die Auslaeufer-Suche zeigt Trefferzahlen im Fensterfeld - die muessen
+   der neuen Ligaauswahl folgen. */
+function ligaWahlGeaendert(feld){
+  if(feld==='a-liga'&&typeof aktualisiereFensterZahlen==='function')
+    aktualisiereFensterZahlen();
+}
+
+function ligaAuswahlUmschalten(feld){
+  const box=document.getElementById('mf-'+feld);
+  if(!box)return;
+  const offen=box.querySelector('.mehrfach-panel');
+  document.querySelectorAll('.mehrfach-panel').forEach(x=>x.remove());
+  document.querySelectorAll('.mehrfach').forEach(x=>x.classList.remove('offen'));
+  if(offen)return;                        // war offen -> jetzt geschlossen
+  const panel=document.createElement('div');
+  panel.className='mehrfach-panel';
+  box.appendChild(panel);
+  box.classList.add('offen');
+  zeichneLigaAuswahl(feld);
+}
+
+/* Klick daneben schliesst die Auswahl - ohne das bliebe sie offen stehen
+   und verdeckte die Felder darunter. */
+document.addEventListener('click',function(e){
+  if(e.target.closest('.mehrfach'))return;
+  document.querySelectorAll('.mehrfach-panel').forEach(x=>x.remove());
+  document.querySelectorAll('.mehrfach').forEach(x=>x.classList.remove('offen'));
+});
 
 /* ---------- Niveau-Einordnung ----------------------------------------
    Ein Percentil gilt nur innerhalb seiner Liga. Note 85 in der Oberliga
@@ -1471,7 +1661,7 @@ function imFenster(p,f){
 function leseAuslaufFilter(){
   const v=id=>{const el=document.getElementById(id);return el?el.value.trim():'';};
   const an=id=>{const el=document.getElementById(id);return!!(el&&el.checked);};
-  return {fenster:v('a-fenster'),pos:v('a-pos'),liga:v('a-liga'),
+  return {fenster:v('a-fenster'),pos:v('a-pos'),ligen:gewaehlteLigen('a-liga'),
           ageVon:parseInt(v('a-age-von'),10),ageBis:parseInt(v('a-age-bis'),10),
           maxMw:parseFloat(v('a-mw')),minLn:parseInt(v('a-ln'),10),
           ohneOption:an('a-ohne-option'),ohneLeihe:an('a-ohne-leihe'),
@@ -1494,7 +1684,7 @@ function passtOhneFenster(p,f,posListe){
   if(f.ohneOption&&a&&a.option&&optionArt(a.option)==='verlaengerung')return false;
   if(f.ohneLeihe&&a&&a.leihe)return false;
   if(posListe&&!posListe.includes(p.pos))return false;
-  if(f.liga&&p.liga_id!==f.liga)return false;
+  if(f.ligen.length&&!f.ligen.includes(p.liga_id))return false;
   if(!isNaN(f.ageVon)&&p.age<f.ageVon)return false;
   if(!isNaN(f.ageBis)&&p.age>f.ageBis)return false;
   if(!isNaN(f.maxMw)&&(p.mv_eur??0)>f.maxMw*1e6)return false;
@@ -1522,7 +1712,7 @@ function auslaufText(f){
   const fe=f.fenster?auslaufFenster().find(x=>x.id===f.fenster):null;
   t.push(fe?fe.name:'alle Ausläufer');
   if(f.pos)t.push(f.pos.replace(/,/g,'/'));
-  if(f.liga){const l=LIGEN.find(x=>x.id===f.liga);t.push(l?l.name:f.liga);}
+  if(f.ligen.length)t.push(ligenText(f.ligen));
   if(!isNaN(f.ageVon)||!isNaN(f.ageBis))
     t.push('Alter '+(isNaN(f.ageVon)?'':f.ageVon)+'–'+(isNaN(f.ageBis)?'':f.ageBis));
   if(!isNaN(f.maxMw))t.push('max. '+f.maxMw+' Mio. €');
@@ -1681,12 +1871,27 @@ function renderPlayers(){
      Filterleiste der Spielersuche gilt hier nicht - sonst wirkten dort
      gesetzte Werte unsichtbar weiter, wie es beim Matching schon einmal
      der Fall war. */
-  let ligaBezug=f.liga;
+  /* Die Note auf ein Zielniveau umzurechnen setzt EIN Zielniveau voraus.
+     Bei mehreren gewaehlten Ligen gibt es keins - dann bleibt die
+     Einordnung weg, statt sich eine Liga davon herauszugreifen. */
+  let ligaBezug=f.ligen.length===1?f.ligen[0]:null;
+  /* Merkliste: die Auswahl hat der Betrachter selbst getroffen, hier wird
+     nichts weiter gefiltert. Die Reihenfolge des Ordners bleibt erhalten -
+     sie ist die Reihenfolge des Merkens. */
+  if(fromPage==='ordner'){
+    const ids=ORDNER[offenerOrdner]||[];
+    treffer=ids.map(id=>PLAYERS.find(x=>x.id===id)).filter(Boolean);
+    const fehlt=ids.length-treffer.length;
+    if(f.sort&&f.sort!=='ln')treffer=sortPlayers(treffer,f.sort);
+    hinweis='Ordner „'+offenerOrdner+'“'
+      +(fehlt?' · '+fehlt+' Einträge nicht mehr im Datenstand':'');
+    ligaBezug=null;
+  }
   if(fromPage==='auslaufer'){
     const af=leseAuslaufFilter();
     treffer=sortPlayers(filterAuslaufer(af),af.sort);
     hinweis=auslaufText(af);
-    ligaBezug=af.liga;
+    ligaBezug=af.ligen.length===1?af.ligen[0]:null;
   }
 
   const refNiv=verein?niveauVonLiga(verein.liga)
@@ -1733,7 +1938,7 @@ function renderPlayers(){
   /* Im Matching entfaellt der Hinweis: dort ist die Passung bereits um das
      Liganiveau bereinigt, die Werte sind also vergleichbar. */
   const stufen=new Set(treffer.map(e=>(e.p||e).stufe).filter(x=>x));
-  const mischung=(stufen.size>1&&!f.liga&&!verein)
+  const mischung=(stufen.size>1&&!verein)
     ? ' — Achtung: Treffer aus '+stufen.size+' Spielklassen, Noten gelten je Liga'
     : '';
   const filt=document.getElementById('res-filt');
@@ -2010,6 +2215,237 @@ function ytUrl(begriff){
   return 'https://www.youtube.com/results?search_query='+encodeURIComponent(begriff);
 }
 
+/* ---------- Merkliste: Ordner ----------------------------------------
+   Gespeichert wird im Browser des Betrachters (localStorage). Bewusst so:
+   die Seite ist statisch, es gibt keinen Server, der etwas ablegen
+   koennte. Das heisst zugleich - die Ordner liegen auf DIESEM Geraet in
+   DIESEM Browser, sie wandern nicht mit und erreichen niemanden sonst.
+   Ein privates Fenster oder geloeschte Websitedaten sind sie los; deshalb
+   ist jeder Zugriff abgesichert und die Seite funktioniert auch ohne. */
+function ordnerLaden(){
+  try{
+    const roh=localStorage.getItem(ORDNER_SCHLUESSEL);
+    const d=roh?JSON.parse(roh):null;
+    ORDNER=(d&&typeof d==='object'&&!Array.isArray(d))?d:{};
+  }catch(e){ORDNER={};}
+  /* Nur Zahlen behalten - alles andere waere Datenmuell aus einer
+     frueheren Fassung oder von Hand veraendert. */
+  Object.keys(ORDNER).forEach(n=>{
+    ORDNER[n]=Array.isArray(ORDNER[n])?ORDNER[n].filter(x=>typeof x==='number'):[];
+  });
+}
+
+function ordnerSichern(){
+  try{localStorage.setItem(ORDNER_SCHLUESSEL,JSON.stringify(ORDNER));return true;}
+  catch(e){return false;}          // privates Fenster, voller Speicher
+}
+
+function ordnerNamen(){return Object.keys(ORDNER).sort((a,b)=>a.localeCompare(b,'de'));}
+function ordnerVon(id){return ordnerNamen().filter(n=>ORDNER[n].includes(id));}
+function istGemerkt(id){return ordnerVon(id).length>0;}
+
+function ordnerAnlegen(name){
+  const n=(name||'').trim().slice(0,60);
+  if(!n||ORDNER[n])return n||null;   // Name schon da: einfach verwenden
+  ORDNER[n]=[];
+  ordnerSichern();
+  return n;
+}
+
+function ordnerSchalten(name,id,an){
+  if(!ORDNER[name])ORDNER[name]=[];
+  const drin=ORDNER[name].includes(id);
+  if(an&&!drin)ORDNER[name].push(id);
+  if(!an&&drin)ORDNER[name]=ORDNER[name].filter(x=>x!==id);
+  ordnerSichern();
+}
+
+function ordnerLoeschen(name){
+  delete ORDNER[name];
+  ordnerSichern();
+  renderOrdnerListe();
+}
+
+function ordnerUmbenennen(alt){
+  const neu=(prompt('Neuer Name für „'+alt+'“:',alt)||'').trim().slice(0,60);
+  if(!neu||neu===alt)return;
+  if(ORDNER[neu]){
+    /* Zusammenlegen statt ueberschreiben - sonst waere der Inhalt des
+       gleichnamigen Ordners kommentarlos weg. */
+    ORDNER[neu]=[...new Set([...ORDNER[neu],...ORDNER[alt]])];
+  }else{
+    ORDNER[neu]=ORDNER[alt];
+  }
+  delete ORDNER[alt];
+  ordnerSichern();
+  renderOrdnerListe();
+}
+
+/* ---- Uebersicht der Ordner ---- */
+function renderOrdnerListe(){
+  const ziel=document.getElementById('ordner-liste');
+  if(!ziel)return;
+  const namen=ordnerNamen();
+  const num=document.getElementById('ordner-num');
+  if(num)num.textContent=namen.length;
+  const hinweis=document.getElementById('ordner-hinweis');
+  if(hinweis)hinweis.textContent=namen.length
+    ? namen.reduce((a,n)=>a+ORDNER[n].length,0)+' Einträge · nur in diesem Browser gespeichert'
+    : '';
+  if(!namen.length){
+    ziel.innerHTML='<div class="empty-panel"><i class="ti ti-star"></i>'+
+      '<p>Noch kein Ordner angelegt<br><span style="font-size:12px;color:var(--ink-3)">'+
+      'Eine Spielerakte öffnen und dort auf <strong>Merken</strong> tippen — '+
+      'dabei lässt sich auch ein neuer Ordner anlegen.</span></p></div>'+
+      ordnerSpeicherHinweis();
+    return;
+  }
+  ziel.innerHTML=namen.map(n=>{
+    const sicher=n.replace(/</g,'&lt;');
+    const kod=encodeURIComponent(n);
+    /* Gemerkte Spieler, die es im aktuellen Datenstand nicht mehr gibt,
+       werden mitgezaehlt aber gesondert genannt - stillschweigend zu
+       verschwinden waere schlimmer als der Hinweis. */
+    const da=ORDNER[n].filter(id=>PLAYERS.some(x=>x.id===id)).length;
+    const fehlt=ORDNER[n].length-da;
+    return '<div class="ordner-karte">'+
+      '<div class="ok-name" onclick="ordnerOeffnen(\''+kod+'\')">'+sicher+'</div>'+
+      '<div class="ok-zahl">'+da+' Spieler'+
+        (fehlt?' · '+fehlt+' nicht mehr im Datenstand':'')+'</div>'+
+      '<button type="button" onclick="ordnerUmbenennen(decodeURIComponent(\''+kod+'\'))">Umbenennen</button>'+
+      '<button type="button" onclick="ordnerLoeschenFragen(\''+kod+'\')">Löschen</button>'+
+    '</div>';
+  }).join('')+ordnerSpeicherHinweis();
+}
+
+function ordnerSpeicherHinweis(){
+  return '<p class="a-quelle">Ordner liegen im Speicher dieses Browsers, nicht '+
+    'auf einem Server — sie wandern nicht auf andere Geräte und sind für '+
+    'niemanden sonst sichtbar. Gelöschte Websitedaten oder ein privates '+
+    'Fenster bedeuten: weg.</p>';
+}
+
+function ordnerLoeschenFragen(kod){
+  const name=decodeURIComponent(kod);
+  const anzahl=(ORDNER[name]||[]).length;
+  if(confirm('Ordner „'+name+'“ mit '+anzahl+' Einträgen löschen?'))
+    ordnerLoeschen(name);
+}
+
+function ordnerOeffnen(kod){
+  offenerOrdner=decodeURIComponent(kod);
+  go('ergebnisse','ordner');
+}
+
+/* ---- Stern im Spielerprofil ---- */
+function sternKnopf(p){
+  const gemerkt=istGemerkt(p.id);
+  const wo=ordnerVon(p.id);
+  return '<div class="stern-halter" style="position:relative">'+
+    '<button type="button" class="stern-knopf'+(gemerkt?' gemerkt':'')+'" '+
+    'onclick="ordnerPopUmschalten(event,'+p.id+')" title="'+
+    (gemerkt?'Gemerkt in: '+wo.join(', ').replace(/"/g,'&quot;')
+           :'In einem Ordner merken')+'">'+
+    '<i class="ti ti-star'+(gemerkt?'-filled':'')+'"></i>'+
+    (gemerkt?(wo.length===1?wo[0].replace(/</g,'&lt;'):wo.length+' Ordner'):'Merken')+
+    '</button></div>';
+}
+
+function ordnerPopUmschalten(ev,id){
+  ev.stopPropagation();
+  const knopf=ev.target.closest('.stern-knopf');
+  const war=document.querySelector('.ordner-pop');
+  document.querySelectorAll('.ordner-pop').forEach(x=>x.remove());
+  if(war)return;
+  const pop=document.createElement('div');
+  pop.className='ordner-pop';
+  pop.onclick=e=>e.stopPropagation();
+  document.body.appendChild(pop);
+  zeichneOrdnerPop(id);
+  richteOrdnerPop(knopf);
+}
+
+/* Unter dem Stern ausrichten, rechtsbuendig - und im Sichtfeld halten.
+   Passt es unten nicht mehr, klappt das Fenster nach oben. */
+function richteOrdnerPop(knopf){
+  const pop=document.querySelector('.ordner-pop');
+  if(!pop||!knopf)return;
+  const k=knopf.getBoundingClientRect();
+  const h=pop.offsetHeight, b=pop.offsetWidth;
+  /* innerWidth/innerHeight koennen 0 sein - etwa in einer nicht
+     dargestellten Vorschau. Dann nicht ins Nichts klemmen, sondern die
+     Ausrichtung am Knopf einfach stehen lassen. */
+  const vw=innerWidth||document.documentElement.clientWidth||0;
+  const vh=innerHeight||document.documentElement.clientHeight||0;
+  let links=k.right-b;
+  if(vw)links=Math.max(10,Math.min(links,vw-b-10));
+  let oben=k.bottom+8;
+  if(vh&&oben+h>vh-10)oben=Math.max(10,k.top-h-8);
+  pop.style.left=Math.round(Math.max(0,links))+'px';
+  pop.style.top=Math.round(oben)+'px';
+}
+
+/* Beim Scrollen schliessen: das Fenster ist fixiert, der Stern wandert -
+   mitzuwandern waere aufwendig, stehenzubleiben waere falsch. */
+addEventListener('scroll',function(){
+  document.querySelectorAll('.ordner-pop').forEach(x=>x.remove());
+},true);
+
+function zeichneOrdnerPop(id){
+  const pop=document.querySelector('.ordner-pop');
+  if(!pop)return;
+  const namen=ordnerNamen();
+  pop.innerHTML='<h5>In Ordner merken</h5>'+
+    (namen.length
+      ? namen.map(n=>'<label class="mehrfach-zeile"><input type="checkbox"'+
+          (ORDNER[n].includes(id)?' checked':'')+
+          ' onchange="ordnerAusPop(\''+encodeURIComponent(n)+'\','+id+',this.checked)">'+
+          '<span>'+n.replace(/</g,'&lt;')+'</span>'+
+          '<span class="anzahl">'+ORDNER[n].length+'</span></label>').join('')
+      : '<div class="ordner-leer">Noch kein Ordner. Unten einen anlegen — '+
+        'zum Beispiel „Linksverteidiger 2027“.</div>')+
+    '<div class="ordner-neu">'+
+      '<input type="text" id="ordner-neu-name" placeholder="Neuer Ordner" maxlength="60" '+
+        'onkeydown="if(event.key===\'Enter\')ordnerAusPopAnlegen('+id+')">'+
+      '<button type="button" onclick="ordnerAusPopAnlegen('+id+')">Anlegen</button>'+
+    '</div>';
+}
+
+function ordnerAusPop(nameKodiert,id,an){
+  ordnerSchalten(decodeURIComponent(nameKodiert),id,an);
+  sternAuffrischen(id);
+}
+
+function ordnerAusPopAnlegen(id){
+  const feld=document.getElementById('ordner-neu-name');
+  const name=ordnerAnlegen(feld?feld.value:'');
+  if(!name)return;
+  ordnerSchalten(name,id,true);      // neu angelegt heisst: hier soll er rein
+  sternAuffrischen(id);
+  richteOrdnerPop(document.querySelector('.stern-knopf'));
+}
+
+/* Stern und Fenster neu zeichnen, ohne das ganze Profil aufzubauen -
+   sonst schloesse sich das Fenster bei jedem Haken. */
+function sternAuffrischen(id){
+  const halter=document.querySelector('.stern-halter');
+  if(!halter)return;
+  const knopf=halter.querySelector('.stern-knopf');
+  const wo=ordnerVon(id);
+  if(knopf){
+    knopf.classList.toggle('gemerkt',wo.length>0);
+    knopf.title=wo.length?'Gemerkt in: '+wo.join(', '):'In einem Ordner merken';
+    knopf.innerHTML='<i class="ti ti-star'+(wo.length?'-filled':'')+'"></i>'+
+      (wo.length?(wo.length===1?wo[0].replace(/</g,'&lt;'):wo.length+' Ordner'):'Merken');
+  }
+  zeichneOrdnerPop(id);
+}
+
+document.addEventListener('click',function(e){
+  if(e.target.closest('.stern-halter')||e.target.closest('.ordner-pop'))return;
+  document.querySelectorAll('.ordner-pop').forEach(x=>x.remove());
+});
+
 /* Vertragsende mit Restlaufzeit. Gewicht fuehrt die Quelle nicht, deshalb
    steht an dessen Stelle diese fuer Scouting weit nuetzlichere Angabe. */
 function vertragText(p){
@@ -2076,7 +2512,7 @@ function renderProfile(p,hasV,vN){
         'title="YouTube-Suche mit Verein — hilft, wenn es keine Zusammenschnitte gibt">'+
         '<i class="ti ti-search"></i> '+p.club+'</a>'+
     '</div>'+
-    '<div class="badges">'+cbadge(p.contract)+'<span class="badge b-blue">'+(p.mv||'k.A.')+' €</span>'+(p.underval?'<span class="badge b-teal"><i class="ti ti-trending-up" style="font-size:10px"></i> Unterbewertet</span>':'')+'</div></div></div>'+
+    '<div class="badges">'+cbadge(p.contract)+'<span class="badge b-blue">'+(p.mv||'k.A.')+' €</span>'+(p.underval?'<span class="badge b-teal"><i class="ti ti-trending-up" style="font-size:10px"></i> Unterbewertet</span>':'')+'</div></div>'+sternKnopf(p)+'</div>'+
   '<div class="note-grid">'+
     ringCard('LN','Liga-Note',p.ln,'vs. alle '+p.pos+' der Liga','var(--lime)')+
     ringCard('PN','Positions-Note',p.pn,'Gewichtete Kernparameter','var(--green)')+

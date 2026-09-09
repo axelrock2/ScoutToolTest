@@ -159,6 +159,44 @@ Die Trennung ist wichtig: Eine **erhobene** Körpergröße und eine
 **berechnete** Note sind zweierlei — und was gar nicht vorliegt, gehört
 ebenso benannt wie das Vorhandene.
 
+## Mehrere Ligen auf einmal
+
+Der Liga-Filter ist eine Mehrfachauswahl — in der Spielersuche wie bei den
+Vertragsausläufern. Ein natives `<select multiple>` verlangt Strg-Klick und
+zeigt bei 35 Einträgen entweder eine winzige oder eine sehr lange Liste;
+stattdessen klappt ein Feld mit Kästchen auf, nach Spielklasse gruppiert.
+Jede Gruppenüberschrift schaltet ihre Gruppe als Ganzes, dazu gibt es
+*Alle* und *Nur erste Ligen*.
+
+**Keine Auswahl heißt „alle"** — der häufigste Fall, und er erspart es, 35
+Kästchen anzuhaken, nur um nichts einzuschränken.
+
+Eine Einschränkung, die dazugehört: Die *eingeordnete Note* rechnet eine
+Liga-Note auf ein Zielniveau um und braucht dafür **ein** Zielniveau. Bei
+mehreren gewählten Ligen gibt es keins — dann bleibt die Einordnung weg,
+statt sich eine der Ligen willkürlich herauszugreifen.
+
+## Merkliste
+
+Ein Stern in jeder Spielerakte legt den Spieler in einen Ordner; über
+denselben Stern lassen sich neue Ordner anlegen. Ein Spieler kann in
+mehreren Ordnern liegen. Die Übersicht (Kachel 05) listet alle Ordner mit
+Anzahl, öffnet sie in der gewohnten Trefferansicht und erlaubt Umbenennen
+und Löschen. Beim Umbenennen auf einen vorhandenen Namen werden die Ordner
+**zusammengelegt**, nicht überschrieben.
+
+**Gespeichert wird im Browser des Betrachters** (`localStorage`). Das ist
+keine Bequemlichkeit, sondern die einzige Möglichkeit: Die Seite ist
+statisch, es gibt keinen Server, der etwas ablegen könnte. Also gilt — die
+Ordner liegen auf *diesem* Gerät in *diesem* Browser, wandern nicht mit und
+sind für niemanden sonst sichtbar. Ein privates Fenster oder gelöschte
+Websitedaten bedeuten: weg. Das steht auch auf der Seite selbst, statt es
+den Nutzer herausfinden zu lassen.
+
+Spieler, die im aktuellen Datenstand nicht mehr vorkommen, werden auf der
+Ordnerkarte gesondert ausgewiesen (*„2 nicht mehr im Datenstand"*) —
+stillschweigend zu verschwinden wäre schlimmer als der Hinweis.
+
 ## Vertragsausläufer
 
 Vierte Suchfunktion, eigene Seite. Sie beantwortet eine andere Frage als
