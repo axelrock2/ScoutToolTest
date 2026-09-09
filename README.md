@@ -176,6 +176,52 @@ Liga-Note auf ein Zielniveau um und braucht dafür **ein** Zielniveau. Bei
 mehreren gewählten Ligen gibt es keins — dann bleibt die Einordnung weg,
 statt sich eine der Ligen willkürlich herauszugreifen.
 
+## Spielerfotos
+
+In der Spielerakte steht statt der Initialen das Portrait von
+Transfermarkt — **nur dort**, nicht in den Trefferlisten. Der Grund ist
+Rücksicht auf die Quelle: In einer Ergebnisliste wären es fünfzig Bilder je
+Seite von fremden Servern, in der Akte ist es genau eines, und man schaut
+einen Spieler ohnehin einzeln an.
+
+Die Adresse trägt einen Zeitstempel:
+
+```
+https://img.a.transfermarkt.technology/portrait/medium/607720-1737037032.jpg
+```
+
+Ohne ihn antwortet der Server mit **404** — aus der Spieler-ID allein lässt
+sie sich also nicht bilden. Geführt wird sie in der *schlichten*
+Kaderansicht (`/kader/verein/<id>`, ohne `/plus/1`), dort im Attribut
+`data-src`, weil Transfermarkt die Bilder nachlädt. Die ausführliche
+Ansicht, die `build_players.py` ohnehin abruft, enthält sie nicht — daher
+ein eigener Lauf, ein Abruf je Verein:
+
+```bash
+python3 scripts/bilder.py
+python3 scripts/compute_grades.py
+```
+
+Gespeichert wird **nur der Zeitstempel** (zehn Zeichen); die ID steht
+ohnehin im Datensatz, der unveränderte Teil einmal als `bild_basis`. Das
+kostet 0,07 MB in der ausgelieferten Datei statt 0,8 MB für ganze Adressen.
+
+**Der Rückfall auf die Initialen trägt sich selbst.** Das Bild liegt über
+den Initialen und ist bis zum Laden durchsichtig — es hat *bewusst keine
+Hintergrundfarbe*. So stehen die Initialen da, solange geladen wird, und
+bleiben stehen, wenn nie etwas ankommt. Auf `onerror` allein wäre kein
+Verlass: Ein hängender Abruf löst es nicht aus, und genau das passiert,
+wenn ein Netz die Adresse blockiert statt sie abzulehnen.
+
+Grenzen:
+
+| | |
+|---|---|
+| Abdeckung | 100 % bis zur 3. Liga, 92–97 % in Regionalliga und Oberliga, in den schwächsten fünftklassigen Staffeln unter 30 % |
+| Nur heutiger Kader | Wer den Verein verlassen hat, steht dort nicht mehr; sein Bild gäbe es nur über die Profilseite — ein Abruf **je Spieler**, also Stunden statt Minuten. Diese Spieler behalten die Initialen. |
+| Platzhalter | Wo Transfermarkt kein Foto hat, liefert es `default.jpg`. Der wird verworfen — eine graue Silhouette sagt weniger als die Initialen. |
+| Hotlinking | Die Bilder liegen weiter bei Transfermarkt und werden beim Öffnen einer Akte von dort geladen, nicht hier gespeichert. Wird der Verweis eines Tages gesperrt, greift der Rückfall. |
+
 ## Merkliste
 
 Ein Stern in jeder Spielerakte legt den Spieler in einen Ordner; über

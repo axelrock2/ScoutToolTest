@@ -72,6 +72,15 @@ if [ "${VERTRAEGE:-1}" = "1" ]; then
   fi
 
   echo
+  echo "== Spielerfotos (Adressen) =="
+  if [ -n "$LIGEN" ]; then
+    "$PY" scripts/bilder.py --ligen "$LIGEN" \
+      || echo "  uebersprungen - Bestand bleibt gueltig"
+  else
+    "$PY" scripts/bilder.py || echo "  uebersprungen - Bestand bleibt gueltig"
+  fi
+
+  echo
   echo "== Auslaufende Vertraege (Transfermarkt) =="
   if [ -n "$LIGEN" ]; then
     "$PY" scripts/vertraege.py --ligen "$LIGEN" \

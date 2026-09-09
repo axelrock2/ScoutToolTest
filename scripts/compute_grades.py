@@ -254,6 +254,16 @@ HERKUNFT = {
                    "Vertrag länger oder der Verein wurde noch nicht "
                    "geprüft (auf der Trefferkarte unterschieden).",
     },
+    "transfermarkt_bild": {
+        "name": "Transfermarkt · Spielerfoto",
+        "url": "https://www.transfermarkt.de",
+        "art": "erhoben",
+        "felder": ["Portrait in der Spielerakte"],
+        "hinweis": "Wird beim Öffnen einer Akte direkt von Transfermarkt "
+                   "geladen, nicht hier gespeichert. Nur für Spieler im "
+                   "heutigen Kader; wo kein Foto vorliegt, stehen die "
+                   "Initialen.",
+    },
     "understat": {
         "name": "Understat",
         "url": "https://understat.com",
@@ -545,6 +555,10 @@ def main() -> int:
                 # Behauptung statt einer Auskunft.
                 **({"vgeprueft": s["vertrag_scan"]["jahre"]}
                    if s.get("vertrag_scan") else {}),
+                # Zeitstempel des Portraits. Nur er wird gespeichert - die
+                # Adresse setzt das Frontend aus bild_basis, ID und ihm
+                # zusammen. Fehlt er, bleiben die Initialen stehen.
+                **({"bild": s["bild"]} if s.get("bild") else {}),
                 # flags und fazit entstehen im Frontend (flagsFuer/fazitFuer).
                 # Als Text mitgeliefert waeren sie rund 8 MB - fast die
                 # Haelfte der Datei - obwohl sie nur beim Oeffnen eines
@@ -575,7 +589,7 @@ def main() -> int:
             # den meisten Minuten ist oft die Zweitvertretung, gefuehrt
             # wird der Vertrag aber beim Profikader.
             for w in eintraege[1:]:
-                for feld in ("auslauf", "vgeprueft"):
+                for feld in ("auslauf", "vgeprueft", "bild"):
                     if feld not in haupt and feld in w:
                         haupt[feld] = w[feld]
         zusammengefasst.append(haupt)
@@ -694,6 +708,7 @@ def main() -> int:
                         "xG/xA/progressive Carries sind darin nicht enthalten "
                         "und werden bewusst nicht ausgewiesen."),
             "mindestminuten": MIN_MINUTEN,
+            "bild_basis": roh.get("bild_basis"),
             "kennzahlen": KENNZAHL_NAMEN,
             "herkunft": HERKUNFT,
             "bereiche": BEREICH_NAME,

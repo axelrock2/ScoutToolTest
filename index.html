@@ -204,6 +204,20 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
    sagt, worauf die Auskunft beruht und wo sie aufhoert. */
 .a-quelle{font-size:11px;line-height:1.6;color:var(--ink-3);margin:14px 0 0;font-style:italic}
 
+/* ---- Spielerfoto in der Akte --------------------------------------
+   Nur hier, nicht in den Trefferlisten: dort waeren es fuenfzig Bilder je
+   Seite von fremden Servern, hier ist es genau eines - und man schaut
+   einen Spieler ohnehin einzeln an. Das Bild liegt UEBER den Initialen;
+   laedt es nicht, wird es entfernt und die Initialen stehen wieder da. */
+/* BEWUSST OHNE Hintergrundfarbe: das Bild liegt ueber den Initialen, ist
+   aber bis zum Laden durchsichtig - so stehen die Initialen da, solange
+   geladen wird, und bleiben stehen, wenn nie etwas ankommt. Eine
+   Fuellfarbe wuerde sie hinter einer leeren Flaeche verstecken, und ein
+   haengender Abruf loest kein onerror aus, auf das man sich verlassen
+   koennte. */
+.ph-av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  border-radius:14px}
+
 /* ---- Mehrfachauswahl (Ligen) --------------------------------------
    Ein natives <select multiple> verlangt Strg-Klick und zeigt bei 35
    Eintraegen entweder eine winzige Liste oder eine sehr lange. Deshalb
@@ -790,7 +804,7 @@ let KPOS=[{pos:'TW',note:72},{pos:'IV L',note:68},{pos:'IV R',note:71},{pos:'LV'
    ============================================================ */
 const API_URL=null;
 const DATA_URL='data/players.json';
-let dataStand=null,dataSaison=null,dataHinweis=null;
+let dataStand=null,dataSaison=null,dataHinweis=null,dataBildBasis=null;
 
 /* Merkliste. Steht hier oben und nicht bei den zugehoerigen Funktionen,
    weil loadScoutData() weiter unten ordnerLaden() aufruft - eine mit let
@@ -827,6 +841,7 @@ async function loadScoutData(){
     PLAYERS=d.players;
     if(d.ligen&&d.ligen.length)LIGEN=d.ligen;
     dataStand=d.stand;dataSaison=d.saison;dataHinweis=d.hinweis;
+    dataBildBasis=d.bild_basis||null;
     window.BEREICHE=d.bereiche||{};
     window.HERKUNFT=d.herkunft||{};
     zeigeHerkunft();
@@ -2319,6 +2334,26 @@ function ytUrl(begriff){
   return 'https://www.youtube.com/results?search_query='+encodeURIComponent(begriff);
 }
 
+/* Portraitadresse aus Basis, Spieler-ID und Zeitstempel. Ohne den
+   Zeitstempel antwortet Transfermarkt mit 404, aus der ID allein laesst
+   sie sich also nicht bilden - deshalb steht er in den Daten. */
+function bildUrl(p){
+  if(!p.bild||!dataBildBasis)return null;
+  return dataBildBasis+p.id+'-'+p.bild+'.jpg';
+}
+
+/* Bild ueber den Initialen. Scheitert das Laden - kein Netz, geaenderte
+   Adresse, gesperrter Verweis -, entfernt sich das Element selbst und die
+   Initialen darunter kommen zum Vorschein. Deshalb bleiben sie im Markup
+   stehen, statt ersetzt zu werden. */
+function phAvatar(p){
+  const u=bildUrl(p);
+  return '<div class="ph-av">'+p.ini+
+    (u?'<img src="'+u+'" alt="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" '
+       +'onerror="this.remove()">':'')+
+    '</div>';
+}
+
 /* ---------- Merkliste: Ordner ----------------------------------------
    Gespeichert wird im Browser des Betrachters (localStorage). Bewusst so:
    die Seite ist statisch, es gibt keinen Server, der etwas ablegen
@@ -2606,7 +2641,7 @@ function renderProfile(p,hasV,vN){
     +'<div class="param-skala"><span>schwächster</span><span>Ligaschnitt</span>'
     +'<span>bester</span></div>';
   document.getElementById('profil-content').innerHTML=rb+
-  '<div class="ph"><div class="ph-banner"><div class="ph-av">'+p.ini+'</div><div class="ph-id"><div class="ph-name"><a href="'+tmUrl(p)+'" target="_blank" rel="noopener noreferrer" class="tm-link" title="Profil auf transfermarkt.de öffnen">'+p.name+'<i class="ti ti-external-link"></i></a></div><div class="ph-sub"><span class="pos-tag">'+p.pos+'</span> · '+p.club+' · '+p.liga+(p.number?' · #'+p.number:'')+'</div>'+
+  '<div class="ph"><div class="ph-banner">'+phAvatar(p)+'<div class="ph-id"><div class="ph-name"><a href="'+tmUrl(p)+'" target="_blank" rel="noopener noreferrer" class="tm-link" title="Profil auf transfermarkt.de öffnen">'+p.name+'<i class="ti ti-external-link"></i></a></div><div class="ph-sub"><span class="pos-tag">'+p.pos+'</span> · '+p.club+' · '+p.liga+(p.number?' · #'+p.number:'')+'</div>'+
     '<div class="quellen">'+
       '<span class="quellen-lbl">Videomaterial</span>'+
       '<a href="'+ytUrl(p.name)+'" target="_blank" rel="noopener" '+

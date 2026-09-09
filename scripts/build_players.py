@@ -627,6 +627,7 @@ def main() -> int:
 
     print(f"Sammle {len(ligen)} Ligen, Saison {SAISON}/{str(SAISON + 1)[2:]} ...",
           file=sys.stderr)
+    bild_basis = None
     spieler, bericht = sammle(ligen, args.max_vereine)
 
     if not spieler:
@@ -665,7 +666,8 @@ def main() -> int:
             # gilt fuer einen Stichtag und wird von --kader-aktuell neu
             # gesetzt; alt uebernommen behauptete er einen Abgang, den es
             # laengst nicht mehr gibt.
-            ANGESAMMELT = ("verletzungen", "vertrag", "vertrag_scan", "xg")
+            ANGESAMMELT = ("verletzungen", "vertrag", "vertrag_scan", "xg",
+                           "bild")
             frueher = {}
             for s_alt in alt.get("spieler", []):
                 vorrat = {k: s_alt[k] for k in ANGESAMMELT if s_alt.get(k)}
@@ -684,6 +686,10 @@ def main() -> int:
 
             spieler = behalten + spieler
             bericht = alt_bericht + bericht
+            # Adressbasis der Portraits steht auf oberster Ebene und
+            # gehoert nicht zu einer einzelnen Liga.
+            if alt.get("bild_basis"):
+                bild_basis = alt["bild_basis"]
         except (OSError, ValueError) as exc:
             print(f"  Bestand nicht lesbar, schreibe neu: {exc}", file=sys.stderr)
 
@@ -695,6 +701,7 @@ def main() -> int:
             "stand": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "saison": f"{SAISON}/{str(SAISON + 1)[2:]}",
             "quellen": bericht,
+            **({"bild_basis": bild_basis} if bild_basis else {}),
             "spieler": spieler,
         }, fh, ensure_ascii=False, separators=(",", ":"))
 
