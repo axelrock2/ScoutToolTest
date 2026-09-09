@@ -2339,7 +2339,12 @@ function ytUrl(begriff){
    sie sich also nicht bilden - deshalb steht er in den Daten. */
 function bildUrl(p){
   if(!p.bild||!dataBildBasis)return null;
-  return dataBildBasis+p.id+'-'+p.bild+'.jpg';
+  /* p.bild traegt Zeitstempel UND Endung ("1701639955.png"). Rund ein
+     Fuenftel der Portraits sind PNG - stur ".jpg" anzuhaengen liess jeden
+     fuenften Spieler ohne Bild. Aeltere Daten ohne Endung bekommen ".jpg",
+     damit ein Datenstand von gestern nicht alles verliert. */
+  const teil=String(p.bild);
+  return dataBildBasis+p.id+'-'+teil+(teil.indexOf('.')<0?'.jpg':'');
 }
 
 /* Bild ueber den Initialen. Scheitert das Laden - kein Netz, geaenderte

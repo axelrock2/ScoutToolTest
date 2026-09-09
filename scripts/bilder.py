@@ -20,9 +20,11 @@ Spielerprofile waere.
 
 Danach compute_grades.py laufen lassen.
 
-Gespeichert wird NUR der Zeitstempel (zehn Zeichen), nicht die ganze
-Adresse: die Spieler-ID steht ohnehin im Datensatz, und der unveraenderte
-Teil gehoert einmal in die Ausgabedatei statt neuntausendmal.
+Gespeichert wird nur der veraenderliche Teil des Dateinamens, also
+Zeitstempel und Endung ("1701639955.png"): die Spieler-ID steht ohnehin im
+Datensatz, und der unveraenderte Teil gehoert einmal in die Ausgabedatei
+statt neuntausendmal. Die Endung MUSS mit - etwa ein Fuenftel der
+Portraits sind PNG.
 
 Grenzen, die dazugehoeren
 -------------------------
@@ -59,11 +61,14 @@ BUDGET_MIN = float(os.environ.get("SCOUT_BUDGET_MIN", "0")) or None
 # in der Ausgabedatei, damit das Frontend sie nicht fest verdrahtet.
 BILD_BASIS = "https://img.a.transfermarkt.technology/portrait/medium/"
 
-_PORTRAIT = re.compile(r"/portrait/[^/]+/(\d+)-(\d+)\.(?:jpg|png)")
+# Die Endung gehoert dazu: rund ein Fuenftel der Portraits sind PNG, nicht
+# JPG. Sie wegzulassen und im Frontend ".jpg" anzuhaengen hiess, dass jeder
+# fuenfte Spieler kein Bild bekam (aufgefallen an Cheick Souare).
+_PORTRAIT = re.compile(r"/portrait/[^/]+/(\d+)-(\d+\.(?:jpg|png|webp))")
 
 
 def portraits(verein_id: str) -> dict[str, str]:
-    """{spieler_id: zeitstempel} aus der schlichten Kaderansicht."""
+    """{spieler_id: "<zeitstempel>.<endung>"} aus der schlichten Kaderansicht."""
     page = fetch(f"/x/kader/verein/{verein_id}")
     out: dict[str, str] = {}
     for attr in ("data-src", "src"):
@@ -120,7 +125,7 @@ def main() -> int:
     print(f"{len(offen)} Vereine abzurufen.", file=sys.stderr)
 
     start = time.time()
-    gefunden: dict[str, str] = {}                  # spieler_id -> zeitstempel
+    gefunden: dict[str, str] = {}       # spieler_id -> "<stempel>.<endung>"
     vereine_ok = fehler = 0
     for vid, (name, _liga) in offen:
         if BUDGET_MIN and (time.time() - start) / 60 > BUDGET_MIN:

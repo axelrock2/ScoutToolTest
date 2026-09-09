@@ -202,9 +202,17 @@ python3 scripts/bilder.py
 python3 scripts/compute_grades.py
 ```
 
-Gespeichert wird **nur der Zeitstempel** (zehn Zeichen); die ID steht
-ohnehin im Datensatz, der unveränderte Teil einmal als `bild_basis`. Das
-kostet 0,07 MB in der ausgelieferten Datei statt 0,8 MB für ganze Adressen.
+Gespeichert wird **nur der veränderliche Teil des Dateinamens** —
+Zeitstempel *und Endung*, etwa `1701639955.png`; die ID steht ohnehin im
+Datensatz, der unveränderte Teil einmal als `bild_basis`. Das kostet einen
+Bruchteil dessen, was ganze Adressen kosten würden.
+
+Die Endung muss mit: **rund ein Fünftel der Portraits sind PNG**, nicht
+JPG. Sie wegzulassen und im Frontend `.jpg` anzuhängen hieß, dass jeder
+fünfte Spieler mit hinterlegtem Bild keins bekam — aufgefallen an Cheick
+Souaré, dessen Portrait eine `.png` ist. Ältere Datenstände ohne Endung
+bekommen weiterhin `.jpg`, damit ein Frontend-Update ihnen nicht alles
+nimmt.
 
 **Der Rückfall auf die Initialen trägt sich selbst.** Das Bild liegt über
 den Initialen und ist bis zum Laden durchsichtig — es hat *bewusst keine
