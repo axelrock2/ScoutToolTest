@@ -238,6 +238,15 @@ Die Grenzen liegen bei **Ende August**, nicht am Jahreswechsel: englische
 Verträge enden am 31.05., deutsche am 30.06., manche am 31.12. — erst ein
 Saisonschnitt fasst sie richtig zusammen.
 
+Wer es genauer will, wählt **einzelne Stichtage** an: eine Liste aller
+Termine, die in den Daten tatsächlich vorkommen (21 Stück), jeder mit
+seiner Trefferzahl. So lassen sich auch Termine aus *verschiedenen*
+Fenstern kombinieren — etwa der 31.12.2026 und der 30.06.2027. Eine solche
+Auswahl **ersetzt** das Zeitfenster, statt sich mit ihm zu verrechnen: wer
+den 31.12. anklickt, während oben „Saisonende" steht, bekäme sonst null
+Treffer und keinen Hinweis, warum. Das Fenster wird dabei sichtbar
+gesperrt, *Zurück zum Zeitfenster* hebt es wieder auf.
+
 Die Winterfälle kommen aus einer anderen Quelle als die Sommerfälle: Die
 Vertragsende-Seite beginnt beim **nächsten** Sommer, `vertragsendeJahr=2026`
 liefert nichts mehr. Enden zum 31.12.2026 stehen daher nur in der

@@ -656,6 +656,7 @@ input[type=range]::-webkit-slider-thumb{box-shadow:none}
     <div class="filter-panel">
       <div class="panel-title"><span class="idx">//</span> Vertragsende</div>
       <div class="fg"><label>Vertrag endet</label><select id="a-fenster"><option value="">Wird geladen …</option></select></div>
+      <div class="fg"><label>Oder einzelne Stichtage</label><div class="mehrfach" id="mf-a-datum"><button type="button" class="mehrfach-knopf" onclick="mehrfachUmschalten('a-datum')">Alle Stichtage</button></div></div>
       <div class="fg"><label>Position</label><select id="a-pos"><option value="">Alle Positionen</option><option value="TW">TW</option><option value="IV">IV</option><option value="LV,RV">LV / RV</option><option value="DM">DM</option><option value="ZM">ZM</option><option value="OM,LA,RA">OM / Flügel</option><option value="ST">ST</option></select></div>
       <div class="fg"><label>Ligen</label><div class="mehrfach" id="mf-a-liga"><button type="button" class="mehrfach-knopf" onclick="ligaAuswahlUmschalten('a-liga')">Alle Ligen</button></div></div>
       <div class="fg"><label>Alter</label><div class="age-row"><input type="number" id="a-age-von" placeholder="von"><input type="number" id="a-age-bis" placeholder="bis"></div></div>
@@ -670,7 +671,7 @@ input[type=range]::-webkit-slider-thumb{box-shadow:none}
       <button class="btn-primary" onclick="go('ergebnisse','auslaufer')"><i class="ti ti-search"></i> Ausläufer suchen</button>
       <p class="a-quelle" id="a-quelle"></p>
     </div>
-    <div class="empty-panel"><i class="ti ti-clock-exclamation"></i><p>Sommer wählen · Suche starten</p></div>
+    <div class="empty-panel"><i class="ti ti-clock-exclamation"></i><p>Zeitfenster oder Stichtag wählen · Suche starten</p></div>
   </div>
 </div>
 
@@ -1470,7 +1471,9 @@ function ligaWahlGeaendert(feld){
     aktualisiereFensterZahlen();
 }
 
-function ligaAuswahlUmschalten(feld){
+/* Ein Auf- und Zuklappen fuer alle Mehrfachfelder. Welcher Zeichner
+   zustaendig ist, entscheidet der Feldname. */
+function mehrfachUmschalten(feld){
   const box=document.getElementById('mf-'+feld);
   if(!box)return;
   const offen=box.querySelector('.mehrfach-panel');
@@ -1481,8 +1484,9 @@ function ligaAuswahlUmschalten(feld){
   panel.className='mehrfach-panel';
   box.appendChild(panel);
   box.classList.add('offen');
-  zeichneLigaAuswahl(feld);
+  (feld==='a-datum'?zeichneDatumAuswahl:zeichneLigaAuswahl)(feld);
 }
+function ligaAuswahlUmschalten(feld){return mehrfachUmschalten(feld);}
 
 /* Klick daneben schliesst die Auswahl - ohne das bliebe sie offen stehen
    und verdeckte die Felder darunter. */
@@ -1595,6 +1599,7 @@ function fuelleAuslaufPanel(){
     panel.addEventListener('input',aktualisiereFensterZahlen);
     panel.dataset.verdrahtet='1';
   }
+  zeichneDatumAuswahl();
   aktualisiereFensterZahlen();
 }
 
@@ -1608,6 +1613,13 @@ function aktualisiereFensterZahlen(){
   const f=leseAuslaufFilter();
   const posListe=f.pos?f.pos.split(','):null;
   const uebrig=PLAYERS.filter(p=>passtOhneFenster(p,f,posListe));
+  /* Stichtage angeklickt? Dann gilt das Fenster nicht mehr - und zwar
+     sichtbar, statt es unbemerkt zu uebergehen. */
+  const genau=f.daten&&f.daten.length;
+  sel.disabled=!!genau;
+  sel.style.opacity=genau?0.45:'';
+  const dknopf=document.querySelector('#mf-a-datum .mehrfach-knopf');
+  if(dknopf)dknopf.textContent=datumWahlText();
   auslaufFenster().forEach(fe=>{
     const o=sel.querySelector('option[value="'+fe.id+'"]');
     if(o)o.textContent=fe.name+' ('
@@ -1628,6 +1640,15 @@ function zeigeFensterErklaerung(){
   const sel=document.getElementById('a-fenster');
   const f=auslaufFenster().find(x=>x.id===(sel?sel.value:''));
   const jahre=auslaufJahre();
+  const tage=gewaehlteStichtage().sort();
+  if(tage.length){
+    q.innerHTML='<strong>Stichtage:</strong> '+tage.map(dtm).join(', ')+
+      '. Das Zeitfenster oben ist dadurch außer Kraft — die Auswahl der '+
+      'Termine ist genauer. Über <em>Zurück zum Zeitfenster</em> wieder '+
+      'aufheben.<br>Quelle: Transfermarkt; Termine stammen aus den Daten '+
+      'selbst, es steht nur zur Wahl, was auch vorkommt.';
+    return;
+  }
   /* Zwei verschiedene Mengen, deshalb kein "davon": geprueft sind ALLE
      Kaderspieler der abgefragten Vereine - auch die, deren Vertrag noch
      lange laeuft und die hier folglich gar kein Datum haben. */
@@ -1658,6 +1679,77 @@ function imFenster(p,f){
   return true;
 }
 
+/* ---------- Einzelne Stichtage -------------------------------------
+   Die Zeitfenster fassen zusammen, was zusammengehoert. Manchmal will man
+   aber genau einen Termin - oder zwei, die in verschiedene Fenster fallen,
+   etwa den 31.12.2026 und den 30.06.2027. Deshalb zusaetzlich die
+   Stichtage einzeln, direkt aus den Daten: was nicht vorkommt, steht auch
+   nicht zur Wahl.
+
+   Eine getroffene Auswahl ERSETZT das Zeitfenster. Beides zu verrechnen
+   waere die schlechtere Antwort: wer den 31.12. anklickt, waehrend oben
+   "Saisonende" steht, bekaeme null Treffer und keinen Hinweis, warum. */
+const DATUM_WAHL=new Set();
+
+function stichtage(){
+  const heute=new Date().toISOString().slice(0,10);
+  const z={};
+  PLAYERS.forEach(p=>{
+    if(p.weg)return;
+    const e=vertragsEnde(p);
+    if(e&&e>=heute)z[e]=(z[e]||0)+1;
+  });
+  return Object.keys(z).sort().map(d=>({datum:d,anzahl:z[d]}));
+}
+
+function gewaehlteStichtage(){return [...DATUM_WAHL];}
+
+function datumWahlText(){
+  const w=gewaehlteStichtage().sort();
+  if(!w.length)return 'Alle Stichtage';
+  if(w.length<=2)return w.map(dtm).join(' + ');
+  return w.length+' Stichtage';
+}
+
+function zeichneDatumAuswahl(){
+  const box=document.getElementById('mf-a-datum');
+  if(!box)return;
+  const knopf=box.querySelector('.mehrfach-knopf');
+  if(knopf)knopf.textContent=datumWahlText();
+  const panel=box.querySelector('.mehrfach-panel');
+  if(!panel)return;
+  /* Trefferzahlen mit den uebrigen Filtern, aber ohne Fenster und ohne
+     die Stichtagswahl selbst - sonst zeigte jeder nicht gewaehlte Tag 0. */
+  const f=leseAuslaufFilter();
+  const posListe=f.pos?f.pos.split(','):null;
+  const uebrig=PLAYERS.filter(p=>!p.weg&&passtOhneFenster(p,f,posListe));
+  const zahl={};
+  uebrig.forEach(p=>{const e=vertragsEnde(p);if(e)zahl[e]=(zahl[e]||0)+1;});
+  const tage=stichtage();
+  panel.innerHTML=
+    '<div class="mehrfach-kopf">'+
+      '<button type="button" onclick="datumWahlLeeren()">Zurück zum Zeitfenster</button>'+
+    '</div>'+
+    tage.map(t=>
+      '<label class="mehrfach-zeile"><input type="checkbox"'+
+      (DATUM_WAHL.has(t.datum)?' checked':'')+
+      ' onchange="datumWahlSchalten(\''+t.datum+'\',this.checked)">'+
+      '<span>'+dtm(t.datum)+'</span>'+
+      '<span class="anzahl">'+(zahl[t.datum]||0)+'</span></label>').join('');
+}
+
+function datumWahlSchalten(datum,an){
+  an?DATUM_WAHL.add(datum):DATUM_WAHL.delete(datum);
+  zeichneDatumAuswahl();
+  aktualisiereFensterZahlen();
+}
+
+function datumWahlLeeren(){
+  DATUM_WAHL.clear();
+  zeichneDatumAuswahl();
+  aktualisiereFensterZahlen();
+}
+
 function leseAuslaufFilter(){
   const v=id=>{const el=document.getElementById(id);return el?el.value.trim():'';};
   const an=id=>{const el=document.getElementById(id);return!!(el&&el.checked);};
@@ -1665,6 +1757,7 @@ function leseAuslaufFilter(){
           ageVon:parseInt(v('a-age-von'),10),ageBis:parseInt(v('a-age-bis'),10),
           maxMw:parseFloat(v('a-mw')),minLn:parseInt(v('a-ln'),10),
           ohneOption:an('a-ohne-option'),ohneLeihe:an('a-ohne-leihe'),
+          daten:gewaehlteStichtage(),
           belastbar:an('a-belastbar'),fit:an('a-fit'),
           /* Vorgabe bleibt die Liga-Note: innerhalb eines Fensters enden
              fast alle Vertraege am selben Tag, nach Datum zu sortieren
@@ -1701,16 +1794,27 @@ function filterAuslaufer(f){
   const fenster=f.fenster?auslaufFenster().find(x=>x.id===f.fenster):null;
   /* Ohne gewaehltes Fenster gilt: alles, was ueberhaupt noch auslaeuft. */
   const alles=FENSTER_ALLE;
+  /* Angeklickte Stichtage haben Vorrang - siehe Erlaeuterung oben. */
+  const genau=(f.daten&&f.daten.length)?new Set(f.daten):null;
   return PLAYERS.filter(p=>{
-    if(!imFenster(p,fenster||alles))return false;
+    if(genau){
+      if(p.weg)return false;
+      if(!genau.has(vertragsEnde(p)))return false;
+    }else if(!imFenster(p,fenster||alles))return false;
     return passtOhneFenster(p,f,posListe);
   });
 }
 
 function auslaufText(f){
   const t=['Vertragsausläufer'];
-  const fe=f.fenster?auslaufFenster().find(x=>x.id===f.fenster):null;
-  t.push(fe?fe.name:'alle Ausläufer');
+  if(f.daten&&f.daten.length){
+    t.push(f.daten.length<=3
+      ? f.daten.slice().sort().map(dtm).join(' + ')
+      : f.daten.length+' Stichtage');
+  }else{
+    const fe=f.fenster?auslaufFenster().find(x=>x.id===f.fenster):null;
+    t.push(fe?fe.name:'alle Ausläufer');
+  }
   if(f.pos)t.push(f.pos.replace(/,/g,'/'));
   if(f.ligen.length)t.push(ligenText(f.ligen));
   if(!isNaN(f.ageVon)||!isNaN(f.ageBis))
