@@ -200,6 +200,9 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 .bar{height:100%;border-radius:5px;transition:width 0.5s ease;position:relative;z-index:1}
 .param-skala{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink-3);letter-spacing:1px;text-transform:uppercase;margin:2px 0 12px 210px;padding-left:14px}
 .param-erklaerung{font-size:13px;color:var(--ink-2);line-height:1.6;margin-bottom:18px}
+/* Herkunftszeile unter der Auslaeufer-Suche: leise, aber lesbar - sie
+   sagt, worauf die Auskunft beruht und wo sie aufhoert. */
+.a-quelle{font-size:11px;line-height:1.6;color:var(--ink-3);margin:14px 0 0;font-style:italic}
 .param-erklaerung strong{color:var(--ink)}
 .param-wert{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink);width:132px;text-align:right;flex-shrink:0}
 .param-wert b{font-weight:700;font-size:14px}
@@ -536,6 +539,12 @@ input[type=range]::-webkit-slider-thumb{box-shadow:none}
       <p>Kompletter Kader-Scan mit Budget, Schwachstellen und gezielten Verstärkungs-Empfehlungen.</p>
       <div class="mode-go">Öffnen <i class="ti ti-arrow-right"></i></div>
     </div>
+    <div class="mode-card" data-num="04" onclick="go('auslaufer')">
+      <div class="mode-ico"><i class="ti ti-clock-exclamation"></i></div>
+      <h3>Vertragsausläufer</h3>
+      <p>Spieler mit auslaufendem Vertrag — samt Verlängerungsoption und Leihe, direkt von Transfermarkt.</p>
+      <div class="mode-go">Öffnen <i class="ti ti-arrow-right"></i></div>
+    </div>
   </div>
 </div>
 
@@ -560,6 +569,34 @@ input[type=range]::-webkit-slider-thumb{box-shadow:none}
       <button class="btn-primary" onclick="go('ergebnisse','spielersuche')"><i class="ti ti-search"></i> Suche starten</button>
     </div>
     <div class="empty-panel"><i class="ti ti-radar-2"></i><p>Filter setzen · Suche starten</p></div>
+  </div>
+</div>
+
+<!-- Vertragsauslaeufer. Eigene Seite statt eines weiteren Schalters in der
+     Spielersuche: die Fragen sind andere. Dort lautet sie "wer ist gut?",
+     hier "wer ist bald zu haben, und zu welchen Bedingungen?" - Sommer,
+     Verlaengerungsoption und Leihe gibt es nur hier. -->
+<div class="page" id="p-auslaufer">
+  <button class="nav-back" onclick="go('home')"><i class="ti ti-arrow-left"></i> Terminal</button>
+  <div class="two-col">
+    <div class="filter-panel">
+      <div class="panel-title"><span class="idx">//</span> Vertragsende</div>
+      <div class="fg"><label>Vertrag endet</label><select id="a-fenster"><option value="">Wird geladen …</option></select></div>
+      <div class="fg"><label>Position</label><select id="a-pos"><option value="">Alle Positionen</option><option value="TW">TW</option><option value="IV">IV</option><option value="LV,RV">LV / RV</option><option value="DM">DM</option><option value="ZM">ZM</option><option value="OM,LA,RA">OM / Flügel</option><option value="ST">ST</option></select></div>
+      <div class="fg"><label>Liga</label><select id="a-liga"><option value="">Alle Ligen</option></select></div>
+      <div class="fg"><label>Alter</label><div class="age-row"><input type="number" id="a-age-von" placeholder="von"><input type="number" id="a-age-bis" placeholder="bis"></div></div>
+      <div class="fg"><label>Max. Marktwert (Mio. €)</label><input type="number" id="a-mw" step="0.1" placeholder="z.B. 10"></div>
+      <div class="fg"><label>Mindest-Liga-Note</label><select id="a-ln"><option value="">Keine</option><option value="60">60+</option><option value="65">65+</option><option value="70">70+</option><option value="75">75+</option><option value="80">80+</option></select></div>
+      <div class="fg">
+        <div class="tr"><label title="Eine vereinbarte Verlängerungsoption kann der Verein ziehen — der Spieler ist dann nicht frei. Diese Fälle bleiben außen vor.">Nur ohne Verlängerungsoption</label><label class="tog"><input type="checkbox" id="a-ohne-option"><span class="tslider"></span></label></div>
+        <div class="tr"><label title="Bei Leihspielern endet die Leihe, nicht der Vertrag beim Stammverein. Standardmäßig ausgeblendet.">Leihspieler ausblenden</label><label class="tog"><input type="checkbox" id="a-ohne-leihe" checked><span class="tslider"></span></label></div>
+        <div class="tr"><label title="Blendet Spieler mit sehr wenig Saisonminuten aus">Nur belastbare Stichprobe</label><label class="tog"><input type="checkbox" id="a-belastbar" checked><span class="tslider"></span></label></div>
+        <div class="tr"><label title="Blendet Spieler mit 90+ Ausfalltagen in drei Jahren aus. Betrifft nur Spieler, für die eine Historie vorliegt.">Verletzungsanfällige ausblenden</label><label class="tog"><input type="checkbox" id="a-fit"><span class="tslider"></span></label></div>
+      </div>
+      <button class="btn-primary" onclick="go('ergebnisse','auslaufer')"><i class="ti ti-search"></i> Ausläufer suchen</button>
+      <p class="a-quelle" id="a-quelle"></p>
+    </div>
+    <div class="empty-panel"><i class="ti ti-clock-exclamation"></i><p>Sommer wählen · Suche starten</p></div>
   </div>
 </div>
 
@@ -596,7 +633,7 @@ input[type=range]::-webkit-slider-thumb{box-shadow:none}
   <div class="results-wrap">
     <div class="res-header">
       <div class="res-count"><strong id="res-num">47</strong> Treffer<span class="filt" id="res-filt">Liga-Note 65+ · 2. Bundesliga · OM/Flügel</span></div>
-      <select class="sort-sel" id="f-sort" onchange="renderPlayers()"><option value="ln">Sortieren: Liga-Note ↓</option><option value="pn">Positions-Note ↓</option><option value="age">Alter ↑</option><option value="mv">Marktwert ↓</option></select>
+      <select class="sort-sel" id="f-sort" onchange="renderPlayers()"><option value="ln">Sortieren: Liga-Note ↓</option><option value="pn">Positions-Note ↓</option><option value="age">Alter ↑</option><option value="mv">Marktwert ↓</option><option value="vertrag">Vertragsende ↑</option></select>
     </div>
     <div id="player-list"></div>
   </div>
@@ -892,12 +929,13 @@ function go(page,from){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('p-'+page).classList.add('active');
   window.scrollTo(0,0);
-  const lbl={home:'TERMINAL // START',spielersuche:'SPIELERSUCHE',vereinsmatching:'VEREINS-MATCHING',kaderanalyse:'KADERANALYSE',kaderresult:'KADER // REPORT',ergebnisse:'TREFFER',profil:'SPIELERAKTE'};
+  const lbl={home:'TERMINAL // START',spielersuche:'SPIELERSUCHE',vereinsmatching:'VEREINS-MATCHING',kaderanalyse:'KADERANALYSE',kaderresult:'KADER // REPORT',ergebnisse:'TREFFER',profil:'SPIELERAKTE',auslaufer:'VERTRAGSAUSLÄUFER'};
   document.getElementById('bc').innerHTML='<span class="dot"></span> '+(lbl[page]||page);
   if(page==='ergebnisse'){document.getElementById('ergebnis-bk').onclick=()=>go(fromPage);renderPlayers();}
   if(page==='kaderresult')renderKadResult();
   if(page==='vereinsmatching'){vmLiga=null;vmVerein=null;renderLigen('vm');resetPanels('vm');}
   if(page==='kaderanalyse'){kadLiga=null;kadVerein=null;renderLigen('kad');resetPanels('kad');}
+  if(page==='auslaufer')fuelleAuslaufPanel();
 }
 function resetPanels(px){
   document.getElementById(px+'-verein-panel').innerHTML='<div class="panel-title"><span class="idx">02</span> Verein</div><div class="empty-panel" style="padding:48px 16px"><i class="ti ti-shield"></i><p>Liga wählen</p></div>';
@@ -1212,6 +1250,12 @@ function sortPlayers(liste,art){
   if(art==='age')kopie.sort((a,b)=>a.age-b.age||b.ln-a.ln);
   else if(art==='mv')kopie.sort((a,b)=>(b.mv_eur??0)-(a.mv_eur??0));
   else if(art==='pn')kopie.sort((a,b)=>b.pn-a.pn);
+  /* Vertragsende aufsteigend: das naechste zuerst. Spieler ohne Datum
+     ans Ende, sonst stuenden die Unbekannten vor den Auslaeufern. */
+  else if(art==='vertrag')kopie.sort((a,b)=>{
+    const da=vertragsEnde(a)||'9999',db=vertragsEnde(b)||'9999';
+    return da<db?-1:da>db?1:b.ln-a.ln;
+  });
   else kopie.sort((a,b)=>b.ln-a.ln);
   return kopie;
 }
@@ -1237,7 +1281,13 @@ const STUFEN_NAME={1:'Erste Ligen',2:'Zweite Ligen',3:'3. Liga',
                    4:'Regionalliga (4. Liga)',5:'Oberliga (5. Liga)'};
 
 function fuelleLigaFilter(){
-  const sel=document.getElementById('f-liga');
+  /* Beide Liga-Auswahlen bekommen dieselbe Liste - die der Spielersuche
+     und die der Auslaeufer-Suche. */
+  ['f-liga','a-liga'].forEach(fuelleEineLigaAuswahl);
+}
+
+function fuelleEineLigaAuswahl(feld){
+  const sel=document.getElementById(feld);
   if(!sel||!LIGEN.length)return;
   const aktuell=sel.value;
   /* Nach Spielklasse gruppieren - bei ueber 30 Ligen sonst unuebersichtlich. */
@@ -1264,6 +1314,282 @@ function fuelleLigaFilter(){
    kosten rund 11 Notenpunkte. */
 const NIVEAU_FAKTOR=0.55;
 const RADIUS_NAH=18;          // Niveaupunkte, die als vergleichbar gelten
+
+/* ---------- Vertragsauslaeufer ---------------------------------------
+   Eigene Quelle, eigener Filtersatz: die Transfermarkt-Seite
+   "Vertragsende" je Verein und Sommer (scripts/vertraege.py). Sie liefert
+   drei Dinge, die die Kaderansicht nicht hat - das gesicherte Enddatum,
+   eine etwaige Verlaengerungsoption und die Markierung als Leihe.
+
+   Warum das zaehlt: mit gezogener Option ist ein Auslaeufer kein freier
+   Transfer, und bei einem Leihspieler endet die Leihe, waehrend der
+   Vertrag beim Stammverein weiterlaeuft. Beides ohne Kennzeichnung als
+   "abloesefrei" auszuweisen waere schlicht falsch. */
+
+/* Welche Sommer wurden ueber die Vertragsende-Seite abgefragt? Steht am
+   Spieler (vgeprueft) - so beruht die Herkunftsangabe nicht auf fest
+   verdrahteten Jahreszahlen. */
+function auslaufJahre(){
+  const zaehler={};
+  PLAYERS.forEach(p=>{if(p.vgeprueft)zaehler[p.vgeprueft]=(zaehler[p.vgeprueft]||0)+1;});
+  const haeufigste=Object.keys(zaehler).sort((a,b)=>zaehler[b]-zaehler[a])[0];
+  if(!haeufigste)return [];
+  return haeufigste.split(',').map(x=>parseInt(x,10)).filter(x=>x);
+}
+
+/* ---------- Zeitfenster statt Jahreszahlen -------------------------
+   Ein Scout fragt nicht "endet der Vertrag 2027", sondern "wer ist im
+   Winter zu haben und wer im Sommer". Das sind zwei verschiedene Fenster:
+
+     Winterpause   Vertrag endet im laufenden Kalenderjahr -> ab Januar frei.
+                   Selten, aber real: polnische Vereine schliessen haeufig
+                   Kalenderjahrvertraege.
+     Saisonende    Vertrag endet zum Saisonschluss -> ab Sommer frei. Ab dem
+                   1. Januar darf der Spieler mit Vereinen anderer Verbaende
+                   einen Vorvertrag schliessen; fuer den abgebenden Verein
+                   ist der Winter also die letzte Gelegenheit auf Ablöse.
+
+   Die Grenzen liegen bei Ende August, nicht bei Jahreswechsel: englische
+   Vertraege enden am 31.05., deutsche am 30.06., manche am 31.12. - erst
+   ein Saisonschnitt fasst sie richtig zusammen. */
+function saisonStart(heute){
+  const h=heute||new Date();
+  return h.getMonth()>=6?h.getFullYear():h.getFullYear()-1;
+}
+
+function auslaufFenster(){
+  const st=saisonStart();
+  const s2=(st+1), s3=(st+2);
+  const kurz=j=>String(j).slice(2);
+  return [
+    {id:'winter', von:null,              bis:st+'-12-31',
+     name:'Winterpause '+st+'/'+kurz(s2),
+     erklaerung:'Vertrag endet im Winter — ablösefrei ab Januar '+s2+'.'},
+    {id:'saison', von:s2+'-01-01',       bis:s2+'-08-31',
+     name:'Saisonende '+st+'/'+kurz(s2),
+     erklaerung:'Vertrag endet zum Saisonschluss — ablösefrei ab Sommer '+s2
+       +'. Ab 1. Januar '+s2+' ist ein Vorvertrag mit Vereinen anderer '
+       +'Verbände möglich; im Winter ist es die letzte Gelegenheit auf Ablöse.'},
+    {id:'folge',  von:s2+'-09-01',       bis:s3+'-08-31',
+     name:'Saison '+s2+'/'+kurz(s3),
+     erklaerung:'Vertrag endet ein Jahr später — jetzt noch mit Ablöse, '
+       +'im nächsten Winter die letzte Gelegenheit dazu.'},
+  ];
+}
+
+/* Massgebliches Vertragsende. Zwei Quellen, in dieser Reihenfolge:
+     auslauf.bis      Vertragsende-Seite des Vereins (mit Option und Leihe)
+     contract_until   Kaderansicht - deckt auch Enden ab, die jene Seite
+                      nicht fuehrt (sie beginnt erst beim naechsten Sommer) */
+function vertragsEnde(p){
+  return (p.auslauf&&p.auslauf.bis)||p.contract_until||null;
+}
+
+function fuelleAuslaufPanel(){
+  const sel=document.getElementById('a-fenster');
+  const fenster=auslaufFenster();
+  if(sel){
+    const vorher=sel.value;
+    const gueltig=[...fenster.map(f=>f.id),''];
+    sel.innerHTML=fenster.map(f=>'<option value="'+f.id+'" title="'+f.erklaerung
+        +'">'+f.name+'</option>').join('')
+      +'<option value="">Alle Ausläufer</option>';
+    /* Vorgabe ist das Saisonende - der Fall, um den es meistens geht. */
+    sel.value=(vorher&&gueltig.includes(vorher))?vorher:'saison';
+  }
+  /* Jede Aenderung im Panel wirkt sich auf die Trefferzahlen aus, also
+     werden sie danach neu ausgezaehlt. */
+  const panel=document.querySelector('#p-auslaufer .filter-panel');
+  if(panel&&!panel.dataset.verdrahtet){
+    panel.addEventListener('change',aktualisiereFensterZahlen);
+    panel.addEventListener('input',aktualisiereFensterZahlen);
+    panel.dataset.verdrahtet='1';
+  }
+  aktualisiereFensterZahlen();
+}
+
+/* Trefferzahl je Fenster - MIT den gerade gesetzten Filtern. Eine Zahl im
+   Auswahlfeld, die nicht zum Ergebnis passt, waere schlimmer als keine:
+   die Vorgabe blendet Leihen und duenne Stichproben aus, das aendert die
+   Zahl deutlich. */
+function aktualisiereFensterZahlen(){
+  const sel=document.getElementById('a-fenster');
+  if(!sel)return;
+  const f=leseAuslaufFilter();
+  const posListe=f.pos?f.pos.split(','):null;
+  const uebrig=PLAYERS.filter(p=>passtOhneFenster(p,f,posListe));
+  auslaufFenster().forEach(fe=>{
+    const o=sel.querySelector('option[value="'+fe.id+'"]');
+    if(o)o.textContent=fe.name+' ('
+      +uebrig.filter(p=>imFenster(p,fe)).length.toLocaleString('de-DE')+')';
+  });
+  const alle=sel.querySelector('option[value=""]');
+  if(alle)alle.textContent='Alle Ausläufer ('
+    +uebrig.filter(p=>imFenster(p,FENSTER_ALLE)).length.toLocaleString('de-DE')+')';
+  zeigeFensterErklaerung();
+}
+
+/* Was das gewaehlte Fenster bedeutet, und worauf die Auskunft beruht.
+   Ohne diese Zeile liesse sich weder die Bosman-Frist erkennen noch, dass
+   nur geprüfte Vereine überhaupt Aussagen erlauben. */
+function zeigeFensterErklaerung(){
+  const q=document.getElementById('a-quelle');
+  if(!q)return;
+  const sel=document.getElementById('a-fenster');
+  const f=auslaufFenster().find(x=>x.id===(sel?sel.value:''));
+  const jahre=auslaufJahre();
+  /* Zwei verschiedene Mengen, deshalb kein "davon": geprueft sind ALLE
+     Kaderspieler der abgefragten Vereine - auch die, deren Vertrag noch
+     lange laeuft und die hier folglich gar kein Datum haben. */
+  const geprueft=PLAYERS.filter(p=>p.vgeprueft).length;
+  const mitDatum=PLAYERS.filter(p=>vertragsEnde(p)&&!p.weg).length;
+  q.innerHTML=(f?'<strong>'+f.name+':</strong> '+f.erklaerung+'<br>':'')
+    +'Quellen: Vereinsseite „Vertragsende“ von Transfermarkt — nur sie führt '
+    +'Verlängerungsoption und Leihe, und erst ab Sommer '
+    +(jahre.length?jahre[0]:'—')+'. Frühere Enden (etwa 31.12.) stammen aus '
+    +'der Kaderansicht. Auf Optionen geprüft: '
+    +geprueft.toLocaleString('de-DE')+' Kaderspieler; ein Vertragsdatum '
+    +'liegt für '+mitDatum.toLocaleString('de-DE')+' von ihnen vor — bei den '
+    +'übrigen läuft der Vertrag über das Suchfenster hinaus. '
+    +'Wer seinen Verein verlassen hat, erscheint hier nicht: sein Vertrag '
+    +'steht heute beim neuen Verein.';
+}
+
+/* Faellt der Spieler in dieses Fenster? Abgelaufenes zaehlt nicht mehr,
+   und wer den Verein verlassen hat, traegt ein Datum vom alten Verein. */
+function imFenster(p,f){
+  if(p.weg)return false;
+  const e=vertragsEnde(p);
+  if(!e)return false;
+  const heute=new Date().toISOString().slice(0,10);
+  if(e<heute)return false;
+  if(f.von&&e<f.von)return false;
+  if(f.bis&&e>f.bis)return false;
+  return true;
+}
+
+function leseAuslaufFilter(){
+  const v=id=>{const el=document.getElementById(id);return el?el.value.trim():'';};
+  const an=id=>{const el=document.getElementById(id);return!!(el&&el.checked);};
+  return {fenster:v('a-fenster'),pos:v('a-pos'),liga:v('a-liga'),
+          ageVon:parseInt(v('a-age-von'),10),ageBis:parseInt(v('a-age-bis'),10),
+          maxMw:parseFloat(v('a-mw')),minLn:parseInt(v('a-ln'),10),
+          ohneOption:an('a-ohne-option'),ohneLeihe:an('a-ohne-leihe'),
+          belastbar:an('a-belastbar'),fit:an('a-fit'),
+          /* Vorgabe bleibt die Liga-Note: innerhalb eines Fensters enden
+             fast alle Vertraege am selben Tag, nach Datum zu sortieren
+             ordnete also nichts. Ueber die Auswahl oben geht es trotzdem. */
+          sort:v('f-sort')||'ln'};
+}
+
+/* Alle Bedingungen AUSSER dem Zeitfenster. Getrennt, weil die Auswahl
+   oben zeigen soll, wie viele Treffer jedes Fenster mit den GERADE
+   gesetzten Filtern brächte - eine Zahl, die zum Ergebnis nicht passt,
+   ist schlimmer als gar keine. */
+function passtOhneFenster(p,f,posListe){
+  const a=p.auslauf;
+  /* Nur Verlaengerungsoptionen ausschliessen. Eine Kaufoption steht
+     fast immer bei Leihspielern und sagt nichts ueber die Laufzeit -
+     wer sie mit ausfilterte, verloere Treffer ohne Grund. */
+  if(f.ohneOption&&a&&a.option&&optionArt(a.option)==='verlaengerung')return false;
+  if(f.ohneLeihe&&a&&a.leihe)return false;
+  if(posListe&&!posListe.includes(p.pos))return false;
+  if(f.liga&&p.liga_id!==f.liga)return false;
+  if(!isNaN(f.ageVon)&&p.age<f.ageVon)return false;
+  if(!isNaN(f.ageBis)&&p.age>f.ageBis)return false;
+  if(!isNaN(f.maxMw)&&(p.mv_eur??0)>f.maxMw*1e6)return false;
+  if(!isNaN(f.minLn)&&p.ln<f.minLn)return false;
+  if(f.belastbar&&p.belastbar===false)return false;
+  if(f.fit&&p.verletzungen&&p.verletzungen.tage_3j>=90)return false;
+  return true;
+}
+
+const FENSTER_ALLE={id:'alle',von:null,bis:null};
+
+function filterAuslaufer(f){
+  const posListe=f.pos?f.pos.split(','):null;
+  const fenster=f.fenster?auslaufFenster().find(x=>x.id===f.fenster):null;
+  /* Ohne gewaehltes Fenster gilt: alles, was ueberhaupt noch auslaeuft. */
+  const alles=FENSTER_ALLE;
+  return PLAYERS.filter(p=>{
+    if(!imFenster(p,fenster||alles))return false;
+    return passtOhneFenster(p,f,posListe);
+  });
+}
+
+function auslaufText(f){
+  const t=['Vertragsausläufer'];
+  const fe=f.fenster?auslaufFenster().find(x=>x.id===f.fenster):null;
+  t.push(fe?fe.name:'alle Ausläufer');
+  if(f.pos)t.push(f.pos.replace(/,/g,'/'));
+  if(f.liga){const l=LIGEN.find(x=>x.id===f.liga);t.push(l?l.name:f.liga);}
+  if(!isNaN(f.ageVon)||!isNaN(f.ageBis))
+    t.push('Alter '+(isNaN(f.ageVon)?'':f.ageVon)+'–'+(isNaN(f.ageBis)?'':f.ageBis));
+  if(!isNaN(f.maxMw))t.push('max. '+f.maxMw+' Mio. €');
+  if(!isNaN(f.minLn))t.push('Liga-Note '+f.minLn+'+');
+  if(f.ohneOption)t.push('ohne Verlängerungsoption');
+  if(f.ohneLeihe)t.push('ohne Leihen');
+  return t.join(' · ');
+}
+
+/* Monat/Jahr aus einem ISO-Datum, plus einen Tag weitergedacht: ein am
+   30.06. endender Vertrag macht den Spieler zum 01.07. frei. */
+function freiAb(iso){
+  const d=new Date(iso);
+  d.setDate(d.getDate()+1);
+  return ('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear();
+}
+
+/* Datum wie ueberall sonst im Werkzeug: 30.06.2027, nicht 30.6.2027. */
+function dtm(iso){
+  return new Date(iso).toLocaleDateString('de-DE',
+    {day:'2-digit',month:'2-digit',year:'numeric'});
+}
+
+/* Zwei ganz verschiedene Dinge stehen in derselben Spalte:
+     "Kaufoption", "Kaufpflicht ..."  -> der aufnehmende Verein darf/muss kaufen
+     "vereinsseitig 1 Jahr", "beidseitig 2 Jahre", "ein weiteres Jahr"
+                                      -> der Vertrag kann verlaengert werden
+   Nur das Zweite verhindert, dass ein Spieler frei wird. Beides gleich zu
+   erklaeren waere falsch - besonders bei Leihspielern, wo fast immer eine
+   Kaufoption steht. */
+function optionArt(text){
+  return /^kauf/i.test((text||'').trim()) ? 'kauf' : 'verlaengerung';
+}
+
+function auslaufBadge(p,imAuslaufModus){
+  const a=p.auslauf;
+  if(!a){
+    /* Kein Eintrag von der Vertragsende-Seite: das Datum stammt dann aus
+       der Kaderansicht, die keine Option und keine Leihe fuehrt. Nur in
+       der Auslaeufer-Suche zeigen - anderswo sagt die Vertragsampel
+       daneben schon dasselbe, nur groeber. */
+    const e=imAuslaufModus?vertragsEnde(p):null;
+    if(!e)return '';
+    return '<span class="badge" style="border-color:var(--line-bright);color:var(--ink-2)" '
+      +'title="Vertrag bis '+dtm(e)+' laut Kaderansicht auf Transfermarkt. '
+      +'Ob eine Verlängerungsoption besteht, führt diese Ansicht nicht — '
+      +'die Vertragsende-Seite deckt erst spätere Sommer ab.">Vertrag bis '
+      +freiAb(e)+' · Option unbekannt</span>';
+  }
+  const ende=dtm(a.bis);
+  if(a.leihe)
+    return '<span class="badge" style="border-color:rgba(77,166,255,0.4);color:var(--blue)" '
+      +'title="Leihe endet am '+ende+'. Der Vertrag beim Stammverein läuft weiter — '
+      +'das ist kein ablösefreier Wechsel.'
+      +(a.option?' Eingetragen: „'+a.option+'“.':'')
+      +' Quelle: Transfermarkt.">Leihe bis '+freiAb(a.bis)+'</span>';
+  if(a.option&&optionArt(a.option)==='verlaengerung')
+    return '<span class="badge" style="border-color:rgba(245,166,35,0.45);color:var(--amber)" '
+      +'title="Vertrag bis '+ende+', aber mit Verlängerungsoption: „'+a.option
+      +'“. Zieht der Verein sie, wird der Spieler nicht frei. '
+      +'Quelle: Transfermarkt.">Ausläufer + Option</span>';
+  return '<span class="badge" style="border-color:rgba(91,211,122,0.45);color:var(--green)" '
+    +'title="Vertrag endet am '+ende+', keine Verlängerungsoption eingetragen.'
+    +(a.option?' Eingetragen ist lediglich: „'+a.option+'“.':'')
+    +' Quelle: Transfermarkt, Vereinsseite „Vertragsende“.">ablösefrei ab '
+    +freiAb(a.bis)+'</span>';
+}
 
 function niveauVonLiga(ligaId){
   const l=LIGEN.find(x=>x.id===ligaId);
@@ -1351,8 +1677,20 @@ function renderPlayers(){
       +' · '+radText;
   }
 
+  /* Vertragsauslaeufer: eigener Filtersatz, eigene Grundmenge. Die
+     Filterleiste der Spielersuche gilt hier nicht - sonst wirkten dort
+     gesetzte Werte unsichtbar weiter, wie es beim Matching schon einmal
+     der Fall war. */
+  let ligaBezug=f.liga;
+  if(fromPage==='auslaufer'){
+    const af=leseAuslaufFilter();
+    treffer=sortPlayers(filterAuslaufer(af),af.sort);
+    hinweis=auslaufText(af);
+    ligaBezug=af.liga;
+  }
+
   const refNiv=verein?niveauVonLiga(verein.liga)
-              :(f.liga?niveauVonLiga(f.liga):null);
+              :(ligaBezug?niveauVonLiga(ligaBezug):null);
 
   /* Aus der Kaderanalyse heraus gilt derselbe Radius wie im Matching:
      ohne ihn bekaeme ein Oberligist Weltklassespieler vorgeschlagen.
@@ -1475,7 +1813,7 @@ function renderPlayers(){
         +'<div class="score-cap"><div class="scl">LN</div><div class="scv">'+p.ln+'</div><div class="scbar" style="width:'+p.ln+'%;background:var(--blue)"></div></div>'
       : '<div class="score-cap primary"><div class="scl">LN</div><div class="scv">'+p.ln+'</div><div class="scbar" style="width:'+p.ln+'%"></div></div>'
         +'<div class="score-cap"><div class="scl">PN</div><div class="scv">'+p.pn+'</div><div class="scbar" style="width:'+p.pn+'%;background:var(--blue)"></div></div>';
-    return '<div class="pcard" onclick="showProfile('+p.id+')"><div class="av">'+p.ini+''+(p.number?'<span class="num">'+p.number+'</span>':'')+'</div><div class="pi"><h4><a href="'+tmUrl(p)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Profil auf transfermarkt.de öffnen" class="tm-link">'+p.name+'<i class="ti ti-external-link"></i></a></h4><div class="meta"><span class="pos-tag">'+p.pos+'</span><span>'+p.club+'</span><span>'+p.liga+'</span><span>'+p.age+' J.</span></div><div class="badges">'+cbadge(p.contract)+'<span class="badge b-blue">'+p.mv+' €</span>'+(p.underval?'<span class="badge b-teal"><i class="ti ti-trending-up" style="font-size:10px"></i> Unterbewertet</span>':'')+bewBadge+verlBadge+wegBadge+einBadge+duenn+luecken+'</div></div><div class="scores">'+note+'</div></div>';
+    return '<div class="pcard" onclick="showProfile('+p.id+')"><div class="av">'+p.ini+''+(p.number?'<span class="num">'+p.number+'</span>':'')+'</div><div class="pi"><h4><a href="'+tmUrl(p)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Profil auf transfermarkt.de öffnen" class="tm-link">'+p.name+'<i class="ti ti-external-link"></i></a></h4><div class="meta"><span class="pos-tag">'+p.pos+'</span><span>'+p.club+'</span><span>'+p.liga+'</span><span>'+p.age+' J.</span></div><div class="badges">'+cbadge(p.contract)+'<span class="badge b-blue">'+p.mv+' €</span>'+(p.underval?'<span class="badge b-teal"><i class="ti ti-trending-up" style="font-size:10px"></i> Unterbewertet</span>':'')+auslaufBadge(p,fromPage==='auslaufer')+bewBadge+verlBadge+wegBadge+einBadge+duenn+luecken+'</div></div><div class="scores">'+note+'</div></div>';
   }).join('');
 }
 /* Flags und Fazit werden hier erzeugt, nicht in der JSON mitgeliefert.
@@ -1544,6 +1882,67 @@ function tmUrl(p){
    Welche Angabe stammt woher? Ohne das laesst sich nicht beurteilen, wie
    belastbar eine Zahl ist - eine erhobene Groesse und eine berechnete
    Note sind zweierlei, und was ganz fehlt, gehoert ebenso benannt. */
+/* Vertragslage im Profil. Nur fuer geprueft Betroffene - wer keinen
+   Eintrag hat, hat entweder einen laenger laufenden Vertrag oder wurde
+   nicht geprueft; beides steht als Satz darunter, statt es offenzulassen. */
+function vertragsAbschnitt(p){
+  const a=p.auslauf;
+  if(!a){
+    const e=vertragsEnde(p);
+    const zeilen=[];
+    /* Datum aus der Kaderansicht: belastbar, aber ohne Angabe zur Option. */
+    if(e)
+      zeilen.push({c:'neu',t:'<strong>Vertrag bis '+dtm(e)+'</strong> laut '+
+        'Kaderansicht. Ob eine Verlängerungsoption besteht, führt diese '+
+        'Ansicht nicht.'});
+    if(p.vgeprueft)
+      zeilen.push({c:'pos',t:'Kein auslaufender Vertrag in den geprüften '+
+        'Sommern ('+String(p.vgeprueft).split(',').join(' und ')+'). Der '+
+        'Vertrag läuft darüber hinaus. Quelle: Transfermarkt, Vereinsseite '+
+        '„Vertragsende“.'});
+    if(!zeilen.length)return '';
+    return '<div class="sec"><div class="sec-title">Vertragslage</div>'+
+      zeilen.map(function(z){
+        return '<div class="flag"><div class="fdot '+z.c+'"></div><span>'+z.t+'</span></div>';
+      }).join('')+'</div>';
+  }
+  const ende=dtm(a.bis);
+  const art=a.option?optionArt(a.option):null;
+  const zeilen=[];
+  if(a.leihe){
+    zeilen.push({c:'neu',t:'<strong>Leihe endet am '+ende+'.</strong> Das ist '+
+      'kein Vertragsende: beim Stammverein läuft der Vertrag weiter. Ein '+
+      'Wechsel wäre eine Ablöse mit dem Stammverein, kein freier Transfer.'});
+  }else if(art==='verlaengerung'){
+    /* Mit Verlaengerungsoption zuerst gar nicht "abloesefrei" behaupten -
+       der Satz waere im naechsten Absatz schon widerrufen. */
+    zeilen.push({c:'neu',t:'<strong>Vertrag endet am '+ende+'</strong> — '+
+      'ablösefrei nur, wenn die Option unten nicht gezogen wird.'});
+  }else{
+    zeilen.push({c:'pos',t:'<strong>Vertrag endet am '+ende+'</strong> — '+
+      'ablösefrei ab '+freiAb(a.bis)+'.'});
+  }
+  if(art==='verlaengerung')
+    zeilen.push({c:'neg',t:'Verlängerungsoption: <strong>'+a.option+'</strong>. '+
+      'Wird sie gezogen, wird der Spieler zu diesem Termin nicht frei.'});
+  else if(art==='kauf')
+    zeilen.push({c:'neu',t:'Eingetragen: <strong>'+a.option+'</strong>. Das '+
+      'betrifft den Übergang zum aufnehmenden Verein, nicht die Laufzeit — '+
+      'wird sie wahrgenommen, ist der Spieler dort fest unter Vertrag und '+
+      'kommt nicht auf den Markt.'});
+  else if(!a.leihe)
+    zeilen.push({c:'neu',t:'Keine Verlängerungsoption eingetragen.'});
+  return '<div class="sec"><div class="sec-title">Vertragslage</div>'+
+    zeilen.map(function(z){
+      return '<div class="flag"><div class="fdot '+z.c+'"></div><span>'+z.t+'</span></div>';
+    }).join('')+
+    '<div class="param-erklaerung" style="margin-top:12px">Quelle: '+
+    'Transfermarkt, Vereinsseite „Vertragsende“ — abgerufen für die Sommer '+
+    (p.vgeprueft?String(p.vgeprueft).split(',').join(' und '):'des Suchfensters')+
+    '. Vertragsdaten ändern sich durch Verlängerungen laufend; maßgeblich '+
+    'ist der Datenstand oben.</div></div>';
+}
+
 function herkunftAbschnitt(){
   var h=window.HERKUNFT;
   if(!h||!Object.keys(h).length) return '';
@@ -1579,8 +1978,15 @@ function zeigeHerkunft(){
     if(!h) return;
     var hero=document.querySelector('#p-home .hero');
     if(!hero) return;
-    var erhoben=Object.keys(h).filter(function(k){return h[k].art==='erhoben';})
-      .map(function(k){return h[k].name;});
+    /* Kurzform: nur die Anbieter, nicht deren einzelne Seiten. Sonst
+       stuende hier "Transfermarkt und Transfermarkt Vertragsende und
+       Understat". Die Aufschluesselung steht in jeder Spielerakte. */
+    var erhoben=[];
+    Object.keys(h).forEach(function(k){
+      if(h[k].art!=='erhoben')return;
+      var anbieter=h[k].name.split(' · ')[0];
+      if(erhoben.indexOf(anbieter)<0)erhoben.push(anbieter);
+    });
     var el=document.createElement('div');
     el.id='herkunft-kurz';
     el.className='herkunft-kurz';
@@ -1607,6 +2013,11 @@ function ytUrl(begriff){
 /* Vertragsende mit Restlaufzeit. Gewicht fuehrt die Quelle nicht, deshalb
    steht an dessen Stelle diese fuer Scouting weit nuetzlichere Angabe. */
 function vertragText(p){
+  /* Bei einem geprueften Auslaeufer steht das Datum aus der Vereinsseite
+     "Vertragsende" - dort ist es gesichert, in der Kaderansicht fehlt es
+     haeufig. */
+  if(!p.contract_until&&p.auslauf&&!p.auslauf.leihe)
+    return new Date(p.auslauf.bis).toLocaleDateString('de-DE');
   if(!p.contract_until)return 'k. A.';
   const m=restmonate(p);
   const txt=new Date(p.contract_until).toLocaleDateString('de-DE',
@@ -1673,6 +2084,7 @@ function renderProfile(p,hasV,vN){
   '</div></div>'+
   tnSec+
   '<div class="sec"><div class="sec-title">Stammdaten</div><div class="sd-grid"><div class="sd"><div class="sd-lbl">Alter</div><div class="sd-val">'+p.age+' J.</div></div><div class="sd"><div class="sd-lbl">Fuß</div><div class="sd-val">'+p.foot+'</div></div><div class="sd"><div class="sd-lbl">Größe</div><div class="sd-val">'+p.height+'</div></div><div class="sd"><div class="sd-lbl">Vertrag bis</div><div class="sd-val">'+vertragText(p)+'</div></div><div class="sd"><div class="sd-lbl">Rückennummer</div><div class="sd-val">'+(p.number?'#'+p.number:'k. A.')+'</div></div></div></div>'+
+  vertragsAbschnitt(p)+
   (function(){
     /* Was bedeutet dieser Spieler fuer den gerade betrachteten Verein? */
     const v=aktiverVerein();

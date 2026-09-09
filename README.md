@@ -2,7 +2,7 @@
 
 **→ [axelrock2.github.io/ScoutToolTest](https://axelrock2.github.io/ScoutToolTest/)**
 
-Scouting-Terminal für 33 Wettbewerbe — von der Premier League bis zur
+Scouting-Terminal für 35 Wettbewerbe — von der Premier League bis zur
 Oberliga. Reine statische Seite, ohne Server und ohne laufende Kosten.
 
 ## Liganiveau statt Spielklasse
@@ -130,9 +130,15 @@ markiert das in der Kopfzeile — sie ist also nie leer.
 | Belgien | Jupiler Pro League |
 | Portugal | Liga Portugal |
 | Österreich | Bundesliga |
+| Polen | Ekstraklasa |
+| Tschechien | Chance Liga |
 
 Dazu der **deutsche Unterbau**: 3. Liga, alle fünf Regionalligen und alle
-vierzehn Oberligen — zusammen 33 Wettbewerbe und rund 620 Vereine.
+vierzehn Oberligen — zusammen 35 Wettbewerbe und rund 650 Vereine.
+
+Polen und Tschechien stehen in der UEFA-Fünfjahreswertung inzwischen vor
+Österreich (Polen 12., Tschechien 10., Österreich 17.) — als Markt für
+Mitteleuropa also ergiebiger, als die Aufmerksamkeit vermuten ließe.
 
 Eine Liga ergänzen = eine Zeile in `scripts/leagues.py`.
 
@@ -144,6 +150,7 @@ Spielerakte unter *Datenherkunft*, in Kurzform auf der Startseite.
 | Art | Quelle | Was daher stammt |
 |---|---|---|
 | **erhoben** | [Transfermarkt](https://www.transfermarkt.de) | Stammdaten, Marktwert, Vertrag, Einsätze, Tore, Vorlagen, Karten, Minuten, Mannschaftswerte, Verletzungshistorie |
+| **erhoben** | Transfermarkt · Vereinsseite *Vertragsende* | Auslaufender Vertrag, Vertragsoption, Leihe |
 | **erhoben** | [Understat](https://understat.com) | xG, npxG, xA, Schlüsselpässe, Schüsse, Aufbaubeteiligung *(nur 5 Ligen)* |
 | **berechnet** | dieses Werkzeug | Liga-Note, Positions-Note, Team-Note, Percentile, Liganiveau, Unterbewertet-Index |
 | **fehlt** | — | Zweikämpfe, Tacklings, Klärungen, Passquote, Laufleistung, Gewicht |
@@ -151,6 +158,85 @@ Spielerakte unter *Datenherkunft*, in Kurzform auf der Startseite.
 Die Trennung ist wichtig: Eine **erhobene** Körpergröße und eine
 **berechnete** Note sind zweierlei — und was gar nicht vorliegt, gehört
 ebenso benannt wie das Vorhandene.
+
+## Vertragsausläufer
+
+Vierte Suchfunktion, eigene Seite. Sie beantwortet eine andere Frage als
+die Spielersuche: nicht *wer ist gut*, sondern *wer ist bald zu haben — und
+zu welchen Bedingungen*.
+
+Quelle ist eine eigene Transfermarkt-Seite je Verein und Sommer:
+
+```
+/<verein>/vertragsende/verein/<id>?vertragsendeJahr=2027
+```
+
+Sie führt drei Dinge, die die Kaderansicht **nicht** hat:
+
+| Angabe | Warum sie zählt |
+|---|---|
+| gesichertes Enddatum | Die Kaderansicht lässt es bei rund der Hälfte der Spieler offen |
+| **Vertragsoption** | „beidseitig 2 Jahre“, „vereinsseitig 1 Jahr“, „Kaufoption“ — wird sie gezogen, wird der Spieler nicht frei |
+| **Leihe** | Dort endet die *Leihe*, nicht der Vertrag beim Stammverein. Ein Leihende als „ablösefrei“ auszuweisen wäre schlicht falsch |
+
+Deshalb trägt jeder Treffer ein Kennzeichen: *ablösefrei ab 07/2027*,
+*Ausläufer + Option*, *Leihe bis 07/2027* — oder *Vertrag bis … · Option
+unbekannt*, wenn das Datum nur aus der Kaderansicht stammt. Leihen sind
+standardmäßig ausgeblendet, ein Schalter blendet zusätzlich alle Spieler
+mit Verlängerungsoption aus.
+
+### Gesucht wird in Zeitfenstern, nicht in Jahreszahlen
+
+Ein Scout fragt nicht „endet der Vertrag 2027", sondern „wer ist im Winter
+zu haben und wer im Sommer":
+
+| Fenster | Bedeutung |
+|---|---|
+| **Winterpause 2026/27** | Vertrag endet im Winter — ablösefrei ab Januar 2027 |
+| **Saisonende 2026/27** | ablösefrei ab Sommer 2027; ab 1. Januar ist ein **Vorvertrag** mit Vereinen anderer Verbände möglich, im Winter also die letzte Gelegenheit auf Ablöse |
+| **Saison 2027/28** | ein Jahr später, jetzt noch mit Ablöse |
+
+Die Grenzen liegen bei **Ende August**, nicht am Jahreswechsel: englische
+Verträge enden am 31.05., deutsche am 30.06., manche am 31.12. — erst ein
+Saisonschnitt fasst sie richtig zusammen.
+
+Die Winterfälle kommen aus einer anderen Quelle als die Sommerfälle: Die
+Vertragsende-Seite beginnt beim **nächsten** Sommer, `vertragsendeJahr=2026`
+liefert nichts mehr. Enden zum 31.12.2026 stehen daher nur in der
+Kaderansicht — ohne Angabe zur Option, und genau so gekennzeichnet.
+
+Wer seinen Verein verlassen hat, erscheint hier nicht: sein Vertragsdatum
+stammt vom alten Verein und sagt heute nichts mehr.
+
+**Ein Abruf je Verein und Sommer** — rund 1.200 statt 17.000, wie es der
+Weg über die Spielerprofile wäre:
+
+```bash
+python3 scripts/build_players.py --kader-aktuell   # vorher: wer steht noch im Kader?
+python3 scripts/vertraege.py                       # kommender + folgender Sommer
+python3 scripts/vertraege.py --jahre 2027          # nur der kommende
+python3 scripts/vertraege.py --ligen buli,buli2
+python3 scripts/compute_grades.py                  # danach immer
+```
+
+Die Reihenfolge ist keine Förmlichkeit: Wer den Verein verlassen hat, steht
+auf dessen Vertragsende-Seite nicht mehr — sein Fehlen sagt dann nichts über
+seinen Vertrag. Erst `--kader-aktuell` trennt beides. Fehlt dieser Schritt
+für eine Liga, schreibt `vertraege.py` dort **nur die gefundenen Ausläufer**
+und verzichtet auf den Vermerk „Vertrag läuft länger" — und sagt das beim
+Lauf auch. `update_local.sh` erledigt beides in der richtigen Folge.
+
+Das Jahr ist nicht fest verdrahtet: `kommender_sommer()` leitet es aus dem
+Datum ab (ab Juli zählt der Sommer des Folgejahres), und die Auswahl im
+Frontend kommt aus den Daten selbst.
+
+**Was nicht geprüft wurde, wird nicht behauptet.** Jeder geprüfte
+Kaderspieler trägt den Vermerk, welche Sommer nachgesehen wurden. Nur damit
+lässt sich *„Vertrag läuft länger“* von *„nicht nachgesehen“* trennen —
+ohne diese Unterscheidung wäre die Suche eine Behauptung statt einer
+Auskunft. Spieler, die ihren Verein verlassen haben, bekommen den Vermerk
+bewusst nicht: sie stehen auf der Vereinsseite gar nicht mehr, ihr Fehlen
+sagt also nichts über ihren Vertrag.
 
 ## Verletzungshistorie
 
@@ -417,7 +503,7 @@ allein wieder an. Sie sammelt dann rotierend drei von acht Gruppen pro
 Lauf, höchstens zwei gleichzeitig — sieben parallel lösten die Abwehr
 sofort aus.
 
-### Zwei Fallen, die Daten gekostet haben
+### Drei Fallen, die Daten gekostet haben
 
 **Werte nur aus der eigenen Liga.** Ohne den Parameter
 `reldata=<Wettbewerb>&<Saison>` liefert Transfermarkt alle Pflichtspiele
@@ -436,6 +522,20 @@ Lauf den Bestand auf unter die Hälfte schrumpfen würde
 führt deshalb zusammen statt zu überschreiben, `merge_raw.py` tut dasselbe
 für parallele Teilergebnisse. Eine Liga, die heute ausfällt, behält ihren
 letzten Stand.
+
+**Ein Volllauf löschte alles später Hinzugekommene.** `sammle()` baut jeden
+Datensatz neu auf und kennt nur die Felder der Kader- und Leistungsseite.
+Bei einem Teillauf fällt das nicht auf, weil die übrigen Ligen unangetastet
+bleiben — ein Lauf über *alle* Ligen dagegen warf Verletzungshistorie,
+Vertragsdaten und xG weg, allein die Verletzungen rund zehn Stunden Abrufe.
+`build_players.py` trägt sie jetzt über die Spieler-ID zurück; für bereits
+entstandene Lücken gibt es `scripts/rette_bestand.py <sicherung.json.gz>`.
+
+**Und ein Merksatz dazu:** Ein laufendes Shell-Skript nicht bearbeiten.
+Bash liest Skripte über einen Byte-Offset nach; werden Zeilen davor
+eingefügt, setzt es an verschobener Stelle fort. Aufgetreten als
+`./scripts/update_local.sh: line 47: ld_players.py: command not found` —
+das Sammeln war durch, alle Schritte danach fielen aus.
 
 ## Hinweis
 

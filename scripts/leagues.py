@@ -42,6 +42,13 @@ LEAGUES: list[League] = [
     League("BE1", "jupiler",   "Jupiler Pro League",    "BEL", 1),
     League("PO1", "primeira",  "Liga Portugal",         "POR", 1),
     League("A1",  "oebuli",    "Österreich Bundesliga", "AUT", 1),
+    # --- Polen / Tschechien ---
+    # Beide stehen in der UEFA-Fuenfjahreswertung inzwischen vor
+    # Oesterreich (Polen 12., Tschechien 10., Oesterreich 17.) und sind
+    # als Transfermarkt fuer Mitteleuropa ergiebig. Die Namen sind die
+    # gesponserten, wie Transfermarkt sie fuehrt.
+    League("PL1", "ekstraklasa", "Ekstraklasa",         "POL", 1),
+    League("TS1", "chance-liga", "Chance Liga",         "CZE", 1),
 
     # ---------------------------------------------------------------
     # Deutscher Unterbau. Bewusst weniger tief ausgewertet: ab der

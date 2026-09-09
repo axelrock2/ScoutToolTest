@@ -649,6 +649,39 @@ def main() -> int:
             if behalten:
                 print(f"  {len(behalten)} Spieler aus {len(alt_bericht)} frueheren "
                       f"Ligen uebernommen", file=sys.stderr)
+
+            # Angesammeltes am Spieler retten.
+            #
+            # sammle() baut jeden Datensatz neu auf und kennt nur die Felder
+            # der Kader- und Leistungsseite. Alles, was spaeter dazukam -
+            # Verletzungshistorie, Vertragsende, xG - stuende danach nicht
+            # mehr da. Bei einem Teillauf faellt das nicht auf, weil die
+            # uebrigen Ligen unangetastet bleiben; ein VOLLLAUF dagegen
+            # loeschte den gesamten Bestand: allein die Verletzungshistorien
+            # sind rund zehn Stunden Abrufe. Deshalb werden sie hier ueber
+            # die Spieler-ID zurueckgetragen.
+            #
+            # nicht_mehr_im_kader bleibt bewusst aussen vor: dieser Vermerk
+            # gilt fuer einen Stichtag und wird von --kader-aktuell neu
+            # gesetzt; alt uebernommen behauptete er einen Abgang, den es
+            # laengst nicht mehr gibt.
+            ANGESAMMELT = ("verletzungen", "vertrag", "vertrag_scan", "xg")
+            frueher = {}
+            for s_alt in alt.get("spieler", []):
+                vorrat = {k: s_alt[k] for k in ANGESAMMELT if s_alt.get(k)}
+                if vorrat:
+                    frueher.setdefault(str(s_alt.get("id")), {}).update(vorrat)
+            gerettet = 0
+            for s_neu in spieler:
+                vorrat = frueher.get(str(s_neu.get("id")))
+                if vorrat:
+                    for k, v in vorrat.items():
+                        s_neu.setdefault(k, v)
+                    gerettet += 1
+            if gerettet:
+                print(f"  {gerettet} Spieler mit Verletzungs-, Vertrags- und "
+                      f"xG-Daten aus dem Bestand ergaenzt", file=sys.stderr)
+
             spieler = behalten + spieler
             bericht = alt_bericht + bericht
         except (OSError, ValueError) as exc:

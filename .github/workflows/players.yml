@@ -41,7 +41,7 @@ jobs:
   #
   # Transfermarkt blockt Rechenzentren: aus einem GitHub-Runner kommt HTTP
   # 202, der Lauf muss also ueber den Browser gehen (~4,5 s je Seite). Alle
-  # 33 Ligen am Stueck waeren rund 90 Minuten. Sieben Gruppen gleichzeitig
+  # 35 Ligen am Stueck waeren rund 95 Minuten. Neun Gruppen gleichzeitig
   # sind schneller - aber gemessen: vier von sieben liefen in HTTP 403, weil
   # so viele parallele Zugriffe aus demselben Adressbereich die Abwehr
   # ausloesen.
@@ -68,6 +68,7 @@ jobs:
               {"name": "italien",            "ligen": "seriea,serieb"},
               {"name": "frankreich-benelux", "ligen": "ligue1,ligue2,jupiler,primeira"},
               {"name": "dach",               "ligen": "buli,buli2,oebuli"},
+              {"name": "mitteleuropa",       "ligen": "ekstraklasa,chance-liga"},
               {"name": "deutschland-3-4",    "ligen": "l3,rl-nord,rl-nordost,rl-west,rl-suedwest,rl-bayern"},
               {"name": "oberliga-nord",      "ligen": "ol-nord,ol-sued,ol-nds,ol-hamburg,ol-bremen,ol-sh,ol-westfalen"},
               {"name": "oberliga-sued",      "ligen": "ol-niederrhein,ol-mittelrhein,ol-hessen,ol-rps,ol-bw,ol-bayern-n,ol-bayern-s"},

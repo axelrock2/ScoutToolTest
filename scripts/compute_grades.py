@@ -185,6 +185,8 @@ UEFA_JAHRE = {                    # 21/22, 22/23, 23/24, 24/25, 25/26
     "FRA": [18.416, 12.583, 16.250, 17.928, 18.321],
     "POR": [12.916, 12.500, 11.000, 16.250, 20.500],
     "BEL": [6.600, 14.200, 14.400, 15.650, 11.400],
+    "POL": [4.625, 7.750, 6.875, 11.750, 15.750],
+    "CZE": [6.700, 6.750, 13.500, 10.550, 11.025],
     "AUT": [10.400, 4.900, 4.800, 9.650, 4.100],
 }
 UEFA_GEWICHTE = [1, 2, 4, 6, 9]
@@ -239,6 +241,18 @@ HERKUNFT = {
                    "Verletzungshistorie"],
         "hinweis": "Leistungsdaten nur aus der jeweiligen Liga "
                    "(ohne Pokal und Europapokal).",
+    },
+    "transfermarkt_vertrag": {
+        "name": "Transfermarkt · Vertragsende",
+        "url": "https://www.transfermarkt.de",
+        "art": "erhoben",
+        "felder": ["Auslaufender Vertrag", "Vertragsoption", "Leihe"],
+        "hinweis": "Eigene Vereinsseite je Sommer. Nur sie führt die "
+                   "Vertragsoption und markiert Leihspieler - die "
+                   "Kaderansicht tut beides nicht. Geprüft werden die "
+                   "beiden kommenden Sommer; wo nichts steht, läuft der "
+                   "Vertrag länger oder der Verein wurde noch nicht "
+                   "geprüft (auf der Trefferkarte unterschieden).",
     },
     "understat": {
         "name": "Understat",
@@ -514,6 +528,23 @@ def main() -> int:
                 "basis": {"gruppe": len(basis), "minuten": kw["minuten"]},
                 **({"verletzungen": s["verletzungen"]}
                    if s.get("verletzungen") else {}),
+                # Auslaufender Vertrag, direkt von der Transfermarkt-Seite
+                # "Vertragsende" (scripts/vertraege.py). Die Option ist der
+                # eigentliche Gewinn: mit einer Verlaengerungsoption ist ein
+                # Auslaeufer kein freier Transfer. "leihe" ebenso - dort
+                # endet die Leihe, nicht der Vertrag beim Stammverein.
+                **({"auslauf": {
+                       "bis": s["vertrag"]["bis"],
+                       **({"option": s["vertrag"]["option"]}
+                          if s["vertrag"].get("option") else {}),
+                       **({"leihe": 1} if s["vertrag"].get("leihe") else {}),
+                   }} if s.get("vertrag") else {}),
+                # Welche Sommer nachgesehen wurden. Nur damit laesst sich
+                # "Vertrag laeuft laenger" von "nicht geprueft" trennen -
+                # ohne diese Angabe waere die Auslaeufer-Suche eine
+                # Behauptung statt einer Auskunft.
+                **({"vgeprueft": s["vertrag_scan"]["jahre"]}
+                   if s.get("vertrag_scan") else {}),
                 # flags und fazit entstehen im Frontend (flagsFuer/fazitFuer).
                 # Als Text mitgeliefert waeren sie rund 8 MB - fast die
                 # Haelfte der Datei - obwohl sie nur beim Oeffnen eines
@@ -540,6 +571,13 @@ def main() -> int:
                 "liga": w["liga"], "club": w["club"], "stufe": w["stufe"],
                 "minuten": w["minuten"], "einsaetze": w["einsaetze"],
             } for w in eintraege[1:]]
+            # Vertragsangaben aus jedem Eintrag uebernehmen: der Kader mit
+            # den meisten Minuten ist oft die Zweitvertretung, gefuehrt
+            # wird der Vertrag aber beim Profikader.
+            for w in eintraege[1:]:
+                for feld in ("auslauf", "vgeprueft"):
+                    if feld not in haupt and feld in w:
+                        haupt[feld] = w[feld]
         zusammengefasst.append(haupt)
 
     doppelte = len(spieler_out) - len(zusammengefasst)

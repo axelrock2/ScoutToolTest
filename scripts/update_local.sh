@@ -10,6 +10,7 @@
 #   ./scripts/update_local.sh              # Tagesplan: alle 33 Ligen
 #   ./scripts/update_local.sh buli,buli2   # nur diese Ligen
 #   PUSH=0 ./scripts/update_local.sh       # ohne Push, nur lokal
+#   VERTRAEGE=0 ./scripts/update_local.sh  # ohne den Vertragsende-Lauf
 #
 set -euo pipefail
 
@@ -48,6 +49,37 @@ fi
 echo
 echo "== xG-Werte (Understat, nur Topligen) =="
 "$PY" scripts/understat.py || echo "  xG uebersprungen - Bestand bleibt gueltig"
+
+# Auslaufende Vertraege. Ein Abruf je Verein und Sommer, also rund 1200
+# Seiten - deutlich weniger als der Kaderlauf, aber kein Nebenbei. Wer nur
+# schnell die Kader auffrischen will, setzt VERTRAEGE=0.
+# Beide Schritte zusammen kosten rund zwei Abrufe je Verein.
+if [ "${VERTRAEGE:-1}" = "1" ]; then
+  # Zuerst die HEUTIGEN Kader. Der Sammellauf oben liest die Kaderansicht
+  # der Saison 2025/26; wer den Verein seither verlassen hat, ist daran
+  # nicht zu erkennen. Genau das braucht der Vertragslauf aber: nur bei
+  # einem Spieler, der noch im Kader steht, heisst ein fehlender Eintrag
+  # "Vertrag laeuft laenger". Nebenbei fuellt dieser Schritt Vertragsenden,
+  # Marktwerte, Groesse und Fuss aus der aktuellen Ansicht.
+  echo
+  echo "== Heutige Kader (Wechsel, Vertraege, Marktwerte) =="
+  if [ -n "$LIGEN" ]; then
+    "$PY" scripts/build_players.py --kader-aktuell --ligen "$LIGEN" \
+      || echo "  uebersprungen - Bestand bleibt gueltig"
+  else
+    "$PY" scripts/build_players.py --kader-aktuell \
+      || echo "  uebersprungen - Bestand bleibt gueltig"
+  fi
+
+  echo
+  echo "== Auslaufende Vertraege (Transfermarkt) =="
+  if [ -n "$LIGEN" ]; then
+    "$PY" scripts/vertraege.py --ligen "$LIGEN" \
+      || echo "  uebersprungen - Bestand bleibt gueltig"
+  else
+    "$PY" scripts/vertraege.py || echo "  uebersprungen - Bestand bleibt gueltig"
+  fi
+fi
 
 echo
 echo "== Noten berechnen =="
