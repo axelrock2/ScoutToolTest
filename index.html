@@ -204,6 +204,19 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
    sagt, worauf die Auskunft beruht und wo sie aufhoert. */
 .a-quelle{font-size:11px;line-height:1.6;color:var(--ink-3);margin:14px 0 0;font-style:italic}
 
+/* ---- Passung gegen einen Verein, direkt in der Akte ---------------- */
+.pf-passung{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:14px;
+  padding:14px 16px;background:var(--pitch-2);border:1px solid var(--line);border-radius:12px}
+.pf-passung .pfl{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;
+  letter-spacing:1px;color:var(--ink-3);flex-shrink:0}
+.pf-passung select{background:var(--input);border:1px solid var(--line);border-radius:8px;
+  padding:8px 10px;font:inherit;font-size:12.5px;color:var(--ink);max-width:260px}
+.pf-passung select:hover{border-color:var(--line-bright)}
+.pf-passung .pf-weg{background:none;border:1px solid var(--line);border-radius:8px;padding:7px 11px;
+  font:inherit;font-size:11px;color:var(--ink-3);cursor:pointer}
+.pf-passung .pf-weg:hover{border-color:var(--red);color:var(--red)}
+.pf-hinweis{flex-basis:100%;font-size:11px;line-height:1.6;color:var(--ink-3);font-style:italic}
+
 /* ---- Spielerfoto in der Akte --------------------------------------
    Nur hier, nicht in den Trefferlisten: dort waeren es fuenfzig Bilder je
    Seite von fremden Servern, hier ist es genau eines - und man schaut
@@ -812,6 +825,11 @@ let dataStand=null,dataSaison=null,dataHinweis=null,dataBildBasis=null;
    noch in der temporalen Totzone und wuerde werfen. */
 const ORDNER_SCHLUESSEL='scoutiq.ordner.v1';
 let ORDNER={};                     // {Name: [SpielerId, ...]}
+/* Verein, gegen den in der Akte geprueft wird, wenn die Navigation keinen
+   mitbringt (Spielersuche, Merkliste). Bleibt ueber Profilwechsel hinweg
+   stehen - beim Durchsehen einer Merkliste will man alle gegen DENSELBEN
+   Verein halten. */
+let profilVerein=null;             // {name, liga}
 let offenerOrdner=null;            // Name des Ordners in der Trefferliste
 
 async function loadScoutData(){
@@ -957,6 +975,17 @@ function pctLookup(pct,label){
   }
   return best!==null?pct[best]:undefined;
 }
+/* Kaderwerte des Bezugsvereins in KPOS legen.
+   KPOS ist global und wird von bedarfNoteFor gelesen (20 % der Team-Note).
+   Frueher setzte es nur renderKadResult - das Vereins-Matching rechnete
+   deshalb gegen das Demo-Array oder, nach einer Kaderanalyse, gegen DEREN
+   Verein. Gemessen: Bayern wurde gegen den Kader von ETSV Hamburg
+   gehalten. Deshalb wird es jetzt an jeder Stelle gesetzt, die es braucht,
+   statt sich auf einen frueheren Aufruf zu verlassen. */
+function setzeKPOS(name,ligaId){
+  KPOS=(name&&ligaId)?kaderNoten(name,ligaId):[];
+}
+
 function bedarfNoteFor(pos){
   /* KPOS enthaelt seit der Datenanbindung echte Positionskuerzel
      (TW, IV, LV, RV, DM, ZM, OM, LA, RA, ST). */
@@ -996,6 +1025,7 @@ function startMatching(){
   };
   const f=document.getElementById('vm-formation');
   if(f)chosenFormation=f.value;
+  setzeKPOS(vmVerein,vmVereinLiga);
   go('ergebnisse','vereinsmatching');
 }
 
@@ -1947,6 +1977,9 @@ function renderPlayers(){
        Die Filterleiste der Spielersuche gehoert zu einem anderen Modus -
        sonst wirken dort gesetzte Filter unsichtbar weiter. */
     treffer=PLAYERS.slice();
+    /* Nicht auf einen frueheren Aufruf verlassen: ein Profilwechsel
+       dazwischen kann KPOS auf einen anderen Verein gestellt haben. */
+    setzeKPOS(vmVerein,vmVereinLiga);
     const vp=document.getElementById('vm-pos');
     const wunsch=vp?vp.value.trim():'';
     if(wunsch){
@@ -2624,10 +2657,98 @@ function vertragText(p){
     ? ' <span style="font-size:11px;color:var(--amber)">(noch '+Math.max(m,0)+' Mon.)</span>' : '');
 }
 
+/* ---------- Vereins-Matching direkt in der Spielerakte ---------------
+   Die Passungsanalyse gab es bisher nur andersherum: erst einen Verein
+   waehlen, dann Spieler dazu suchen. Aus der Merkliste heraus ist die
+   Frage umgekehrt - dieser Spieler steht fest, gesucht ist der Verein, zu
+   dem er passt. Beides rechnet dieselbe Team-Note, nur der Einstieg ist
+   ein anderer. */
+
+/* Massgeblicher Verein fuer diese Akte: erst der aus der Navigation
+   (Matching, Kaderanalyse), sonst der in der Akte gewaehlte. */
+function profilBezug(){
+  if(fromPage==='vereinsmatching'&&vmVerein)
+    return {name:vmVerein,liga:vmVereinLiga};
+  if((fromPage==='kaderanalyse'||fromPage==='kaderresult')&&kadVerein)
+    return {name:kadVerein,liga:kadVereinLiga};
+  return profilVerein;
+}
+
+/* Kommt der Verein aus der Navigation, ist er nicht in der Akte
+   umzustellen - dort gehoert er zum Suchweg. */
+function bezugAusNavigation(){
+  return !!((fromPage==='vereinsmatching'&&vmVerein)
+         || ((fromPage==='kaderanalyse'||fromPage==='kaderresult')&&kadVerein));
+}
+
+function passungsLeiste(p){
+  const bezug=profilBezug();
+  if(bezugAusNavigation())
+    return '<div class="pf-passung"><span class="pfl">Passung</span>'+
+      '<span style="font-size:13px;color:var(--ink)">berechnet für <strong>'+
+      bezug.name.replace(/</g,'&lt;')+'</strong> — aus dem Suchweg übernommen</span></div>';
+
+  const wahl=bezug?bezug.liga+'|'+bezug.name:'';
+  const optionen=LIGEN.map(l=>'<optgroup label="'+l.name+'">'+
+      (l.vereine||[]).map(v=>{
+        const w=l.id+'|'+v;
+        return '<option value="'+w.replace(/"/g,'&quot;')+'"'+(w===wahl?' selected':'')+'>'
+          +v.replace(/</g,'&lt;')+'</option>';
+      }).join('')+'</optgroup>').join('');
+
+  return '<div class="pf-passung">'+
+    '<span class="pfl">Passung prüfen gegen</span>'+
+    '<select onchange="profilVereinSetzen(this.value)">'+
+      '<option value="">Verein wählen …</option>'+optionen+
+    '</select>'+
+    (bezug
+      ? '<select onchange="profilFormationSetzen(this.value)">'+
+          ['4-2-3-1','4-3-3','3-5-2','4-4-2','3-4-3','5-3-2','4-1-4-1'].map(f=>
+            '<option'+(f===chosenFormation?' selected':'')+'>'+f+'</option>').join('')+
+        '</select>'+
+        '<button type="button" class="pf-weg" onclick="profilVereinSetzen(\'\')">Aufheben</button>'
+      : '')+
+    (bezug
+      ? '<div class="pf-hinweis">Das Stilprofil steht auf '+stilText()+'. '+
+        'Es wiegt 70 % der Team-Note und lässt sich nur im Vereins-Matching '+
+        'einstellen — dort gewählte Werte gelten auch hier.</div>'
+      : '<div class="pf-hinweis">Rechnet die Team-Note für diesen Spieler bei '+
+        'einem beliebigen Verein: Kaderbedarf auf seiner Position, '+
+        'Formationseignung und Stilprofil.</div>')+
+  '</div>';
+}
+
+function stilText(){
+  const namen={pressing:'Pressing',ballbesitz:'Ballbesitz',konter:'Konter',
+               aufbau:'Aufbau',standards:'Standards'};
+  const werte=Object.values(styleProfile);
+  if(werte.every(v=>v===werte[0]))return 'neutral (alle Merkmale gleich)';
+  return Object.keys(styleProfile).filter(k=>styleProfile[k]>=4)
+    .map(k=>namen[k]).join(', ')||'neutral';
+}
+
+function profilVereinSetzen(wert){
+  if(!wert){profilVerein=null;}
+  else{
+    const i=wert.indexOf('|');
+    profilVerein={liga:wert.slice(0,i),name:wert.slice(i+1)};
+  }
+  if(activePlayer)showProfile(activePlayer.id);
+}
+
+function profilFormationSetzen(f){
+  chosenFormation=f;
+  if(activePlayer)showProfile(activePlayer.id);
+}
+
 function showProfile(id){
   const p=PLAYERS.find(x=>x.id===id);activePlayer=p;
-  const hasV=(fromPage==='vereinsmatching'&&vmVerein)||fromPage==='kaderresult';
-  const vN=(fromPage==='vereinsmatching'&&vmVerein)?vmVerein:(fromPage==='kaderresult'?(kadVerein||'Hamburger SV'):null);
+  const bezug=profilBezug();
+  const hasV=!!bezug;
+  const vN=bezug?bezug.name:null;
+  /* KPOS traegt die Kaderwerte des Bezugsvereins - ohne dieses Setzen
+     rechnete der Kaderbedarf gegen einen fremden Kader. */
+  if(hasV)setzeKPOS(bezug.name,bezug.liga);
   lastTN=hasV?computeTN(p):null;
   renderProfile(p,hasV,vN);
 }
@@ -2679,13 +2800,15 @@ function renderProfile(p,hasV,vN){
     ringCard('LN','Liga-Note',p.ln,'vs. alle '+p.pos+' der Liga','var(--lime)')+
     ringCard('PN','Positions-Note',p.pn,'Gewichtete Kernparameter','var(--green)')+
     tnCard+
-  '</div></div>'+
+  '</div>'+passungsLeiste(p)+'</div>'+
   tnSec+
   '<div class="sec"><div class="sec-title">Stammdaten</div><div class="sd-grid"><div class="sd"><div class="sd-lbl">Alter</div><div class="sd-val">'+p.age+' J.</div></div><div class="sd"><div class="sd-lbl">Fuß</div><div class="sd-val">'+p.foot+'</div></div><div class="sd"><div class="sd-lbl">Größe</div><div class="sd-val">'+p.height+'</div></div><div class="sd"><div class="sd-lbl">Vertrag bis</div><div class="sd-val">'+vertragText(p)+'</div></div><div class="sd"><div class="sd-lbl">Rückennummer</div><div class="sd-val">'+(p.number?'#'+p.number:'k. A.')+'</div></div></div></div>'+
   vertragsAbschnitt(p)+
   (function(){
-    /* Was bedeutet dieser Spieler fuer den gerade betrachteten Verein? */
-    const v=aktiverVerein();
+    /* Was bedeutet dieser Spieler fuer den gerade betrachteten Verein?
+       In der Akte zaehlt auch ein dort gewaehlter Verein, nicht nur einer
+       aus dem Suchweg. */
+    const v=profilBezug();
     const b=(v&&p.club!==v.name)?spielerFuerVerein(p,v.name,v.liga):null;
     if(!b)return '';
     const farbe={pos:'var(--green)',neu:'var(--amber)',neg:'var(--ink-3)'}[b.klasse];

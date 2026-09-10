@@ -230,6 +230,42 @@ Grenzen:
 | Platzhalter | Wo Transfermarkt kein Foto hat, liefert es `default.jpg`. Der wird verworfen — eine graue Silhouette sagt weniger als die Initialen. |
 | Hotlinking | Die Bilder liegen weiter bei Transfermarkt und werden beim Öffnen einer Akte von dort geladen, nicht hier gespeichert. Wird der Verweis eines Tages gesperrt, greift der Rückfall. |
 
+## Passung direkt in der Spielerakte
+
+Die Passungsanalyse gab es bisher nur in eine Richtung: erst einen Verein
+wählen, dann Spieler dazu suchen. Aus der Merkliste heraus ist die Frage
+umgekehrt — *dieser* Spieler steht fest, gesucht ist der Verein, zu dem er
+passt.
+
+In der Akte sitzt deshalb unter den drei Noten eine Leiste **„Passung
+prüfen gegen"** mit allen Vereinen und einer Formationswahl. Sobald ein
+Verein gewählt ist, füllt sich die gesperrte Team-Note, und es erscheinen
+die vollständige Passungsanalyse sowie die Einschätzung *für diesen
+Verein*. Der gewählte Verein bleibt beim Blättern durch die Merkliste
+stehen — beim Durchsehen einer Liste will man alle gegen denselben Verein
+halten.
+
+Kommt der Verein aus dem Suchweg (Vereins-Matching, Kaderanalyse), ist er
+in der Akte **nicht** umzustellen: dort gehört er zur Suche. Die Leiste
+sagt das dann auch.
+
+Das **Stilprofil** (70 % der Team-Note) lässt sich weiterhin nur im
+Vereins-Matching einstellen; die Leiste nennt den aktuellen Stand, damit
+die Zahl nicht überinterpretiert wird.
+
+### Ein Fehler, den das freigelegt hat
+
+`KPOS` trägt die Kaderwerte des Bezugsvereins und wird von
+`bedarfNoteFor()` gelesen — dem Kaderbedarf, 20 % der Team-Note. Gesetzt
+wurde es aber **nur** von der Kaderanalyse. Das Vereins-Matching rechnete
+deshalb gegen das eingebaute Demo-Array (mit Positionskürzeln wie `IV L`
+und `ZM R`, die es in den echten Daten gar nicht gibt) oder — nach einem
+Besuch der Kaderanalyse — gegen *deren* Verein. Gemessen: Bayern wurde
+gegen den Kader von ETSV Hamburg gehalten.
+
+`setzeKPOS()` setzt die Werte jetzt an jeder Stelle, die sie braucht,
+statt sich auf einen früheren Aufruf zu verlassen.
+
 ## Merkliste
 
 Ein Stern in jeder Spielerakte legt den Spieler in einen Ordner; über
