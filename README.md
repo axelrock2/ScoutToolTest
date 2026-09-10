@@ -285,8 +285,12 @@ zu haben und wer im Sommer":
 | Fenster | Bedeutung |
 |---|---|
 | **Winterpause 2026/27** | Vertrag endet im Winter — ablösefrei ab Januar 2027 |
+| **Vor dem 30.06.27** | Läuft *früher* aus als zum üblichen Sommertermin: Winterausläufer und die englischen Mai-Verträge. Der 30.06. selbst zählt hier **nicht** mit — sonst wäre es schlicht „alles bis zum Sommer" |
 | **Saisonende 2026/27** | ablösefrei ab Sommer 2027; ab 1. Januar ist ein **Vorvertrag** mit Vereinen anderer Verbände möglich, im Winter also die letzte Gelegenheit auf Ablöse |
 | **Saison 2027/28** | ein Jahr später, jetzt noch mit Ablöse |
+
+Das dritte Fenster ist bewusst eng: Es umfasst zwölf Spieler statt 4.225.
+Der 30.06. ist der Standardtermin, gefragt sind hier die Ausnahmen davon.
 
 Die Grenzen liegen bei **Ende August**, nicht am Jahreswechsel: englische
 Verträge enden am 31.05., deutsche am 30.06., manche am 31.12. — erst ein

@@ -1566,6 +1566,15 @@ function saisonStart(heute){
   return h.getMonth()>=6?h.getFullYear():h.getFullYear()-1;
 }
 
+/* Tag davor, als ISO-Datum. Die Fenstergrenzen schliessen ihr Enddatum
+   ein (imFenster prueft <=); fuer ein "vor dem X" braucht es daher X-1,
+   und Monats- wie Jahreswechsel rechnet Date zuverlaessiger als wir. */
+function vortag(iso){
+  const d=new Date(iso+'T12:00:00');
+  d.setDate(d.getDate()-1);
+  return d.toISOString().slice(0,10);
+}
+
 function auslaufFenster(){
   const st=saisonStart();
   const s2=(st+1), s3=(st+2);
@@ -1574,6 +1583,15 @@ function auslaufFenster(){
     {id:'winter', von:null,              bis:st+'-12-31',
      name:'Winterpause '+st+'/'+kurz(s2),
      erklaerung:'Vertrag endet im Winter — ablösefrei ab Januar '+s2+'.'},
+    /* Wer FRUEHER frei wird als zum ueblichen Sommertermin. Eine kleine,
+       ungewoehnliche Gruppe - genau deshalb interessant: Winterauslaeufer
+       und die englischen Mai-Vertraege. Der 30.06. selbst bleibt aussen
+       vor, sonst waere es schlicht "alles bis zum Sommer". */
+    {id:'vorher', von:null,              bis:vortag(s2+'-06-30'),
+     name:'Vor dem 30.06.'+kurz(s2),
+     erklaerung:'Läuft früher aus als zum üblichen Sommertermin — '
+       +'Winterausläufer und die englischen Mai-Verträge. Der 30.06.'+kurz(s2)
+       +' selbst zählt hier NICHT mit; dafür ist „Saisonende“ da.'},
     {id:'saison', von:s2+'-01-01',       bis:s2+'-08-31',
      name:'Saisonende '+st+'/'+kurz(s2),
      erklaerung:'Vertrag endet zum Saisonschluss — ablösefrei ab Sommer '+s2
