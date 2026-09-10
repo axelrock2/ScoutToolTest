@@ -720,12 +720,37 @@ def main() -> int:
     # die Kaderanalyse sagen kann, wie vollstaendig ihr Bild ist.
     bewertete_ids = {p["id"] for p in spieler_out}
     ohne_note: dict[str, dict[str, int]] = {}
+    # Dieselben Spieler auch als kompakte Liste - die Kaderansicht zeigt wie
+    # Transfermarkt den VOLLSTAENDIGEN Kader, nicht nur die Bewerteten.
+    # Ohne sie fehlte etwa Saibari bei Bayern, nur weil er aus einer nicht
+    # erfassten Liga kam.
+    ohne_note_spieler: list[dict] = []
+    gesehen_ohne: set[int] = set()
     for s in roh["spieler"]:
         heute = s.get("aktuell")
-        if not heute or int(s["id"]) in bewertete_ids:
+        sid = int(s["id"])
+        if not heute or sid in bewertete_ids:
             continue
         je = ohne_note.setdefault(heute["liga_id"], {})
         je[heute["verein"]] = je.get(heute["verein"], 0) + 1
+        if sid in gesehen_ohne:
+            continue
+        gesehen_ohne.add(sid)
+        ohne_note_spieler.append({
+            "id": sid, "name": s["name"], "pos": s.get("position"),
+            "club": heute["verein"], "club_id": heute["verein_id"],
+            "liga_id": heute["liga_id"], "age": s.get("alter"),
+            "number": s.get("rueckennummer") or 0,
+            **({"cm": s["groesse_cm"]} if s.get("groesse_cm") else {}),
+            **({"foot": s["fuss"]} if s.get("fuss") in ("rechts", "links", "beidfüßig") else {}),
+            **({"contract_until": s["vertrag_bis"]} if s.get("vertrag_bis") else {}),
+            **({"mv": mw_text(s["marktwert_eur"]), "mv_eur": s["marktwert_eur"]}
+               if s.get("marktwert_eur") else {}),
+            **({"bild": s["bild"]} if s.get("bild") else {}),
+            # Warum keine Note: Neuzugang ohne Daten aus einer erfassten
+            # Liga, oder in der Notensaison ohne Einsatz.
+            "grund": "neu" if s.get("ohne_leistung") else "ohne_einsatz",
+        })
 
     # Wie viele bewertete Spieler je Liga - macht duenne Datenlage sichtbar
     bewertet_je_liga: dict[str, int] = {}
@@ -835,6 +860,7 @@ def main() -> int:
             # Saison, deren Vereine und Kader gezeigt werden. Die Noten
             # stammen weiter aus "saison".
             "saison_aktuell": roh.get("saison_aktuell"),
+            "ohne_note_spieler": ohne_note_spieler,
             "quellen": roh.get("quellen", []),
             "hinweis": ("Kennzahlen aus frei verfügbaren Quellen. "
                         "xG/xA/progressive Carries sind darin nicht enthalten "

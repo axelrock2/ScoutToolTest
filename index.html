@@ -232,6 +232,47 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
   border-radius:14px}
 .ph-herkunft{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.5px;
   color:var(--ink-3);margin-top:5px;text-transform:uppercase}
+/* ---- Kaderansicht, aufgebaut wie der Kader auf Transfermarkt -------- */
+.kader-kopf{display:flex;align-items:center;gap:18px;margin-bottom:22px}
+.kader-kopf img{width:64px;height:64px;object-fit:contain}
+.kader-kopf h2{margin:0;font-size:24px;letter-spacing:-.5px}
+.kader-kopf .kk-sub{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;
+  letter-spacing:1px;color:var(--ink-3);margin-top:6px}
+.kader-zahlen{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}
+.kader-zahlen div{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  padding:10px 14px;min-width:120px}
+.kader-zahlen b{display:block;font-size:17px}
+.kader-zahlen span{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;
+  letter-spacing:1px;color:var(--ink-3)}
+.kader-leiste{display:flex;justify-content:space-between;align-items:center;gap:12px;
+  margin-bottom:10px;flex-wrap:wrap}
+.kader-tabelle-halter{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.kader-tabelle{width:100%;border-collapse:collapse;font-size:13px;min-width:760px}
+.kader-tabelle th{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:400;text-transform:uppercase;
+  letter-spacing:1px;color:var(--ink-3);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line)}
+.kader-tabelle td{padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+.kader-tabelle tr.kg td{background:var(--pitch-2);font-family:'JetBrains Mono',monospace;font-size:10px;
+  text-transform:uppercase;letter-spacing:1.5px;color:var(--ink-2);padding:7px 12px}
+.kader-tabelle tr.ks{cursor:pointer;transition:background .12s}
+.kader-tabelle tr.ks:hover td{background:var(--pitch-2)}
+.kader-tabelle tr.ohne td{color:var(--ink-3)}
+.kader-tabelle .r{text-align:right}
+.kader-tabelle .nr{font-family:'JetBrains Mono',monospace;color:var(--ink-3);width:34px}
+.ks-spieler{display:flex;align-items:center;gap:10px;min-width:210px}
+.ks-av{width:38px;height:38px;border-radius:9px;background:var(--pitch-2);border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--ink-3);
+  position:relative;flex-shrink:0;overflow:hidden}
+.ks-av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ks-name{font-weight:600;color:var(--ink)}
+.ks-pos{font-size:11px;color:var(--ink-3)}
+.ks-elf{font-family:'JetBrains Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:1px;
+  color:var(--lime);border:1px solid var(--lime);border-radius:4px;padding:1px 4px;margin-left:6px;vertical-align:1px}
+.ks-note{font-family:'JetBrains Mono',monospace;font-weight:700}
+.kader-knopf{width:100%;margin-bottom:10px;background:none;border:1px solid var(--line-bright);
+  border-radius:9px;padding:10px;font:inherit;font-size:13px;color:var(--ink);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:8px}
+.kader-knopf:hover{border-color:var(--lime);color:var(--lime)}
+
 /* Vereinswappen vor dem Vereinsnamen - von Transfermarkt nachgeladen. */
 .ph-wappen{width:18px;height:18px;object-fit:contain;vertical-align:-4px;margin-right:5px}
 /* Zweikampfwerte in der Akte */
@@ -756,6 +797,14 @@ input[type=range]::-webkit-slider-thumb{box-shadow:none}
   </div>
 </div>
 
+<!-- Kaderansicht. Aufgebaut wie der Kader auf Transfermarkt: nach
+     Positionsgruppen, in deren Reihenfolge, mit Foto, Nummer, Alter, Groesse,
+     Fuss, Vertrag und Marktwert - dazu die Liga-Note und die Startelf. -->
+<div class="page" id="p-kader">
+  <button class="nav-back" onclick="zurueckZumMatching()"><i class="ti ti-arrow-left"></i> Vereins-Matching</button>
+  <div class="results-wrap" id="kader-inhalt"></div>
+</div>
+
 <div class="page" id="p-ergebnisse">
   <button class="nav-back" id="ergebnis-bk"><i class="ti ti-arrow-left"></i> Filter</button>
   <div class="results-wrap">
@@ -844,6 +893,12 @@ let ORDNER={};                     // {Name: [SpielerId, ...]}
    stehen - beim Durchsehen einer Merkliste will man alle gegen DENSELBEN
    Verein halten. */
 let profilVerein=null;             // {name, liga}
+/* Seite, zu der "zurueck" aus der Akte fuehrt; nur die Kaderansicht setzt
+   sie, jeder andere Seitenwechsel loescht sie wieder. */
+let profilZurueck=null;
+/* Kaderansicht: Verein, Liga, Sortierung */
+let kaderAnsicht={verein:null,liga:null,sort:'pos'};
+let OHNE_NOTE=[];
 let offenerOrdner=null;            // Name des Ordners in der Trefferliste
 
 async function loadScoutData(){
@@ -875,6 +930,7 @@ async function loadScoutData(){
     dataStand=d.stand;dataSaison=d.saison;dataHinweis=d.hinweis;
     dataBildBasis=d.bild_basis||null;
     dataSaisonAktuell=d.saison_aktuell||null;
+    OHNE_NOTE=d.ohne_note_spieler||[];
     window.BEREICHE=d.bereiche||{};
     window.HERKUNFT=d.herkunft||{};
     zeigeHerkunft();
@@ -1085,10 +1141,11 @@ function cbadge(c){if(c==='none')return '<span class="badge b-blue" style="opaci
 function ctxt(c){return c==='red'?'Läuft ab (< 6 Monate)':c==='yellow'?'Kritisch (6–12 Monate)':'Stabil (> 12 Monate)'}
 function go(page,from){
   if(from)fromPage=from;
+  if(page!=='profil'&&page!=='kader')profilZurueck=null;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('p-'+page).classList.add('active');
   window.scrollTo(0,0);
-  const lbl={home:'TERMINAL // START',spielersuche:'SPIELERSUCHE',vereinsmatching:'VEREINS-MATCHING',kaderanalyse:'KADERANALYSE',kaderresult:'KADER // REPORT',ergebnisse:'TREFFER',profil:'SPIELERAKTE',auslaufer:'VERTRAGSAUSLÄUFER',ordner:'MERKLISTE'};
+  const lbl={home:'TERMINAL // START',spielersuche:'SPIELERSUCHE',vereinsmatching:'VEREINS-MATCHING',kaderanalyse:'KADERANALYSE',kaderresult:'KADER // REPORT',ergebnisse:'TREFFER',profil:'SPIELERAKTE',auslaufer:'VERTRAGSAUSLÄUFER',ordner:'MERKLISTE',kader:'KADER'};
   document.getElementById('bc').innerHTML='<span class="dot"></span> '+(lbl[page]||page);
   if(page==='ergebnisse'){document.getElementById('ergebnis-bk').onclick=()=>go(fromPage);renderPlayers();}
   if(page==='kaderresult')renderKadResult();
@@ -1096,6 +1153,7 @@ function go(page,from){
   if(page==='kaderanalyse'){kadLiga=null;kadVerein=null;renderLigen('kad');resetPanels('kad');}
   if(page==='auslaufer')fuelleAuslaufPanel();
   if(page==='ordner')renderOrdnerListe();
+  if(page==='kader'&&kaderAnsicht.verein)renderKader();
 }
 function resetPanels(px){
   document.getElementById(px+'-verein-panel').innerHTML='<div class="panel-title"><span class="idx">02</span> Verein</div><div class="empty-panel" style="padding:48px 16px"><i class="ti ti-shield"></i><p>Liga wählen</p></div>';
@@ -1129,6 +1187,7 @@ function pickVerein(px,name,lid){
   if(px==='vm'){
     document.getElementById('vm-opt-panel').innerHTML='<div class="panel-title"><span class="idx">03</span> Optionen</div>'+
     '<div class="sel-info"><div class="sl">Ausgewählt</div><div class="sn">'+name+'</div><div class="sm">'+l.name+' · '+l.land+'</div></div>'+
+    '<button type="button" class="kader-knopf" onclick="zeigeKader(vmVerein,vmVereinLiga)"><i class="ti ti-users"></i> Kader ansehen</button>'+
     '<div class="fg"><label>Formation</label><select id="vm-formation"><option>4-2-3-1</option><option>4-3-3</option><option>3-5-2</option><option>4-4-2</option><option>3-4-3</option><option>5-3-2</option><option>4-1-4-1</option></select></div>'+
     '<div class="fg"><label>Gesuchte Position</label><select id="vm-pos"><option value="">Alle Positionen</option><option value="TW">TW</option><option value="IV">IV</option><option value="LV,RV">LV / RV</option><option value="DM">DM</option><option value="ZM">ZM</option><option value="OM,LA,RA">OM / Flügel</option><option value="ST">ST / HS</option></select></div>'+
     '<div class="fg"><label>Suchradius</label><select id="vm-radius">'+
@@ -2729,6 +2788,160 @@ function zweikampfAbschnitt(p){
       +' Interceptions je 90 Min. Quelle: Sofascore, '+liga+'. '+zkNotenText(p,d)+'</div></div>';
 }
 
+/* ---------- Kaderansicht --------------------------------------------------
+   Aufgebaut wie der Kader auf Transfermarkt: Positionsgruppen Torwart,
+   Abwehr, Mittelfeld, Sturm, darin die dort uebliche Reihenfolge der
+   Positionen, dann die Rueckennummer. Gezeigt wird der VOLLSTAENDIGE heutige
+   Kader - auch Spieler ohne Note (Neuzugaenge aus nicht erfassten Ligen,
+   Spieler ohne Einsatz), gedaempft und mit Grund. Hier werden alle Fotos
+   geladen; in den Trefferlisten bewusst nicht. */
+const TM_GRUPPEN=[
+  {name:'Torwart',   pos:['TW']},
+  {name:'Abwehr',    pos:['IV','LV','RV']},
+  {name:'Mittelfeld',pos:['DM','ZM','OM']},
+  {name:'Sturm',     pos:['LA','RA','ST']},
+];
+const TM_POS_NAME={TW:'Torwart',IV:'Innenverteidiger',LV:'Linker Verteidiger',
+  RV:'Rechter Verteidiger',DM:'Defensives Mittelfeld',ZM:'Zentrales Mittelfeld',
+  OM:'Offensives Mittelfeld',LA:'Linksaußen',RA:'Rechtsaußen',ST:'Mittelstürmer'};
+const TM_POS_RANG=Object.fromEntries(TM_GRUPPEN.flatMap(g=>g.pos).map((p,i)=>[p,i]));
+
+function zeigeKader(verein,ligaId){
+  if(!verein)return;
+  kaderAnsicht={verein,liga:ligaId,sort:'pos'};
+  go('kader','kader');          // go() zeichnet die Seite
+}
+
+/* Zurueck ins Matching - mit dem Verein wieder ausgewaehlt, statt die
+   Auswahl zu verlieren, wie es ein blosser Seitenwechsel taete. */
+function zurueckZumMatching(){
+  const {verein,liga}=kaderAnsicht;
+  go('vereinsmatching');
+  if(verein&&liga){pickLiga('vm',liga);pickVerein('vm',verein,liga);}
+}
+
+function kaderProfil(id){
+  profilZurueck='kader';
+  showProfile(id);
+}
+
+function kaderZeilen(verein){
+  const zeilen=kaderHeute(verein).map(p=>{
+    const cm=parseInt(p.height,10);
+    return {id:p.id,name:p.name,ini:p.ini,pos:p.pos,number:p.number,age:p.age,
+      cm:isNaN(cm)?null:cm,foot:p.foot&&p.foot!=='k. A.'?p.foot:null,
+      contract_until:p.contract_until||(p.auslauf&&!p.auslauf.leihe?p.auslauf.bis:null),
+      mv:p.mv_eur?p.mv:null,mv_eur:p.mv_eur||0,ln:p.ln,bild:p.bild,bewertet:true,
+      herkunft:p.note_liga_id&&p.note_liga_id!==p.liga_id?p.note_liga:null,
+      belastbar:p.belastbar!==false};
+  });
+  OHNE_NOTE.filter(x=>x.club===verein).forEach(x=>{
+    zeilen.push({id:x.id,name:x.name,ini:ini(x.name),pos:x.pos,number:x.number,age:x.age,
+      cm:x.cm||null,foot:x.foot||null,contract_until:x.contract_until||null,
+      mv:x.mv||null,mv_eur:x.mv_eur||0,ln:null,bild:x.bild,bewertet:false,grund:x.grund});
+  });
+  return zeilen;
+}
+
+function renderKader(){
+  const {verein,liga,sort}=kaderAnsicht;
+  const ziel=document.getElementById('kader-inhalt');
+  if(!ziel)return;
+  const zeilen=kaderZeilen(verein);
+  const lg=LIGEN.find(x=>x.id===liga)||{};
+  const clubId=(PLAYERS.find(x=>x.club===verein)||OHNE_NOTE.find(x=>x.club===verein)||{}).club_id;
+  const start=new Set(Object.values(startelfJePosition(kaderEingeordnet(verein,liga)))
+                        .flatMap(x=>x.start.map(p=>p.id)));
+
+  /* Kopf wie bei Transfermarkt: Wappen, Name, Liga, Kennzahlen des Kaders */
+  const alter=zeilen.filter(z=>z.age);
+  const mwSumme=zeilen.reduce((a,z)=>a+z.mv_eur,0);
+  const mitMw=zeilen.filter(z=>z.mv_eur).length;
+  const fmt=eur=>eur>=1e6?(eur/1e6).toLocaleString('de-DE',{maximumFractionDigits:2})+' Mio. €'
+                         :Math.round(eur/1000).toLocaleString('de-DE')+' Tsd. €';
+  const kopf='<div class="kader-kopf">'
+    +(clubId?'<img src="'+WAPPEN_BASIS+clubId+'.png" alt="" referrerpolicy="no-referrer-when-downgrade" onerror="this.remove()">':'')
+    +'<div><h2>'+verein+'</h2><div class="kk-sub">'+(lg.name||'')
+    +(dataSaisonAktuell?' · Kader '+dataSaisonAktuell:'')+(dataSaison?' · Noten '+dataSaison:'')
+    +'</div></div></div>'
+    +'<div class="kader-zahlen">'
+    +'<div><b>'+zeilen.length+'</b><span>Kadergröße</span></div>'
+    +'<div><b>'+zeilen.filter(z=>z.bewertet).length+'</b><span>davon mit Note</span></div>'
+    +(alter.length?'<div><b>'+(alter.reduce((a,z)=>a+z.age,0)/alter.length)
+      .toLocaleString('de-DE',{maximumFractionDigits:1})+'</b><span>Ø-Alter</span></div>':'')
+    +(mitMw>=Math.max(3,zeilen.length/3)
+      ?'<div><b>'+fmt(mwSumme)+'</b><span>Gesamtmarktwert</span></div>'
+       +'<div><b>'+fmt(mwSumme/mitMw)+'</b><span>Ø-Marktwert</span></div>'
+      :'<div><b>—</b><span>Marktwerte nicht verfügbar</span></div>')
+    +'</div>';
+
+  const leiste='<div class="kader-leiste"><span style="font-size:12px;color:var(--ink-3)">'
+    +'<span class="ks-elf" style="margin:0 4px 0 0">Startelf</span> = meistgespielt je Position '
+    +'(Grundlage der Kaderanalyse). Zeile anklicken öffnet die Spielerakte.</span>'
+    +'<select class="sort-sel" onchange="kaderAnsicht.sort=this.value;renderKader()">'
+    +[['pos','Nach Position'],['ln','Liga-Note ↓'],['mv','Marktwert ↓'],['age','Alter ↑']]
+      .map(([v,t])=>'<option value="'+v+'"'+(sort===v?' selected':'')+'>'+t+'</option>').join('')
+    +'</select></div>';
+
+  const zeile=z=>{
+    const u=bildUrl(z);
+    const av='<div class="ks-av">'+z.ini+(u?'<img src="'+u+'" alt="" loading="lazy" '
+      +'referrerpolicy="no-referrer-when-downgrade" onerror="this.remove()">':'')+'</div>';
+    const grund=z.bewertet?'':(z.grund==='neu'
+      ?'Neuzugang aus einer nicht erfassten Liga — keine Leistungsdaten'
+      :'In der Saison '+(dataSaison||'')+' ohne Einsatz in einer erfassten Liga');
+    const name=z.bewertet
+      ?'<span class="ks-name">'+z.name+'</span>'
+      :'<a class="ks-name tm-link" href="'+tmUrl(z)+'" target="_blank" rel="noopener" '
+        +'onclick="event.stopPropagation()" title="'+grund+'">'+z.name+'<i class="ti ti-external-link"></i></a>';
+    const note=z.bewertet
+      ?'<span class="ks-note" style="color:'+nc(z.ln)+'" title="'
+        +(z.herkunft?'Note aus der '+z.herkunft+' — dort gilt das Percentil':'Liga-Note')
+        +(z.belastbar?'':'; dünne Stichprobe')+'">'+z.ln+(z.herkunft?'*':'')+'</span>'
+      :'<span title="'+grund+'">—</span>';
+    return '<tr class="'+(z.bewertet?'ks':'ohne')+'"'
+      +(z.bewertet?' onclick="kaderProfil('+z.id+')"':'')+'>'
+      +'<td class="nr">'+(z.number||'')+'</td>'
+      +'<td><div class="ks-spieler">'+av+'<div>'+name
+        +(start.has(z.id)?'<span class="ks-elf">Startelf</span>':'')
+        +'<div class="ks-pos">'+(TM_POS_NAME[z.pos]||z.pos||'')+'</div></div></div></td>'
+      +'<td>'+(z.age||'—')+'</td>'
+      +'<td>'+(z.cm?(z.cm/100).toLocaleString('de-DE',{minimumFractionDigits:2})+' m':'—')+'</td>'
+      +'<td>'+(z.foot||'—')+'</td>'
+      +'<td>'+(z.contract_until?dtm(z.contract_until):'—')+'</td>'
+      +'<td class="r">'+(z.mv?z.mv+' €':'—')+'</td>'
+      +'<td class="r">'+note+'</td></tr>';
+  };
+
+  let koerper='';
+  if(sort==='pos'){
+    const posSort=(a,b)=>(TM_POS_RANG[a.pos]??99)-(TM_POS_RANG[b.pos]??99)
+      ||(a.number||99)-(b.number||99);
+    TM_GRUPPEN.forEach(g=>{
+      const in_g=zeilen.filter(z=>g.pos.includes(z.pos)).sort(posSort);
+      if(in_g.length)koerper+='<tr class="kg"><td colspan="8">'+g.name+'</td></tr>'
+        +in_g.map(zeile).join('');
+    });
+    const rest=zeilen.filter(z=>!TM_POS_RANG.hasOwnProperty(z.pos));
+    if(rest.length)koerper+='<tr class="kg"><td colspan="8">Ohne Position</td></tr>'
+      +rest.map(zeile).join('');
+  }else{
+    const cmp={ln:(a,b)=>(b.ln??-1)-(a.ln??-1),mv:(a,b)=>b.mv_eur-a.mv_eur,
+               age:(a,b)=>(a.age??99)-(b.age??99)}[sort];
+    koerper=zeilen.slice().sort(cmp).map(zeile).join('');
+  }
+
+  ziel.innerHTML=kopf+leiste
+    +'<div class="kader-tabelle-halter"><table class="kader-tabelle"><thead><tr>'
+    +'<th>#</th><th>Spieler</th><th>Alter</th><th>Größe</th><th>Fuß</th>'
+    +'<th>Vertrag bis</th><th class="r">Marktwert</th><th class="r">Note</th>'
+    +'</tr></thead><tbody>'+koerper+'</tbody></table></div>'
+    +'<p class="a-quelle">Kader und Stammdaten: Transfermarkt, Stand '
+    +(dataStand?new Date(dataStand).toLocaleDateString('de-DE'):'—')
+    +'. Fotos und Wappen werden von Transfermarkt geladen. * = Note aus einer anderen Liga '
+    +'(Wechsel oder Auf-/Abstieg) — dort gilt das Percentil.</p>';
+}
+
 /* Portraitadresse aus Basis, Spieler-ID und Zeitstempel. Ohne den
    Zeitstempel antwortet Transfermarkt mit 404, aus der ID allein laesst
    sie sich also nicht bilden - deshalb steht er in den Daten. */
@@ -3097,7 +3310,11 @@ function showProfile(id){
   renderProfile(p,hasV,vN);
 }
 function renderProfile(p,hasV,vN){
-  document.getElementById('profil-bk').onclick=()=>go('ergebnisse');
+  /* Aus der Kaderansicht geoeffnet, fuehrt "zurueck" wieder dorthin. */
+  const zurueck=profilZurueck||'ergebnisse';
+  document.getElementById('profil-bk').onclick=()=>go(zurueck);
+  document.getElementById('profil-bk').innerHTML='<i class="ti ti-arrow-left"></i> '
+    +(zurueck==='kader'?'Kader':'Ergebnisse');
   const rb=hasV?'<div class="report-bar"><div class="report-bar-info"><strong>Bericht generieren</strong>Spielerakte + Passungsanalyse für '+vN+'</div><button class="btn-report" onclick="openModal()"><i class="ti ti-file-text"></i> Bericht</button></div>':'<div class="report-bar"><div class="report-bar-info"><strong>Bericht generieren</strong>Spielerakte mit Stärken, Schwächen und Eigenschaften</div><button class="btn-report" onclick="openModal()"><i class="ti ti-file-text"></i> Bericht</button></div>';
   const flagsArr=flagsFuer(p);
   const tnCard=(hasV&&lastTN)

@@ -232,6 +232,35 @@ Grenzen:
 | Platzhalter | Wo Transfermarkt kein Foto hat, liefert es `default.jpg`. Der wird verworfen — eine graue Silhouette sagt weniger als die Initialen. |
 | Hotlinking | Die Bilder liegen weiter bei Transfermarkt und werden beim Öffnen einer Akte von dort geladen, nicht hier gespeichert. Wird der Verweis eines Tages gesperrt, greift der Rückfall. |
 
+## Kaderansicht
+
+Im Vereins-Matching öffnet **„Kader ansehen"** den Kader des gewählten
+Vereins — aufgebaut wie der Kader auf Transfermarkt:
+
+- Positionsgruppen **Torwart · Abwehr · Mittelfeld · Sturm**, darin die
+  dort übliche Reihenfolge (Innenverteidiger vor linkem und rechtem
+  Verteidiger, defensives vor zentralem und offensivem Mittelfeld,
+  Linksaußen, Rechtsaußen, Mittelstürmer), dann die Rückennummer
+- Spalten #, Spieler mit Foto und Position, Alter, Größe, Fuß, Vertrag bis,
+  Marktwert — dazu die Liga-Note
+- Kopf mit Wappen, Kadergröße, Ø-Alter, Gesamt- und Ø-Marktwert
+- alternativ sortiert nach Liga-Note, Marktwert oder Alter
+
+Hier werden **alle Fotos** geladen — in den Trefferlisten bewusst nicht,
+weil dort Dutzende auf einmal von fremden Servern kämen.
+
+Gezeigt wird der **vollständige** heutige Kader, auch Spieler ohne Note:
+Neuzugänge aus nicht erfassten Ligen und Spieler ohne Einsatz in der
+Notensaison — gedämpft, ohne Note, der Name verweist auf Transfermarkt.
+Dafür gibt `compute_grades.py` sie als eigene kompakte Liste aus
+(`ohne_note_spieler`, 4.942 Spieler); vorher kannte das Werkzeug nur
+Spieler *mit* Note, und bei Bayern fehlte etwa Saibari.
+
+Die **Startelf** der Kaderanalyse ist markiert; ein Stern an der Note heißt,
+sie wurde in einer anderen Liga erspielt. Eine Zeile öffnet die
+Spielerakte, deren Zurück-Knopf dann zum Kader führt; zurück im Matching
+ist der Verein wieder ausgewählt.
+
 ## Scout-Fazit
 
 Neutral und aus den Daten, nicht werbend. Früher stand dort „überzeugt vor

@@ -80,13 +80,16 @@ if [ "${VERTRAEGE:-1}" = "1" ]; then
       || echo "  uebersprungen - Bestand bleibt gueltig"
   fi
 
+  # --erneuern: alle Vereine, nicht nur solche ohne ein einziges Foto. Sonst
+  # bekaemen Neuzugaenge bei Vereinen, die schon Fotos haben, nie eins - und
+  # genau die zeigt die Kaderansicht. Rund 20 Minuten.
   echo
   echo "== Spielerfotos (Adressen) =="
   if [ -n "$LIGEN" ]; then
-    "$PY" scripts/bilder.py --ligen "$LIGEN" \
+    "$PY" scripts/bilder.py --erneuern --ligen "$LIGEN" \
       || echo "  uebersprungen - Bestand bleibt gueltig"
   else
-    "$PY" scripts/bilder.py || echo "  uebersprungen - Bestand bleibt gueltig"
+    "$PY" scripts/bilder.py --erneuern || echo "  uebersprungen - Bestand bleibt gueltig"
   fi
 
   echo
