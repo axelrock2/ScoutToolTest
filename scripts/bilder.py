@@ -103,19 +103,29 @@ def main() -> int:
                   file=sys.stderr)
             return 1
 
+    # Die HEUTIGEN Vereine, sofern bekannt (build_players.py
+    # --saison-aktuell) - sonst die der Notensaison. Nur so kommen auch
+    # Aufsteiger und Neuzugaenge zu ihrem Bild.
     vereine: dict[str, tuple[str, str]] = {}       # vid -> (name, liga_id)
-    for sp in bestand["spieler"]:
-        if erlaubt and sp["liga_id"] not in erlaubt:
-            continue
-        vereine.setdefault(sp["verein_id"], (sp["verein"], sp["liga_id"]))
+    if bestand.get("ligen_aktuell"):
+        for liga_id, liste in bestand["ligen_aktuell"].items():
+            if erlaubt and liga_id not in erlaubt:
+                continue
+            for e in liste:
+                vereine.setdefault(e["id"], (e["name"], liga_id))
+    else:
+        for sp in bestand["spieler"]:
+            if erlaubt and sp["liga_id"] not in erlaubt:
+                continue
+            vereine.setdefault(sp["verein_id"], (sp["verein"], sp["liga_id"]))
 
     if not args.erneuern:
-        # Ein Verein gilt als erledigt, sobald irgendein Kaderspieler von
-        # ihm ein Bild traegt. Genauer ginge es nur mit einem eigenen
-        # Vermerk - fuer Bilder waere das uebertrieben: fehlt eines,
+        # Ein Verein gilt als erledigt, sobald irgendein Spieler, den er
+        # heute fuehrt, ein Bild traegt. Genauer ginge es nur mit einem
+        # eigenen Vermerk - fuer Bilder waere das uebertrieben: fehlt eines,
         # stehen dort Initialen, kein falscher Wert.
-        fertig = {sp["verein_id"] for sp in bestand["spieler"]
-                  if sp.get("bild")}
+        fertig = {((sp.get("aktuell") or {}).get("verein_id") or sp["verein_id"])
+                  for sp in bestand["spieler"] if sp.get("bild")}
         vereine = {v: d for v, d in vereine.items() if v not in fertig}
 
     offen = sorted(vereine.items(), key=lambda x: x[1][1])

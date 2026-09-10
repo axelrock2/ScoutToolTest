@@ -51,6 +51,21 @@ TARGET = os.environ.get("SCOUT_TARGET") or os.path.join(
 #     SCOUT_SAISON=2026 ./scripts/update_local.sh
 SAISON = int(os.environ.get("SCOUT_SAISON", "2025"))
 
+
+def _laufende_saison() -> int:
+    """Startjahr der gerade laufenden Spielzeit (ab Juli die neue)."""
+    from datetime import date as _date
+    h = _date.today()
+    return h.year if h.month >= 7 else h.year - 1
+
+
+# Saison, deren VEREINE und KADER gezeigt werden - getrennt von SAISON, aus
+# der die Noten stammen. Anfang September 2026 ist das 2026/27: Schalke,
+# Paderborn und Elversberg spielen in der Bundesliga, Heidenheim, St. Pauli
+# und Wolfsburg nicht mehr. Die Noten bleiben aus der vollstaendigen Saison
+# 2025/26 - nach zwei, drei Spieltagen waere jedes Percentil Zufall.
+AKTUELL = int(os.environ.get("SCOUT_AKTUELL") or _laufende_saison())
+
 # Transfermarkt-Positionsbezeichnung -> Kuerzel im Frontend
 POS_MAP = {
     "torwart": "TW",
@@ -250,6 +265,38 @@ def aktueller_kader(verein_id: str) -> dict[str, dict]:
     return out
 
 
+def heutiger_kader(verein_id: str) -> tuple[str, dict[str, dict]]:
+    """(Vereinsname, {spieler_id: Profil}) aus dem HEUTIGEN Kader.
+
+    Wie aktueller_kader(), liefert aber zusaetzlich Name, Position und
+    Alter - noetig fuer Neuzugaenge, die in unseren Daten noch gar nicht
+    vorkommen. Die Spaltenlage fuer Position (4) und Alter (5) ist dieselbe
+    wie in der Saisonansicht; alles Weitere wird am Inhalt erkannt.
+    """
+    page = fetch(f"/x/kader/verein/{verein_id}/plus/1")
+    kopf = page.css("h1.data-header__headline-wrapper") or page.css("h1")
+    name = cell_text(kopf[0]) if kopf else ""
+    out: dict[str, dict] = {}
+    for row in page.css("table.items > tbody > tr"):
+        tds = row.css("td")
+        if len(tds) < 12:
+            continue
+        pid = _spieler_id(row)
+        if not pid:
+            continue
+        c = [cell_text(td) for td in tds]
+        out[pid] = {
+            "id": pid,
+            "name": _spieler_name(row),
+            "rueckennummer": _num(c[0]),
+            "position": _pos(c[4]),
+            "position_lang": c[4],
+            "alter": _alter(c[5]),
+            **_felder_aus_zeile(c),
+        }
+    return name, out
+
+
 def kader(verein_id: str, slug: str, saison: int) -> tuple[str, dict[str, dict]]:
     """(Vereinsname, Profildaten je Spieler-ID) fuer die angegebene Saison."""
     page = fetch(f"/{slug}/kader/verein/{verein_id}/plus/1?saison_id={saison}")
@@ -429,6 +476,10 @@ def main() -> int:
     ap.add_argument("--kader-aktuell", action="store_true",
                     help="Vertraege, Marktwerte und Wechsel aus den heutigen "
                          "Kadern nachziehen (nach dem Transferschluss)")
+    ap.add_argument("--saison-aktuell", action="store_true",
+                    help="Vereine und heutige Kader der laufenden Saison "
+                         "(SCOUT_AKTUELL, sonst aus dem Datum) - Noten "
+                         "bleiben aus SCOUT_SAISON")
     ap.add_argument("--nur-leistung", action="store_true",
                     help="nur die Leistungsdaten erneuern (eine Seite je "
                          "Verein statt zwei), Profile bleiben unangetastet")
@@ -441,6 +492,158 @@ def main() -> int:
     if args.ligen:
         gewaehlt = [by_frontend_id(x.strip()) for x in args.ligen.split(",")]
         ligen = [lg for lg in gewaehlt if lg]
+
+    # ------------------------------------------------------------------
+    # Vereine und Kader der LAUFENDEN Saison, Noten weiter aus SAISON.
+    #
+    # Je Liga die Vereine der laufenden Saison, je Verein der heutige
+    # Kader. Daraus bekommt jeder Spieler seinen heutigen Verein ("aktuell").
+    # Die Leistungsdaten bleiben unberuehrt - sie stammen aus der Saison, in
+    # der sie erspielt wurden, und auch ihr Percentil gilt weiter dort.
+    #
+    # Neuzugaenge aus Ligen, die hier nicht erfasst sind, kommen als
+    # Datensatz OHNE Leistungsdaten hinzu: Sie gehoeren zum Kader, eine Note
+    # laesst sich fuer sie aber nicht rechnen.
+    # ------------------------------------------------------------------
+    if args.saison_aktuell:
+        if not os.path.exists(TARGET):
+            print(f"{TARGET} fehlt - zuerst regulaer sammeln.", file=sys.stderr)
+            return 1
+        with gzip.open(TARGET, "rt", encoding="utf-8") as fh:
+            bestand = json.load(fh)
+
+        budget = float(os.environ.get("SCOUT_BUDGET_MIN", "0")) * 60
+        start = time.monotonic()
+        heute: dict[str, dict] = {}                  # spieler_id -> Kaderplatz
+        neu_ligen: dict[str, list] = {}              # liga -> [{id, name}]
+        vollstaendig: set[str] = set()               # Ligen ohne Luecke
+        print(f"Vereine und Kader {AKTUELL}/{str(AKTUELL + 1)[2:]} fuer "
+              f"{len(ligen)} Ligen ...", file=sys.stderr)
+
+        for lg in ligen:
+            try:
+                clubs = vereine_der_liga(lg.tm_id, AKTUELL)
+            except Exception as exc:
+                print(f"  [X] {lg.name}: {exc}", file=sys.stderr)
+                continue
+            eintraege, luecke = [], False
+            for vid, _slug in clubs:
+                if budget and time.monotonic() - start > budget:
+                    print(f"  [-] {lg.name}: Zeitbudget erschoepft",
+                          file=sys.stderr)
+                    luecke = True
+                    break
+                try:
+                    name, kader_heute = heutiger_kader(vid)
+                except Exception as exc:
+                    print(f"  [!] {lg.name} / {vid}: {exc}", file=sys.stderr)
+                    luecke = True
+                    continue
+                eintraege.append({"id": vid, "name": name})
+                for pid, prof in kader_heute.items():
+                    heute[pid] = {"verein": name, "verein_id": vid,
+                                  "liga_id": lg.frontend_id, "profil": prof}
+            neu_ligen[lg.frontend_id] = eintraege
+            if not luecke and eintraege:
+                vollstaendig.add(lg.frontend_id)
+            print(f"  [ok] {lg.name}: {len(eintraege)}/{len(clubs)} Vereine",
+                  file=sys.stderr)
+
+        if not heute:
+            print("Kein einziger Kader geladen - Bestand bleibt unangetastet.",
+                  file=sys.stderr)
+            return 1
+
+        # Vereinslisten: nur erfolgreich geholte Ligen ersetzen
+        ligen_aktuell = dict(bestand.get("ligen_aktuell") or {})
+        ligen_aktuell.update({k: v for k, v in neu_ligen.items() if v})
+        erfasste_vereine = {e["id"] for liste in ligen_aktuell.values()
+                            for e in liste}
+        alle_ligen_bekannt = {lg.frontend_id for lg in LEAGUES} <= set(ligen_aktuell)
+
+        # Nur diese Felder werden aus dem heutigen Kader uebernommen.
+        # Position bleibt, wie sie in der Notensaison war: die Note ist ein
+        # Percentil innerhalb dieser Positionsgruppe und gilt nur dort.
+        HEUTE_FELDER = ("vertrag_bis", "marktwert_eur", "groesse_cm", "fuss",
+                        "rueckennummer")
+
+        bekannt: set[str] = set()
+        gefunden = gewechselt = weg = ausserhalb = 0
+        for sp in bestand["spieler"]:
+            pid = str(sp["id"])
+            bekannt.add(pid)
+            h = heute.get(pid)
+            if h:
+                sp["aktuell"] = {"verein": h["verein"],
+                                 "verein_id": h["verein_id"],
+                                 "liga_id": h["liga_id"]}
+                for k in HEUTE_FELDER:
+                    if h["profil"].get(k) is not None:
+                        sp[k] = h["profil"][k]
+                sp.pop("nicht_mehr_im_kader", None)
+                sp.pop("verein_ausserhalb", None)
+                gefunden += 1
+                if h["verein_id"] != sp["verein_id"]:
+                    gewechselt += 1
+                continue
+            # Nicht in einem heutigen Kader. Beurteilen laesst sich das nur,
+            # wenn seine letzte bekannte Liga in diesem Lauf LUECKENLOS
+            # abgefragt wurde - sonst fehlt er vielleicht nur, weil sein
+            # Verein nicht drankam.
+            zuletzt = (sp.get("aktuell") or {}).get("liga_id") or sp["liga_id"]
+            if zuletzt not in vollstaendig:
+                continue
+            sp.pop("aktuell", None)
+            sp["nicht_mehr_im_kader"] = True
+            weg += 1
+            # Steht sein Verein selbst in keiner erfassten Liga mehr, hat
+            # nicht der Spieler den Verein verlassen, sondern der Verein die
+            # erfassten Ligen - etwa durch Abstieg in eine nicht erfasste.
+            # Sagen laesst sich das nur, wenn die Vereinslisten ALLER Ligen
+            # vorliegen: in einem Teillauf ueber die Bundesliga saehen
+            # Heidenheim und St. Pauli sonst "ausserhalb" aus, bloss weil
+            # die 2. Bundesliga nicht abgefragt wurde.
+            if alle_ligen_bekannt:
+                if sp["verein_id"] not in erfasste_vereine:
+                    sp["verein_ausserhalb"] = True
+                    ausserhalb += 1
+                else:
+                    sp.pop("verein_ausserhalb", None)
+
+        # Neuzugaenge ohne Leistungsdaten in unserem Bestand
+        neu = 0
+        for pid, h in heute.items():
+            if pid in bekannt:
+                continue
+            lg = by_frontend_id(h["liga_id"])
+            bestand["spieler"].append({
+                **h["profil"],
+                "verein": h["verein"],
+                "verein_id": h["verein_id"],
+                "liga": lg.name if lg else h["liga_id"],
+                "liga_id": h["liga_id"],
+                "land": lg.land if lg else "",
+                "saison": None,
+                "leistung": None,
+                "team": None,
+                "ohne_leistung": True,
+                "aktuell": {"verein": h["verein"],
+                            "verein_id": h["verein_id"],
+                            "liga_id": h["liga_id"]},
+            })
+            neu += 1
+
+        bestand["ligen_aktuell"] = ligen_aktuell
+        bestand["saison_aktuell"] = f"{AKTUELL}/{str(AKTUELL + 1)[2:]}"
+        bestand["stand"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        with gzip.open(TARGET, "wt", encoding="utf-8") as fh:
+            json.dump(bestand, fh, ensure_ascii=False, separators=(",", ":"))
+        print(f"\n{gefunden} Spieler einem heutigen Kader zugeordnet, davon "
+              f"{gewechselt} mit Vereinswechsel; {weg} ohne heutigen Kader "
+              f"(davon {ausserhalb}, deren Verein nicht mehr in erfassten "
+              f"Ligen spielt); {neu} Neuzugaenge ohne Leistungsdaten.",
+              file=sys.stderr)
+        return 0
 
     # Kaderprofile der Saison neu einlesen. Noetig, weil die erste Fassung
     # feste Spaltennummern verwendete - in der Ansicht einer vergangenen
@@ -627,7 +830,7 @@ def main() -> int:
 
     print(f"Sammle {len(ligen)} Ligen, Saison {SAISON}/{str(SAISON + 1)[2:]} ...",
           file=sys.stderr)
-    bild_basis = None
+    oben: dict = {}
     spieler, bericht = sammle(ligen, args.max_vereine)
 
     if not spieler:
@@ -667,7 +870,7 @@ def main() -> int:
             # gesetzt; alt uebernommen behauptete er einen Abgang, den es
             # laengst nicht mehr gibt.
             ANGESAMMELT = ("verletzungen", "vertrag", "vertrag_scan", "xg",
-                           "bild")
+                           "bild", "aktuell", "verein_ausserhalb")
             frueher = {}
             for s_alt in alt.get("spieler", []):
                 vorrat = {k: s_alt[k] for k in ANGESAMMELT if s_alt.get(k)}
@@ -686,10 +889,11 @@ def main() -> int:
 
             spieler = behalten + spieler
             bericht = alt_bericht + bericht
-            # Adressbasis der Portraits steht auf oberster Ebene und
-            # gehoert nicht zu einer einzelnen Liga.
-            if alt.get("bild_basis"):
-                bild_basis = alt["bild_basis"]
+            # Was auf oberster Ebene steht, gehoert zu keiner einzelnen Liga
+            # und muss einen Sammellauf ueberstehen: die Adressbasis der
+            # Portraits und die Vereinslisten der laufenden Saison.
+            oben = {k: alt[k] for k in ("bild_basis", "ligen_aktuell",
+                                        "saison_aktuell") if alt.get(k)}
         except (OSError, ValueError) as exc:
             print(f"  Bestand nicht lesbar, schreibe neu: {exc}", file=sys.stderr)
 
@@ -701,7 +905,7 @@ def main() -> int:
             "stand": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "saison": f"{SAISON}/{str(SAISON + 1)[2:]}",
             "quellen": bericht,
-            **({"bild_basis": bild_basis} if bild_basis else {}),
+            **oben,
             "spieler": spieler,
         }, fh, ensure_ascii=False, separators=(",", ":"))
 

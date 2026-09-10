@@ -21,11 +21,12 @@ ein Weg ueber die Spielerprofile waere.
     python3 scripts/vertraege.py --ligen buli,buli2
     python3 scripts/vertraege.py --erneuern         # auch schon geprueftes neu
 
-Vorher sollte build_players.py --kader-aktuell gelaufen sein: nur daher
-weiss dieses Werkzeug, wer heute noch im Kader steht - und nur fuer die
-laesst sich aus einem fehlenden Eintrag "Vertrag laeuft laenger" schliessen.
-Fehlt der Kaderstand, werden ausschliesslich die gefundenen Auslaeufer
-geschrieben.
+Vorher sollte build_players.py --saison-aktuell gelaufen sein: nur daher
+weiss dieses Werkzeug, welcher Verein den Spieler HEUTE fuehrt - dessen
+Vertragsseite wird abgefragt, und nur fuer Spieler im heutigen Kader laesst
+sich aus einem fehlenden Eintrag "Vertrag laeuft laenger" schliessen. Ohne
+diesen Lauf gilt ersatzweise --kader-aktuell; fehlt auch der, werden
+ausschliesslich die gefundenen Auslaeufer geschrieben.
 
 Danach compute_grades.py laufen lassen.
 
@@ -151,12 +152,33 @@ def main() -> int:
                   file=sys.stderr)
             return 1
 
-    # Vereine aus dem Bestand - kein zusaetzlicher Abruf noetig.
+    # Welcher Verein fuehrt den Spieler HEUTE?
+    #
+    # Liegen die Kader der laufenden Saison vor (build_players.py
+    # --saison-aktuell), ist das der Verein aus "aktuell" - und nur dessen
+    # Vertragsseite nennt den Spieler. Frueher wurden die Vereine der
+    # Notensaison abgefragt: Aufsteiger fehlten, und ein gewechselter Spieler
+    # wurde bei seinem alten Verein gesucht, wo er nicht mehr steht.
+    saison_aktuell = bool(bestand.get("ligen_aktuell"))
+
+    def heutiger_verein(sp: dict) -> str | None:
+        if saison_aktuell:
+            a = sp.get("aktuell")
+            return a["verein_id"] if a else None
+        return None if sp.get("nicht_mehr_im_kader") else sp["verein_id"]
+
     vereine: dict[str, tuple[str, str]] = {}       # vid -> (name, liga_id)
-    for sp in bestand["spieler"]:
-        if erlaubt and sp["liga_id"] not in erlaubt:
-            continue
-        vereine.setdefault(sp["verein_id"], (sp["verein"], sp["liga_id"]))
+    if saison_aktuell:
+        for liga_id, liste in bestand["ligen_aktuell"].items():
+            if erlaubt and liga_id not in erlaubt:
+                continue
+            for e in liste:
+                vereine.setdefault(e["id"], (e["name"], liga_id))
+    else:
+        for sp in bestand["spieler"]:
+            if erlaubt and sp["liga_id"] not in erlaubt:
+                continue
+            vereine.setdefault(sp["verein_id"], (sp["verein"], sp["liga_id"]))
 
     marke = ",".join(str(j) for j in jahre)
     if not args.erneuern:
@@ -165,12 +187,13 @@ def main() -> int:
         bestaetigt: set[str] = set()
         offenstehend: set[str] = set()
         for sp in bestand["spieler"]:
-            if sp["verein_id"] not in vereine or sp.get("nicht_mehr_im_kader"):
+            vid = heutiger_verein(sp)
+            if vid is None or vid not in vereine:
                 continue
             if (sp.get("vertrag_scan") or {}).get("jahre") == marke:
-                bestaetigt.add(sp["verein_id"])
+                bestaetigt.add(vid)
             else:
-                offenstehend.add(sp["verein_id"])
+                offenstehend.add(vid)
         fertig = bestaetigt - offenstehend
         vereine = {v: d for v, d in vereine.items() if v not in fertig}
 
@@ -226,20 +249,28 @@ def main() -> int:
     # Ohne sie wird der Vermerk NICHT gesetzt: lieber keine Auskunft als
     # eine unbelegte. Die gefundenen Auslaeufer selbst sind davon nicht
     # betroffen - sie sind beobachtet, nicht erschlossen.
-    ligen_mit_kaderstand = {sp["liga_id"] for sp in bestand["spieler"]
-                            if sp.get("nicht_mehr_im_kader")}
+    ligen_mit_kaderstand = (set(bestand["ligen_aktuell"]) if saison_aktuell
+                            else {sp["liga_id"] for sp in bestand["spieler"]
+                                  if sp.get("nicht_mehr_im_kader")})
     ohne_kaderstand = sorted({liga for _, (_, liga) in offen}
                              - ligen_mit_kaderstand)
     if ohne_kaderstand:
         print(f"  Kein Kaderstand für {', '.join(ohne_kaderstand)} - dort "
               f"nur gefundene Ausläufer, kein Vermerk 'Vertrag läuft länger'.\n"
-              f"  Erst 'build_players.py --kader-aktuell --ligen "
+              f"  Erst 'build_players.py --saison-aktuell --ligen "
               f"{','.join(ohne_kaderstand)}' laufen lassen, dann hier "
               f"--erneuern.", file=sys.stderr)
 
     mit_vertrag = ohne = 0
     for sp in bestand["spieler"]:
-        vid = sp["verein_id"]
+        vid = heutiger_verein(sp)
+        if vid is None:
+            # Kein heutiger Verein in den erfassten Ligen: ein alter Eintrag
+            # beschriebe einen Vertrag, den es so nicht mehr gibt.
+            if saison_aktuell:
+                sp.pop("vertrag", None)
+                sp.pop("vertrag_scan", None)
+            continue
         if vid not in geprueft:
             continue
         eintrag = treffer.get((vid, str(sp["id"])))
@@ -251,7 +282,8 @@ def main() -> int:
             mit_vertrag += 1
         else:
             sp.pop("vertrag", None)           # verlaengert oder abgegeben
-        if sp.get("nicht_mehr_im_kader") or sp["liga_id"] not in ligen_mit_kaderstand:
+        heute_liga = (sp.get("aktuell") or {}).get("liga_id") or sp["liga_id"]
+        if heute_liga not in ligen_mit_kaderstand:
             # Auch einen frueher gesetzten Vermerk wieder entfernen: der
             # Spieler kann den Verein seither verlassen haben.
             sp.pop("vertrag_scan", None)

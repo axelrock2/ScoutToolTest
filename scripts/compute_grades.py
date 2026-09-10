@@ -26,9 +26,12 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from leagues import LEAGUES, by_frontend_id         # noqa: E402
 
-QUELLE = os.path.join(os.path.dirname(__file__), "..", "data",
-                      "players_raw.json.gz")
-ZIEL = os.path.join(os.path.dirname(__file__), "..", "data", "players.json")
+# Umstellbar, damit sich ein Probelauf auf einer Kopie fahren laesst, ohne
+# den echten Bestand anzufassen (wie SCOUT_TARGET in build_players.py).
+QUELLE = os.environ.get("SCOUT_QUELLE") or os.path.join(
+    os.path.dirname(__file__), "..", "data", "players_raw.json.gz")
+ZIEL = os.environ.get("SCOUT_ZIEL") or os.path.join(
+    os.path.dirname(__file__), "..", "data", "players.json")
 
 MIN_MINUTEN = 450          # darunter ist die Stichprobe zu duenn
 
@@ -488,17 +491,38 @@ def main() -> int:
 
             ampel, monate = vertrags_ampel(s.get("vertrag_bis"))
 
+            # Wo spielt er HEUTE, und wo wurde die Note erspielt?
+            # Angezeigt, gefiltert und zu Kadern gezaehlt wird der heutige
+            # Verein. Die Note bleibt ein Percentil der Liga, in der sie
+            # erspielt wurde - wechselt ein Spieler oder steigt sein Verein
+            # auf, steht diese Liga ausdruecklich daneben.
+            lg_note = by_frontend_id(s["liga_id"])
+            stufe_note = lg_note.stufe if lg_note else 1
+            heute = s.get("aktuell")
+            lg_heute = by_frontend_id(heute["liga_id"]) if heute else None
+            if heute and lg_heute:
+                anzeige = {"club": heute["verein"], "liga": lg_heute.name,
+                           "liga_id": heute["liga_id"],
+                           "stufe": lg_heute.stufe, "land": lg_heute.land}
+            else:
+                anzeige = {"club": s["verein"], "liga": s["liga"],
+                           "liga_id": s["liga_id"], "stufe": stufe_note,
+                           "land": s["land"]}
+            anders = (anzeige["club"] != s["verein"]
+                      or anzeige["liga_id"] != s["liga_id"])
             spieler_out.append({
                 "id": int(s["id"]),
                 "ini": initialen(s["name"]),
                 "name": s["name"],
                 "pos": s["position"],
-                "club": s["verein"],
-                "liga": s["liga"],
-                "liga_id": s["liga_id"],
-                "stufe": (by_frontend_id(s["liga_id"]).stufe
-                          if by_frontend_id(s["liga_id"]) else 1),
-                "land": s["land"],
+                **anzeige,
+                **({"note_club": s["verein"], "note_liga": s["liga"],
+                    "note_liga_id": s["liga_id"], "note_stufe": stufe_note}
+                   if anders else {}),
+                # Intern, fuer Doppeleintraege und Liganiveau; wird vor dem
+                # Schreiben entfernt.
+                "_nc": s["verein"], "_nl": s["liga"], "_nli": s["liga_id"],
+                "_ns": stufe_note,
                 "age": alter,
                 # Absicherung: durch die frueher spaltenbasierte Erkennung
                 # steckte in "fuss" teils die Koerpergroesse. Nur echte
@@ -523,6 +547,9 @@ def main() -> int:
                 # Steht nach dem Transferschluss nicht mehr im Kader seines
                 # Vereins - fuer Scouting eine Information, kein Fehler.
                 **({"weg": 1} if s.get("nicht_mehr_im_kader") else {}),
+                # Nicht er hat den Verein verlassen, sondern der Verein die
+                # erfassten Ligen (etwa Abstieg in eine nicht erfasste).
+                **({"extern": 1} if s.get("verein_ausserhalb") else {}),
                 # xG-Werte von Understat, nur fuer die fuenf grossen ersten
                 # Ligen vorhanden. Sie fliessen BEWUSST NICHT in die Note
                 # ein - sonst waeren diese fuenf Ligen anders bewertet als
@@ -581,8 +608,11 @@ def main() -> int:
         eintraege.sort(key=lambda p: -p["minuten"])
         haupt = eintraege[0]
         if len(eintraege) > 1:
+            # Die weiteren Eintraege beschreiben die NOTENSAISON (etwa
+            # Zweitvertretung plus Profikader) - also deren Verein und Liga,
+            # nicht den heutigen, der fuer alle Eintraege derselbe ist.
             haupt["auch_in"] = [{
-                "liga": w["liga"], "club": w["club"], "stufe": w["stufe"],
+                "liga": w["_nl"], "club": w["_nc"], "stufe": w["_ns"],
                 "minuten": w["minuten"], "einsaetze": w["einsaetze"],
             } for w in eintraege[1:]]
             # Vertragsangaben aus jedem Eintrag uebernehmen: der Kader mit
@@ -599,6 +629,9 @@ def main() -> int:
     spieler_out.sort(key=lambda p: (-p["ln"], p["name"]))
 
     # 4) Ligenliste fuer das Frontend (aus den echten Daten)
+    # Vereine je Liga: die der laufenden Saison, sofern sie abgefragt wurden
+    # (build_players.py --saison-aktuell), sonst die der Notensaison.
+    ligen_aktuell = roh.get("ligen_aktuell") or {}
     ligen: dict[str, dict] = {}
     for s in roh["spieler"]:
         lg = by_frontend_id(s["liga_id"])
@@ -607,7 +640,28 @@ def main() -> int:
             "land": s["land"], "stufe": lg.stufe if lg else 1,
             "vereine": set(),
         })
-        eintrag["vereine"].add(s["verein"])
+        if s["liga_id"] not in ligen_aktuell:
+            eintrag["vereine"].add(s["verein"])
+    for liga_id, liste in ligen_aktuell.items():
+        lg = by_frontend_id(liga_id)
+        if not lg:
+            continue
+        eintrag = ligen.setdefault(liga_id, {
+            "id": liga_id, "name": lg.name, "land": lg.land,
+            "stufe": lg.stufe, "vereine": set()})
+        eintrag["vereine"] = {e["name"] for e in liste if e.get("name")}
+
+    # Wer heute in einem Kader steht, aber keine Note hat - Neuzugaenge aus
+    # nicht erfassten Ligen, Spieler ohne Einsatz. Gezaehlt je Verein, damit
+    # die Kaderanalyse sagen kann, wie vollstaendig ihr Bild ist.
+    bewertete_ids = {p["id"] for p in spieler_out}
+    ohne_note: dict[str, dict[str, int]] = {}
+    for s in roh["spieler"]:
+        heute = s.get("aktuell")
+        if not heute or int(s["id"]) in bewertete_ids:
+            continue
+        je = ohne_note.setdefault(heute["liga_id"], {})
+        je[heute["verein"]] = je.get(heute["verein"], 0) + 1
 
     # Wie viele bewertete Spieler je Liga - macht duenne Datenlage sichtbar
     bewertet_je_liga: dict[str, int] = {}
@@ -617,8 +671,12 @@ def main() -> int:
     # Anteil der Spieler mit Marktwert je Liga. Ein blosses "ja/nein" waere
     # irrefuehrend: in den Oberligen fuehrt die Quelle bei rund 2 Prozent
     # einen Wert - zu wenig fuer den Unterbewertet-Index, aber nicht null.
+    # Marktwertanteil und Liganiveau beschreiben die Liga, in der die Noten
+    # erspielt wurden - also die Zusammensetzung der Notensaison. Sonst
+    # verschoebe allein der Auf- und Abstieg dreier Vereine die freigegebenen
+    # Niveauwerte, obwohl keine einzige Note sich aendert.
     def mw_anteil(liga_id: str) -> int:
-        gruppe = [p for p in spieler_out if p["liga_id"] == liga_id]
+        gruppe = [p for p in spieler_out if p["_nli"] == liga_id]
         if not gruppe:
             return 0
         return round(100 * sum(1 for p in gruppe if p["mv_eur"]) / len(gruppe))
@@ -626,7 +684,7 @@ def main() -> int:
     def marktwert_niveau(liga_id: str, stufe: int) -> tuple[int, bool]:
         """Niveau allein aus dem Median-Marktwert. (Wert, geschaetzt?)"""
         werte = sorted(p["mv_eur"] for p in spieler_out
-                       if p["liga_id"] == liga_id and p["mv_eur"])
+                       if p["_nli"] == liga_id and p["mv_eur"])
         if len(werte) >= 20:
             median = werte[len(werte) // 2]
             return niveau_aus_marktwert(median), False
@@ -669,6 +727,8 @@ def main() -> int:
         niv, geschaetzt, grundlage = niveau_fuer(v["id"], v["stufe"], v["land"])
         ligen_liste.append({**v, "vereine": sorted(v["vereine"]),
                             "bewertet": bewertet_je_liga.get(v["id"], 0),
+                            **({"ohne_note": ohne_note[v["id"]]}
+                               if ohne_note.get(v["id"]) else {}),
                             "marktwert_anteil": mw_anteil(v["id"]),
                             "niveau": niv,
                             "niveau_geschaetzt": geschaetzt,
@@ -677,7 +737,12 @@ def main() -> int:
     # Niveau auch am Spieler, damit das Frontend nicht nachschlagen muss
     niveau_je_liga = {l["id"]: l["niveau"] for l in ligen_liste}
     for p in spieler_out:
-        p["niveau"] = niveau_je_liga.get(p["liga_id"], 50)
+        # Niveau der Liga, in der die Note ERSPIELT wurde - daran rechnet
+        # eingeordneteNote() im Frontend eine Note auf ein Zielniveau um.
+        p["niveau"] = niveau_je_liga.get(p["_nli"], 50)
+    for p in spieler_out:
+        for k in ("_nc", "_nl", "_nli", "_ns"):
+            p.pop(k, None)
     ligen_liste.sort(key=lambda l: (l["stufe"], l["land"], l["name"]))
 
     # Schutz gegen stillen Datenverlust. Genau das ist einmal passiert: die
@@ -703,6 +768,9 @@ def main() -> int:
         json.dump({
             "stand": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "saison": roh.get("saison"),
+            # Saison, deren Vereine und Kader gezeigt werden. Die Noten
+            # stammen weiter aus "saison".
+            "saison_aktuell": roh.get("saison_aktuell"),
             "quellen": roh.get("quellen", []),
             "hinweis": ("Kennzahlen aus frei verfügbaren Quellen. "
                         "xG/xA/progressive Carries sind darin nicht enthalten "

@@ -21,8 +21,10 @@ import os
 import sys
 from datetime import datetime, timezone
 
-ZIEL = os.path.join(os.path.dirname(__file__), "..", "data",
-                    "players_raw.json.gz")
+# Umstellbar wie in build_players.py, damit sich ein Probelauf auf einer
+# Kopie fahren laesst.
+ZIEL = os.environ.get("SCOUT_TARGET") or os.path.join(
+    os.path.dirname(__file__), "..", "data", "players_raw.json.gz")
 
 
 def lade(pfad: str) -> dict | None:
@@ -71,6 +73,7 @@ def main() -> int:
         return 1
 
     # Bestand um die nicht neu geholten Ligen ergaenzen
+    oben: dict = {}
     if os.path.exists(ZIEL):
         alt = lade(ZIEL)
         if alt:
@@ -81,6 +84,34 @@ def main() -> int:
             if behalten:
                 print(f"  {len(behalten)} Spieler aus {len(alt_quellen)} nicht "
                       f"erneuerten Ligen uebernommen", file=sys.stderr)
+
+            # Dieselbe Falle wie in build_players.py: die Teilergebnisse
+            # der Action enthalten frisch aufgebaute Datensaetze ohne alles
+            # spaeter Hinzugekommene. Ohne diesen Block loeschte ein
+            # Action-Lauf Verletzungshistorien, Vertraege, xG, Fotos und
+            # den heutigen Verein aller erneuerten Ligen - und auf oberster
+            # Ebene die Bildadresse und die Vereinslisten der laufenden
+            # Saison.
+            angesammelt = ("verletzungen", "vertrag", "vertrag_scan", "xg",
+                           "bild", "aktuell", "verein_ausserhalb")
+            frueher: dict[str, dict] = {}
+            for s in alt.get("spieler", []):
+                vorrat = {k: s[k] for k in angesammelt if s.get(k)}
+                if vorrat:
+                    frueher.setdefault(str(s.get("id")), {}).update(vorrat)
+            gerettet = 0
+            for s in spieler:
+                vorrat = frueher.get(str(s.get("id")))
+                if vorrat:
+                    for k, v in vorrat.items():
+                        s.setdefault(k, v)
+                    gerettet += 1
+            if gerettet:
+                print(f"  {gerettet} Spieler mit angesammelten Daten "
+                      f"ergaenzt", file=sys.stderr)
+            oben = {k: alt[k] for k in ("bild_basis", "ligen_aktuell",
+                                        "saison_aktuell") if alt.get(k)}
+
             spieler = behalten + spieler
             quellen = alt_quellen + quellen
             saison = saison or alt.get("saison")
@@ -92,6 +123,7 @@ def main() -> int:
             "stand": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "saison": saison,
             "quellen": quellen,
+            **oben,
             "spieler": spieler,
         }, fh, ensure_ascii=False, separators=(",", ":"))
 

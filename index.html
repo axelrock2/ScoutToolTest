@@ -230,6 +230,8 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
    koennte. */
 .ph-av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
   border-radius:14px}
+.ph-herkunft{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.5px;
+  color:var(--ink-3);margin-top:5px;text-transform:uppercase}
 
 /* ---- Mehrfachauswahl (Ligen) --------------------------------------
    Ein natives <select multiple> verlangt Strg-Klick und zeigt bei 35
@@ -817,7 +819,8 @@ let KPOS=[{pos:'TW',note:72},{pos:'IV L',note:68},{pos:'IV R',note:71},{pos:'LV'
    ============================================================ */
 const API_URL=null;
 const DATA_URL='data/players.json';
-let dataStand=null,dataSaison=null,dataHinweis=null,dataBildBasis=null;
+let dataStand=null,dataSaison=null,dataHinweis=null,dataBildBasis=null,
+    dataSaisonAktuell=null;
 
 /* Merkliste. Steht hier oben und nicht bei den zugehoerigen Funktionen,
    weil loadScoutData() weiter unten ordnerLaden() aufruft - eine mit let
@@ -860,6 +863,7 @@ async function loadScoutData(){
     if(d.ligen&&d.ligen.length)LIGEN=d.ligen;
     dataStand=d.stand;dataSaison=d.saison;dataHinweis=d.hinweis;
     dataBildBasis=d.bild_basis||null;
+    dataSaisonAktuell=d.saison_aktuell||null;
     window.BEREICHE=d.bereiche||{};
     window.HERKUNFT=d.herkunft||{};
     zeigeHerkunft();
@@ -1143,7 +1147,10 @@ function renderKadResult(){
      fuer jeden Verein gleich aus. */
   KPOS=kaderNoten(name,lid);
 
-  const kader=PLAYERS.filter(p=>p.club===name);
+  /* Heutiger Kader - wer den Verein verlassen hat, gehoert nicht dazu. */
+  const kader=kaderHeute(name);
+  const lg=LIGEN.find(x=>x.id===lid)||{};
+  const ohneNote=(lg.ohne_note||{})[name]||0;
   const mwSumme=kader.reduce((a,p)=>a+(p.mv_eur||0),0);
   const mitMw=kader.filter(p=>p.mv_eur).length;
   /* Ohne Marktwerte waere "Kaderwert 0,0 Mio. €" eine Falschaussage - in
@@ -1152,9 +1159,11 @@ function renderKadResult(){
     ? 'Kaderwert '+(mwSumme/1e6).toFixed(1).replace('.',',')+' Mio. €'
     : 'Marktwerte für diese Liga nicht verfügbar';
   const kopf=[ln,
-    kader.length?kader.length+' bewertete Spieler':'keine bewerteten Spieler',
+    kader.length?kader.length+' bewertete Spieler'
+      +(ohneNote?' + '+ohneNote+' ohne Note':''):'keine bewerteten Spieler',
     kader.length?wert:null,
-    dataSaison?'Saison '+dataSaison:null].filter(Boolean).join(' · ');
+    dataSaisonAktuell?'Kader '+dataSaisonAktuell:null,
+    dataSaison?'Noten '+dataSaison:null].filter(Boolean).join(' · ');
   document.getElementById('kad-result-header').innerHTML=
     '<h2>'+(name||'Kein Verein gewählt')+' <span class="hl">// Scan</span></h2><p>'+kopf+'</p>';
 
@@ -1174,17 +1183,22 @@ function renderKadResult(){
     ? Math.round(100*(r.vonWievielen-r.rang)/(r.vonWievielen-1)) : 50;
 
   document.getElementById('kad-bars').innerHTML=
-    '<div class="kad-hint">Balkenlänge = Rang unter den '
+    '<div class="kad-hint">Grundlage ist die <strong>Startelf</strong>: je '
+    +'Position der meistgespielte Spieler (Innenverteidigung: die zwei '
+    +'meistgespielten). Noten aus anderen Ligen sind auf das Niveau der '
+    +ln+' umgerechnet — für alle Vereine gleich. Balkenlänge = Rang unter den '
     +(mitRang[0]?mitRang[0].vonWievielen:0)+' Vereinen der Liga auf dieser '
-    +'Position. Ganz rechts heißt: bester Kader der Liga.</div>'
+    +'Position. Ganz rechts heißt: beste Startelf der Liga.</div>'
     +mitRang.map(r=>{
       const a=rangAnteil(r);
       /* Rangtext neben den Balken, nicht hinein: bei Platz 18 von 18 ist
          der Balken zu kurz, der Text wurde abgeschnitten. */
       const farbe=a>=60?'var(--green)':a>=35?'var(--amber)':'var(--red)';
-      return '<div class="kbar-row" title="'+r.pos+': eigener Schnitt '+r.note
-        +', Ligaschnitt '+(r.ligaSchnitt??'—')+', bester Verein '+(r.ligaBester??'—')
-        +' ('+r.anzahl+' eigene Spieler)">'
+      const elf=(r.start||[]).map(x=>x.name+' '+noteMitHerkunft(x)).join(', ');
+      return '<div class="kbar-row" title="'+r.pos+': Startelf '+r.note
+        +(elf?' ('+elf.replace(/"/g,'&quot;')+')':'')
+        +', Ligaschnitt '+(r.ligaSchnitt??'—')+', beste Startelf '+(r.ligaBester??'—')
+        +' — '+r.anzahl+' Spieler auf der Position">'
         +'<div class="kbar-pos">'+r.pos+'</div>'
         +'<div class="kbar-wrap"><div class="kbar" style="width:'+Math.max(a,3)
         +'%;background:'+farbe+'"></div></div>'
@@ -1218,11 +1232,31 @@ function renderKadResult(){
       +r.rang+'.</div>'
       +'<div class="pi"><h4>'+r.pos+' — Platz '+r.rang+' von '+r.vonWievielen+'</h4>'
       +'<div class="meta"><span>'+r.anzahl+' eigene Spieler</span>'
-      +'<span>eigener Schnitt '+r.note+'</span>'
+      +'<span>Startelf '+r.note+'</span>'
       +'<span>Ligaschnitt '+(r.ligaSchnitt??'—')+'</span>'
       +'<span style="color:var(--red)">'+rueckstand+' Pkt hinter dem Besten</span></div></div>'
       +'<div style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--lime);text-transform:uppercase;letter-spacing:1px">Kandidaten →</div></div>';
   }).join(''):'<div style="font-size:13px;color:var(--ink-2)">Keine Position im unteren Drittel der Liga.</div>';
+
+  /* Kadertiefe - getrennt vom Bedarf. Der Bedarf richtet sich allein nach
+     der Startelf; ob die Bank einen Ausfall auffangen kann, ist eine
+     zweite, eigene Aussage und steht deshalb auch gesondert. */
+  const tief=mitRang.filter(r=>r.tiefe&&r.tiefe!=='ok');
+  const ziel=document.getElementById('kad-recs');
+  if(ziel&&tief.length){
+    ziel.insertAdjacentHTML('beforeend',
+      '<div class="sec-title" style="margin-top:28px">Kadertiefe</div>'+
+      '<p style="font-size:12px;color:var(--ink-3);margin:0 0 12px">Unabhängig vom Bedarf: '+
+      'Wo fiele ein Ausfall in der Startelf nicht aufzufangen?</p>'+
+      tief.map(r=>{
+        const elf=r.start.map(x=>x.name.split(' ').slice(-1)[0]+' '+noteMitHerkunft(x)).join(', ');
+        const text=r.tiefe==='fehlt'
+          ? 'kein Ersatz im Kader'
+          : 'bester Ersatz '+r.besterErsatz+' — '+(r.note-r.besterErsatz)+' Punkte unter der Startelf';
+        return '<div class="flag"><div class="fdot '+(r.tiefe==='fehlt'?'neg':'neu')+'"></div>'+
+          '<span><strong>'+r.pos+'</strong> · Startelf '+elf+' · '+text+'</span></div>';
+      }).join(''));
+  }
 }
 
 /* ---------- Vereinskontext ----------------------------------------------
@@ -1232,19 +1266,22 @@ function renderKadResult(){
    Aus "IV 60" wird so "IV: Platz 14 von 18". */
 
 /* {pos: [{club, note}]}, je Position absteigend sortiert. */
+/* Startelf-Noten ALLER Vereine der Liga je Position - der Massstab fuer
+   den Rang. Er muss auf derselben Grundlage stehen wie der eigene Wert:
+   Bayerns Startelf gegen den Schnitt aller Spieler der Konkurrenz zu
+   halten, liesse jeden Verein stark aussehen. */
 function ligaVereinsNoten(ligaId){
-  const proVerein={};
-  PLAYERS.filter(p=>p.liga_id===ligaId).forEach(p=>{
-    (proVerein[p.club]=proVerein[p.club]||{})[p.pos]=
-      (proVerein[p.club][p.pos]||[]).concat(p.ln);
+  const vereine={};
+  const ziel=niveauVonLiga(ligaId);
+  PLAYERS.filter(p=>p.liga_id===ligaId&&!p.weg).forEach(p=>{
+    (vereine[p.club]=vereine[p.club]||[]).push(einordnenAuf(p,ziel));
   });
   const jePos={};
-  for(const club in proVerein)
-    for(const pos in proVerein[club]){
-      const w=proVerein[club][pos];
-      (jePos[pos]=jePos[pos]||[]).push(
-        {club,note:Math.round(w.reduce((a,b)=>a+b,0)/w.length)});
-    }
+  for(const club in vereine){
+    const je=startelfJePosition(vereine[club]);
+    for(const pos in je)
+      (jePos[pos]=jePos[pos]||[]).push({club,note:je[pos].note});
+  }
   for(const pos in jePos)jePos[pos].sort((a,b)=>b.note-a.note);
   return jePos;
 }
@@ -1274,47 +1311,119 @@ function spielerFuerVerein(p,verein,ligaId){
   const ein=eingeordneteNote(p,refNiveau);
   const wert=ein?ein.wert:p.ln;                  // auf Zielliga umgerechnet
 
-  const bestand=PLAYERS.filter(x=>x.club===verein&&x.pos===p.pos)
-                       .map(x=>x.ln).sort((a,b)=>b-a);
-  if(!bestand.length)
+  /* Gemessen an der STARTELF des heutigen Kaders, nicht am Schnitt aller
+     Spieler - ein Verstaerkungskandidat muss sich mit den Stammspielern
+     messen, nicht mit dem dritten Torwart. Die Bank zaehlt nur fuer die
+     Frage, ob er wenigstens dort etwas verbessert. */
+  const je=startelfJePosition(kaderEingeordnet(verein,ligaId)
+                                .filter(x=>x.id!==p.id))[p.pos];
+  const lname=(LIGEN.find(l=>l.id===ligaId)||{}).name;
+  if(!je)
     return {wert,rolle:'Position unbesetzt',klasse:'pos',
-            text:'Auf dieser Position ist derzeit kein bewerteter Spieler im Kader.'};
+            text:'Auf dieser Position steht im heutigen Kader kein bewerteter Spieler.'};
 
-  const bester=bestand[0];
-  const schnitt=Math.round(bestand.reduce((a,b)=>a+b,0)/bestand.length);
-  const schwaechster=bestand[bestand.length-1];
-  /* Neuer Positionsschnitt, wenn er den schwaechsten Spieler ersetzt. */
-  const neu=Math.round((bestand.reduce((a,b)=>a+b,0)-schwaechster+wert)/bestand.length);
+  const start=je.start.map(x=>x.ln);
+  const schnitt=je.note;                       // Startelf-Note der Position
+  const schwaechster=Math.min(...start);
+  const bester=Math.max(...start);
+  /* Neue Startelf-Note, wenn er den schwaechsten Stammspieler verdraengt. */
+  const neu=wert>schwaechster
+    ? Math.round((start.reduce((a,b)=>a+b,0)-schwaechster+wert)/start.length)
+    : schnitt;
+  const namen=je.start.map(x=>x.name+' '+noteMitHerkunft(x)).join(', ');
 
   let rolle,klasse;
-  if(wert>=bester+4){rolle='Sofort die Nummer eins';klasse='pos';}
-  else if(wert>=bester-3){rolle='Auf Augenhöhe mit dem Besten';klasse='pos';}
-  else if(wert>schnitt){rolle='Hebt den Positionsschnitt';klasse='pos';}
-  else if(wert>schwaechster){rolle='Rotationsoption';klasse='neu';}
+  if(wert>=bester+4){rolle='Sofort in der Startelf';klasse='pos';}
+  else if(wert>schwaechster){rolle='Verdrängt einen Stammspieler';klasse='pos';}
+  else if(wert>=schwaechster-3){rolle='Auf Augenhöhe mit der Startelf';klasse='pos';}
+  else if(je.besterErsatz===null){rolle='Füllt die leere Bank';klasse='neu';}
+  else if(wert>je.besterErsatz){rolle='Stärkt die Bank';klasse='neu';}
   else {rolle='Keine Verstärkung';klasse='neg';}
 
+  const bank=je.besterErsatz===null?'kein Ersatz im Kader'
+    :'bester Ersatz '+je.besterErsatz;
   return {wert,rolle,klasse,bester,schnitt,neu,
-          delta:neu-schnitt,anzahl:bestand.length,
-          text:'Eingeordnet auf das Niveau der '+(LIGEN.find(l=>l.id===ligaId)||{}).name
-               +' ergibt das '+wert+'. Bester '+p.pos+' im Kader: '+bester
-               +', Schnitt '+schnitt+' aus '+bestand.length+' Spielern.'};
+          delta:neu-schnitt,anzahl:je.anzahl,
+          text:'Eingeordnet auf das Niveau der '+lname+' ergibt das '+wert
+               +'. Startelf auf '+p.pos+': '+namen+' ('+bank+').'};
 }
 
-/* Durchschnittliche Liga-Note je Position im Kader eines Vereins. */
+/* ---------- Startelf statt Kaderschnitt ------------------------------
+   Grundlage jeder Kaderbewertung ist die Startelf. Frueher zaehlte der
+   Schnitt ALLER Spieler einer Position - ein Nachwuchsspieler mit drei
+   Einsatzminuten zog damit Bayerns defensives Mittelfeld von 78 (Kimmich)
+   auf 50 herunter.
+
+   Aufstellungen fuehrt die Quelle kostenlos nicht. Die Startelf wird daher
+   aus den Ligaminuten der Notensaison abgeleitet: je Position der
+   meistgespielte Spieler, in der Innenverteidigung die beiden
+   meistgespielten - zusammen elf, wie in einem 4-2-3-1.
+
+   Die Bank geht getrennt ein: Der Bedarf richtet sich allein nach der
+   Startelf, fehlende Tiefe wird als eigener Hinweis ausgewiesen - zwei
+   Aussagen statt einer vermischten. "Duenn" heisst: der beste Ersatz liegt
+   TIEFE_ABSTAND Punkte oder mehr unter der Startelf.
+
+   Wer den Verein verlassen hat (weg), zaehlt nirgends mit - er steht heute
+   nicht mehr in diesem Kader. */
+const STARTPLAETZE={TW:1,IV:2,LV:1,RV:1,DM:1,ZM:1,OM:1,LA:1,RA:1,ST:1};
+const TIEFE_ABSTAND=20;
+const POS_REIHENFOLGE=['TW','IV','LV','RV','DM','ZM','OM','LA','RA','ST'];
+
+function kaderHeute(verein){
+  return PLAYERS.filter(p=>p.club===verein&&!p.weg);
+}
+
+/* Heutiger Kader, jede Note auf das Niveau der Liga des Vereins
+   umgerechnet. Seit die Kader aus 2026/27 stammen, stehen in einem Kader
+   Noten aus verschiedenen Ligen nebeneinander - bei den Bundesligisten
+   179 von 449 Spielern, vor allem bei den Aufsteigern. Roh uebernommen
+   hatte Elversberg die beste Startelf der Bundesliga gehabt, gemessen an
+   Zweitliga-Percentilen.
+
+   Umgerechnet wird mit eingeordneteNote() - derselben Formel und Schwelle
+   wie auf den Spielerkarten, damit Karte und Kaderanalyse dieselbe Zahl
+   zeigen. Die rohe Note bleibt als ln_roh erhalten. */
+function kaderEingeordnet(verein,ligaId){
+  const ziel=ligaId?niveauVonLiga(ligaId):null;
+  return kaderHeute(verein).map(p=>einordnenAuf(p,ziel));
+}
+
+function einordnenAuf(p,ziel){
+  if(ziel===null||ziel===undefined)return p;
+  const ein=eingeordneteNote(p,ziel);
+  return ein?{...p,ln:ein.wert,ln_roh:p.ln}:p;
+}
+
+/* "64 (80 in der 2. Bundesliga)" - die Umrechnung soll sichtbar sein. */
+function noteMitHerkunft(x){
+  return x.ln+(x.ln_roh!==undefined
+    ?' ('+x.ln_roh+(x.note_liga?' in der '+x.note_liga:' roh')+')':'');
+}
+
+function startelfJePosition(spieler){
+  const nach={};
+  spieler.forEach(p=>{(nach[p.pos]=nach[p.pos]||[]).push(p);});
+  const out={};
+  for(const pos in nach){
+    const g=nach[pos].slice()
+      .sort((a,b)=>(b.minuten||0)-(a.minuten||0)||b.ln-a.ln);
+    const n=STARTPLAETZE[pos]||1;
+    const start=g.slice(0,n), bank=g.slice(n);
+    const note=Math.round(start.reduce((a,p)=>a+p.ln,0)/start.length);
+    const besterErsatz=bank.length?Math.max(...bank.map(p=>p.ln)):null;
+    out[pos]={pos,note,start,bank,besterErsatz,
+      tiefe:!bank.length?'fehlt':(note-besterErsatz>=TIEFE_ABSTAND?'duenn':'ok'),
+      anzahl:g.length,bester:Math.max(...g.map(p=>p.ln))};
+  }
+  return out;
+}
+
+/* Startelf-Note je Position im heutigen Kader eines Vereins. */
 function kaderNoten(verein,ligaId){
   if(!verein)return[];
-  const reihenfolge=['TW','IV','LV','RV','DM','ZM','OM','LA','RA','ST'];
-  const nach={};
-  PLAYERS.filter(p=>p.club===verein).forEach(p=>{
-    (nach[p.pos]=nach[p.pos]||[]).push(p);
-  });
-  return reihenfolge.filter(pos=>nach[pos]).map(pos=>{
-    const g=nach[pos];
-    return {pos,
-      note:Math.round(g.reduce((a,p)=>a+p.ln,0)/g.length),
-      anzahl:g.length,
-      bester:Math.max(...g.map(p=>p.ln))};
-  });
+  const je=startelfJePosition(kaderEingeordnet(verein,ligaId));
+  return POS_REIHENFOLGE.filter(pos=>je[pos]).map(pos=>je[pos]);
 }
 
 /* Ligaschnitt je Position - Vergleichsmassstab fuer die Bedarfsanalyse. */
@@ -2075,8 +2184,8 @@ function renderPlayers(){
        Haaland und Mbappe an der Spitze der Werder-Kandidaten - formal
        richtig, als Vorschlag wertlos. Die Grenze kommt aus dem Verein
        selbst: das Anderthalbfache seines teuersten Spielers. */
-    const kaderGross=PLAYERS.filter(x=>x.club===verein.name).length;
-    const eigene=PLAYERS.filter(x=>x.club===verein.name&&x.mv_eur)
+    const kaderGross=kaderHeute(verein.name).length;
+    const eigene=kaderHeute(verein.name).filter(x=>x.mv_eur)
                         .map(x=>x.mv_eur);
     /* Nur wenn genug Marktwerte vorliegen. In den Oberligen fuehrt die
        Quelle fast keine - dort waere jede Grenze aus der Luft gegriffen. */
@@ -2107,7 +2216,11 @@ function renderPlayers(){
      Bundesliga. */
   /* Im Matching entfaellt der Hinweis: dort ist die Passung bereits um das
      Liganiveau bereinigt, die Werte sind also vergleichbar. */
-  const stufen=new Set(treffer.map(e=>(e.p||e).stufe).filter(x=>x));
+  /* Massgeblich ist die Spielklasse, in der die NOTE erspielt wurde - ein
+     Aufsteiger steht heute in der Bundesliga, sein Percentil aber gilt in
+     der 2. Bundesliga. */
+  const stufen=new Set(treffer.map(e=>{const q=e.p||e;return q.note_stufe||q.stufe;})
+                               .filter(x=>x));
   const mischung=(stufen.size>1&&!verein)
     ? ' — Achtung: Treffer aus '+stufen.size+' Spielklassen, Noten gelten je Liga'
     : '';
@@ -2148,7 +2261,7 @@ function renderPlayers(){
     const bewBadge=bew
       ? '<span class="badge" style="border-color:'+farbe[bew.klasse]+'55;color:'
         +farbe[bew.klasse]+'" title="'+bew.text
-        +(bew.delta!==undefined?' Ersetzt er den schwächsten, steigt der Positionsschnitt von '
+        +(bew.delta>0?' Verdrängt er den schwächsten Stammspieler, steigt die Startelf-Note von '
           +bew.schnitt+' auf '+bew.neu+'.':'')+'">'+bew.rolle
         +(bew.delta>0?' (+'+bew.delta+')':'')+'</span>' : '';
     const luecken=tn&&tn.gaps.length
@@ -2158,10 +2271,31 @@ function renderPlayers(){
        ihre Percentile beruhen auf einer duennen Stichprobe. */
     /* Verein aus der Saison 2025/26 - steht der Spieler dort heute nicht
        mehr im Kader, hat er gewechselt. Fuer Scouting relevant. */
-    const wegBadge=p.weg
+    /* Zwei verschiedene Faelle: Er hat den Verein verlassen (weg), oder der
+       Verein selbst spielt in keiner erfassten Liga mehr (extern) - dann
+       steht er dort durchaus noch im Kader. */
+    const wegBadge=p.extern
+      ? '<span class="badge" style="border-color:rgba(77,166,255,0.4);color:var(--blue)" '
+        +'title="'+p.club+' spielt in keiner hier erfassten Liga mehr — etwa nach einem '
+        +'Abstieg. Leistungsdaten stammen aus der Saison '+(dataSaison||'')+'.">'
+        +'Verein nicht mehr erfasst</span>'
+      : p.weg
       ? '<span class="badge" style="border-color:rgba(77,166,255,0.4);color:var(--blue)" '
         +'title="Der Verein führt ihn heute nicht mehr im Kader — Leistungsdaten '
         +'stammen aus seiner Zeit dort.">nicht mehr im Kader</span>' : '';
+    /* Note aus einer anderen Liga als der heutigen - Wechsel oder Auf- und
+       Abstieg. Das Percentil gilt dort, wo es erspielt wurde; ohne diesen
+       Hinweis laese sich eine Zweitliga-90 wie eine Erstliga-90. */
+    const herkunftBadge=p.note_liga_id&&p.note_liga_id!==p.liga_id
+      ? '<span class="badge" style="border-color:var(--line-bright);color:var(--ink-2)" '
+        +'title="Note aus der Saison '+(dataSaison||'')+' bei '+p.note_club+' ('+p.note_liga
+        +') — dort gilt das Percentil. Heute: '+p.club+', '+p.liga+'.">Note: '
+        +p.note_liga+'</span>'
+      : (p.note_club&&p.note_club!==p.club
+        ? '<span class="badge" style="border-color:var(--line-bright);color:var(--ink-2)" '
+          +'title="Note aus der Saison '+(dataSaison||'')+' bei '+p.note_club+'.">'
+          +'zuvor '+p.note_club+'</span>'
+        : '');
     /* Verletzungsanfaelligkeit gehoert auf die Karte, nicht nur ins
        Profil - sonst muesste man jeden Treffer einzeln oeffnen, um eine
        Warnung zu sehen, die ueber einen Transfer entscheiden kann. */
@@ -2188,7 +2322,7 @@ function renderPlayers(){
         +'<div class="score-cap"><div class="scl">LN</div><div class="scv">'+p.ln+'</div><div class="scbar" style="width:'+p.ln+'%;background:var(--blue)"></div></div>'
       : '<div class="score-cap primary"><div class="scl">LN</div><div class="scv">'+p.ln+'</div><div class="scbar" style="width:'+p.ln+'%"></div></div>'
         +'<div class="score-cap"><div class="scl">PN</div><div class="scv">'+p.pn+'</div><div class="scbar" style="width:'+p.pn+'%;background:var(--blue)"></div></div>';
-    return '<div class="pcard" onclick="showProfile('+p.id+')"><div class="av">'+p.ini+''+(p.number?'<span class="num">'+p.number+'</span>':'')+'</div><div class="pi"><h4><a href="'+tmUrl(p)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Profil auf transfermarkt.de öffnen" class="tm-link">'+p.name+'<i class="ti ti-external-link"></i></a></h4><div class="meta"><span class="pos-tag">'+p.pos+'</span><span>'+p.club+'</span><span>'+p.liga+'</span><span>'+p.age+' J.</span></div><div class="badges">'+cbadge(p.contract)+'<span class="badge b-blue">'+p.mv+' €</span>'+(p.underval?'<span class="badge b-teal"><i class="ti ti-trending-up" style="font-size:10px"></i> Unterbewertet</span>':'')+auslaufBadge(p,fromPage==='auslaufer')+bewBadge+verlBadge+wegBadge+einBadge+duenn+luecken+'</div></div><div class="scores">'+note+'</div></div>';
+    return '<div class="pcard" onclick="showProfile('+p.id+')"><div class="av">'+p.ini+''+(p.number?'<span class="num">'+p.number+'</span>':'')+'</div><div class="pi"><h4><a href="'+tmUrl(p)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Profil auf transfermarkt.de öffnen" class="tm-link">'+p.name+'<i class="ti ti-external-link"></i></a></h4><div class="meta"><span class="pos-tag">'+p.pos+'</span><span>'+p.club+'</span><span>'+p.liga+'</span><span>'+p.age+' J.</span></div><div class="badges">'+cbadge(p.contract)+'<span class="badge b-blue">'+p.mv+' €</span>'+(p.underval?'<span class="badge b-teal"><i class="ti ti-trending-up" style="font-size:10px"></i> Unterbewertet</span>':'')+auslaufBadge(p,fromPage==='auslaufer')+bewBadge+verlBadge+wegBadge+herkunftBadge+einBadge+duenn+luecken+'</div></div><div class="scores">'+note+'</div></div>';
   }).join('');
 }
 /* Flags und Fazit werden hier erzeugt, nicht in der JSON mitgeliefert.
@@ -2786,6 +2920,12 @@ function renderProfile(p,hasV,vN){
     +'<span>bester</span></div>';
   document.getElementById('profil-content').innerHTML=rb+
   '<div class="ph"><div class="ph-banner">'+phAvatar(p)+'<div class="ph-id"><div class="ph-name"><a href="'+tmUrl(p)+'" target="_blank" rel="noopener noreferrer" class="tm-link" title="Profil auf transfermarkt.de öffnen">'+p.name+'<i class="ti ti-external-link"></i></a></div><div class="ph-sub"><span class="pos-tag">'+p.pos+'</span> · '+p.club+' · '+p.liga+(p.number?' · #'+p.number:'')+'</div>'+
+    /* Note aus einem anderen Verein oder einer anderen Liga: gesagt, nicht
+       versteckt - das Percentil gilt dort, wo es erspielt wurde. */
+    (p.note_club
+      ? '<div class="ph-herkunft">Note aus '+(dataSaison||'der Vorsaison')+': '
+        +p.note_club+' · '+p.note_liga+'</div>'
+      : '')+
     '<div class="quellen">'+
       '<span class="quellen-lbl">Videomaterial</span>'+
       '<a href="'+ytUrl(p.name)+'" target="_blank" rel="noopener" '+
@@ -2815,10 +2955,12 @@ function renderProfile(p,hasV,vN){
     return '<div class="sec"><div class="sec-title">Einschätzung für '+v.name+'</div>'+
       '<div class="flag"><div class="fdot '+b.klasse+'"></div><span><strong style="color:'
       +farbe+'">'+b.rolle+'</strong> — '+b.text+'</span></div>'+
-      (b.neu!==undefined
-        ? '<div class="flag"><div class="fdot neu"></div><span>Ersetzt er den schwächsten '
-          +p.pos+', steigt der Positionsschnitt von <strong>'+b.schnitt+'</strong> auf <strong>'
-          +b.neu+'</strong>'+(b.delta>0?' (+'+b.delta+')':'')+'.</span></div>'
+      /* Nur wenn er tatsaechlich einen Stammspieler verdraengt - sonst
+         stuende dort "steigt von 76 auf 76". */
+      (b.delta>0
+        ? '<div class="flag"><div class="fdot neu"></div><span>Verdrängt er den schwächsten Stammspieler, steigt die Startelf-Note auf '
+          +p.pos+' von <strong>'+b.schnitt+'</strong> auf <strong>'
+          +b.neu+'</strong> (+'+b.delta+').</span></div>'
         : '')+
       '</div>';
   })()+
@@ -3186,7 +3328,15 @@ if(API_URL){
         };
         f('hs-spieler', PLAYERS.length.toLocaleString('de-DE'));
         if(typeof LIGEN !== 'undefined' && LIGEN.length) f('hs-ligen', LIGEN.length);
-        if(typeof dataSaison !== 'undefined' && dataSaison) f('hs-saison', dataSaison);
+        /* Zwei Saisons, zwei Aussagen: Kader und Vereine sind von heute,
+           die Noten aus der letzten vollstaendigen Spielzeit. */
+        if(typeof dataSaison !== 'undefined' && dataSaison){
+          var aktuell = (typeof dataSaisonAktuell !== 'undefined') ? dataSaisonAktuell : null;
+          f('hs-saison', aktuell && aktuell !== dataSaison ? aktuell : dataSaison);
+          var lbl = document.querySelector('#hs-saison + .hstat-lbl');
+          if(lbl && aktuell && aktuell !== dataSaison)
+            lbl.textContent = 'Kader · Noten ' + dataSaison;
+        }
         if(echt){
           f('hs-stand', new Date(dataStand).toLocaleDateString('de-DE',
             {day:'2-digit', month:'2-digit', year:'numeric'}));

@@ -230,6 +230,84 @@ Grenzen:
 | Platzhalter | Wo Transfermarkt kein Foto hat, liefert es `default.jpg`. Der wird verworfen — eine graue Silhouette sagt weniger als die Initialen. |
 | Hotlinking | Die Bilder liegen weiter bei Transfermarkt und werden beim Öffnen einer Akte von dort geladen, nicht hier gespeichert. Wird der Verweis eines Tages gesperrt, greift der Rückfall. |
 
+## Kader 2026/27, Noten 2025/26
+
+Zwei Saisons, zwei Aussagen — und beide stehen ausdrücklich da:
+
+| | Saison | Warum |
+|---|---|---|
+| **Vereine und Kader** | 2026/27 | Wer heute wo spielt: Schalke, Paderborn, Elversberg in der Bundesliga, Heidenheim, St. Pauli, Wolfsburg nicht mehr; Goretzka nicht mehr bei Bayern |
+| **Noten** | 2025/26 | Die letzte *vollständige* Spielzeit. Nach zwei, drei Spieltagen wäre jedes Percentil Zufall — ein Doppelpack machte einen Durchschnittsstürmer zur Nummer eins |
+
+```bash
+python3 scripts/build_players.py --saison-aktuell   # Vereine + heutige Kader
+```
+
+Ein Abruf je Liga für die Vereinsliste, einer je Verein für den heutigen
+Kader. Jeder Spieler bekommt seinen heutigen Verein (`aktuell`);
+Neuzugänge aus nicht erfassten Ligen kommen als Datensatz **ohne Note**
+hinzu — sie gehören zum Kader, eine Note lässt sich für sie nicht rechnen,
+und die Kaderanalyse sagt, wie viele es sind („22 bewertete Spieler + 1
+ohne Note"). Die Saison ergibt sich aus dem Datum (`SCOUT_AKTUELL`
+überschreibt).
+
+**Die Note bleibt dort, wo sie erspielt wurde.** Ein Aufsteiger steht heute
+in der Bundesliga, sein Percentil aber gilt in der 2. Bundesliga. Karte und
+Akte sagen das („Note aus 2025/26: FC Schalke 04 · 2. Bundesliga"), und
+auch die Position bleibt die der Notensaison — die Note ist ein Percentil
+innerhalb dieser Positionsgruppe.
+
+Die **Liganiveaus** beschreiben die Ligen, in denen die Noten erspielt
+wurden, und bleiben die freigegebenen Werte. Sonst verschöbe allein der
+Auf- und Abstieg dreier Vereine das Niveau, obwohl sich keine einzige Note
+ändert.
+
+Zwei Kennzeichen, die man nicht verwechseln darf: *nicht mehr im Kader*
+heißt, der Spieler hat den Verein verlassen; *Verein nicht mehr erfasst*
+heißt, der Verein selbst spielt in keiner erfassten Liga mehr — dort steht
+er durchaus noch im Kader. Unterscheiden lässt sich das nur mit den
+Vereinslisten *aller* Ligen; ein Teillauf setzt es deshalb nicht.
+
+## Kaderanalyse: Startelf statt Kaderschnitt
+
+Grundlage jeder Kaderbewertung ist die **Startelf**. Früher zählte der
+Schnitt *aller* Spieler einer Position — ein Nachwuchsspieler mit drei
+Einsatzminuten zog Bayerns defensives Mittelfeld von 78 (Kimmich) auf 50.
+
+Aufstellungen führt die Quelle kostenlos nicht; die Startelf wird aus den
+Ligaminuten der Notensaison abgeleitet: je Position der meistgespielte
+Spieler, in der Innenverteidigung die zwei meistgespielten — zusammen elf.
+Nachwuchsspieler fallen damit von selbst heraus, ohne ein eigenes Merkmal.
+
+**Die Bank geht getrennt ein.** Der Bedarf richtet sich allein nach der
+Startelf; ob ein Ausfall aufzufangen wäre, steht als eigener Abschnitt
+*Kadertiefe* — „kein Ersatz im Kader" oder „bester Ersatz 20+ Punkte unter
+der Startelf". Zwei Aussagen statt einer vermischten.
+
+**Noten aus anderen Ligen werden umgerechnet.** Seit die Kader aus 2026/27
+stammen, stehen in einem Kader Noten aus verschiedenen Ligen nebeneinander
+— bei den Bundesligisten 179 von 449 Spielern. Roh übernommen hätte der
+Aufsteiger Elversberg die beste Startelf der Bundesliga gehabt, gemessen an
+Zweitliga-Percentilen. Umgerechnet wird mit derselben Formel und Schwelle
+wie die *eingeordnete Note* auf den Karten, sodass Karte und Kaderanalyse
+dieselbe Zahl zeigen; die Umrechnung ist sichtbar („64 (80 in der
+2. Bundesliga)").
+
+| Bundesliga, Startelf | roh | umgerechnet |
+|---|---|---|
+| SV Elversberg | Rang 1 | Rang 7 |
+| FC Bayern | Rang 2 | Rang 1 |
+| FC Schalke 04 | Rang 8 | Rang 12 |
+
+Dieselbe Grundlage gilt überall, wo ein Kader bewertet wird: im Ligavergleich
+(sonst stünde Bayerns Startelf gegen den Schnitt aller Spieler der
+Konkurrenz), in der Einschätzung „für diesen Verein" und im Kaderbedarf der
+Team-Note.
+
+Eine bekannte Schwäche, bewusst so belassen: Bei Rotation ist „meiste
+Minuten" ein Münzwurf — in Bayerns Offensivmittelfeld liegt Karl
+(1.282 Min.) vor Gnabry (1.228 Min.).
+
 ## Passung direkt in der Spielerakte
 
 Die Passungsanalyse gab es bisher nur in eine Richtung: erst einen Verein
@@ -671,6 +749,10 @@ bleiben — ein Lauf über *alle* Ligen dagegen warf Verletzungshistorie,
 Vertragsdaten und xG weg, allein die Verletzungen rund zehn Stunden Abrufe.
 `build_players.py` trägt sie jetzt über die Spieler-ID zurück; für bereits
 entstandene Lücken gibt es `scripts/rette_bestand.py <sicherung.json.gz>`.
+Dieselbe Falle steckte in `merge_raw.py`, dem Zusammenführungsschritt der
+GitHub-Action: Er schrieb nur vier Schlüssel und hätte zusätzlich die
+Bildadresse und die Vereinslisten der laufenden Saison verloren. Er rettet
+jetzt dasselbe wie `build_players.py`.
 
 **Und ein Merksatz dazu:** Ein laufendes Shell-Skript nicht bearbeiten.
 Bash liest Skripte über einen Byte-Offset nach; werden Zeilen davor

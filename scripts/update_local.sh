@@ -55,19 +55,19 @@ echo "== xG-Werte (Understat, nur Topligen) =="
 # schnell die Kader auffrischen will, setzt VERTRAEGE=0.
 # Beide Schritte zusammen kosten rund zwei Abrufe je Verein.
 if [ "${VERTRAEGE:-1}" = "1" ]; then
-  # Zuerst die HEUTIGEN Kader. Der Sammellauf oben liest die Kaderansicht
-  # der Saison 2025/26; wer den Verein seither verlassen hat, ist daran
-  # nicht zu erkennen. Genau das braucht der Vertragslauf aber: nur bei
-  # einem Spieler, der noch im Kader steht, heisst ein fehlender Eintrag
-  # "Vertrag laeuft laenger". Nebenbei fuellt dieser Schritt Vertragsenden,
-  # Marktwerte, Groesse und Fuss aus der aktuellen Ansicht.
+  # Zuerst Vereine und HEUTIGE Kader der laufenden Saison. Der Sammellauf
+  # oben liest die Notensaison; wer seither gewechselt ist, welche Vereine
+  # auf- oder abgestiegen sind, ist daran nicht zu erkennen. Dieser Schritt
+  # ordnet jeden Spieler seinem heutigen Verein zu, nimmt Neuzugaenge auf
+  # und fuellt Vertragsenden, Marktwerte, Groesse und Fuss aus der
+  # aktuellen Ansicht. Bilder- und Vertragslauf bauen darauf auf.
   echo
-  echo "== Heutige Kader (Wechsel, Vertraege, Marktwerte) =="
+  echo "== Vereine und Kader der laufenden Saison =="
   if [ -n "$LIGEN" ]; then
-    "$PY" scripts/build_players.py --kader-aktuell --ligen "$LIGEN" \
+    "$PY" scripts/build_players.py --saison-aktuell --ligen "$LIGEN" \
       || echo "  uebersprungen - Bestand bleibt gueltig"
   else
-    "$PY" scripts/build_players.py --kader-aktuell \
+    "$PY" scripts/build_players.py --saison-aktuell \
       || echo "  uebersprungen - Bestand bleibt gueltig"
   fi
 
