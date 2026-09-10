@@ -152,8 +152,10 @@ Spielerakte unter *Datenherkunft*, in Kurzform auf der Startseite.
 | **erhoben** | [Transfermarkt](https://www.transfermarkt.de) | Stammdaten, Marktwert, Vertrag, Einsätze, Tore, Vorlagen, Karten, Minuten, Mannschaftswerte, Verletzungshistorie |
 | **erhoben** | Transfermarkt · Vereinsseite *Vertragsende* | Auslaufender Vertrag, Vertragsoption, Leihe |
 | **erhoben** | [Understat](https://understat.com) | xG, npxG, xA, Schlüsselpässe, Schüsse, Aufbaubeteiligung *(nur 5 Ligen)* |
+| **erhoben** | [Sofascore](https://www.sofascore.com) | Zweikampfquote gesamt/Boden/Luft, Tacklings, Interceptions *(16 Ligen bis zur 3. Liga)* |
+| **erhoben** | Transfermarkt · Bilder | Spielerfoto, Vereinswappen *(per Verweis, nicht gespeichert)* |
 | **berechnet** | dieses Werkzeug | Liga-Note, Positions-Note, Team-Note, Percentile, Liganiveau, Unterbewertet-Index |
-| **fehlt** | — | Zweikämpfe, Tacklings, Klärungen, Passquote, Laufleistung, Gewicht |
+| **fehlt** | — | Zweikämpfe unterhalb der 3. Liga, Klärungen, Passquote, Laufleistung, Gewicht |
 
 Die Trennung ist wichtig: Eine **erhobene** Körpergröße und eine
 **berechnete** Note sind zweierlei — und was gar nicht vorliegt, gehört
