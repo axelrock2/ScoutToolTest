@@ -274,9 +274,37 @@ Stichprobe (ab 40 Zweikämpfen und 450 Minuten). 58 % sind bei einem
 Innenverteidiger etwas anderes als bei einem Stürmer — Kane gewinnt 52,7 %
 und liegt damit unter den Bundesliga-Stürmern bei Percentil 98.
 
-**Die Zweikampfwerte fließen nicht in die Liga-Note ein.** Sie stehen in
-der Akte daneben. Ob sie eingehen sollen, ist eine Bewertungsfrage und
-bleibt eine eigene Entscheidung.
+**In der Liga-Note — für Abwehr und Mittelfeld** (auf Rückfrage
+entschieden). Die Zweikampfquote ist die erste *individuelle*
+Defensivkennzahl; bis dahin bestand die Note eines Innenverteidigers aus
+Mannschaftsgegentoren und Verfügbarkeit.
+
+| Gruppe | Gewicht der Zweikampfquote | Anteil an der Note |
+|---|---|---|
+| Innenverteidiger | 3 — so viel wie die Mannschaftsdefensive | 25 % |
+| Außenverteidiger | 2 | 20 % |
+| Mittelfeld (DM und ZM) | 2 | 17 % |
+
+DM und ZM bilden **eine** Vergleichsgruppe; die Quote gilt deshalb für
+beide — nur für den DM wären die Noten innerhalb derselben Gruppe
+unterschiedlich zusammengesetzt. Offensivspieler, Stürmer und Torhüter
+bleiben unberührt.
+
+Wo die Quote fehlt — unterhalb der 3. Liga, bei zu kleiner Stichprobe
+(unter 40 Zweikämpfen) oder ohne Zuordnung —, wird sie **übersprungen und
+die übrigen Gewichte neu verteilt**, nicht als schlechter Wert gelesen.
+Gemessen: 13.250 Spieler unverändert, 3.407 Noten verschoben (Median
+5 Punkte). Bundesliga-Innenverteidiger: Amos Pieper (71,8 %) steigt um 15,
+Tapsoba (55,0 %) fällt um 13; die Spitze — Orbán, Anton, Schlotterbeck —
+bleibt.
+
+In der Akte steht die Quote als eigener Bereich *Zweikämpfe
+(individuell)*, getrennt von der *Defensive (Mannschaft)*.
+
+**Filter und Sortierung** in der Spielersuche: *Min. Zweikampfquote* und
+*Sortieren: Zweikampfquote ↓*. Beides nur mit belastbarer Stichprobe; wer
+keine hat, fällt beim Filter heraus und steht beim Sortieren am Ende — die
+Ergebniszeile sagt es.
 
 Beim Abgleich aufgefallen: Die Jupiler League war für 2025/26 nur mit
 15 von 16 Vereinen gesammelt — Sint-Truiden fehlte, der Verein hatte keine

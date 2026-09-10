@@ -670,6 +670,7 @@ input[type=range]::-webkit-slider-thumb{box-shadow:none}
       <div class="fg"><label>Ligen</label><div class="mehrfach" id="mf-f-liga"><button type="button" class="mehrfach-knopf" onclick="ligaAuswahlUmschalten('f-liga')">Alle Ligen</button></div></div>
       <div class="fg"><label>Alter</label><div class="age-row"><input type="number" id="f-age-von" placeholder="von"><input type="number" id="f-age-bis" placeholder="bis"></div></div>
       <div class="fg"><label>Max. Marktwert (Mio. €)</label><input type="number" id="f-mw" step="0.1" placeholder="z.B. 10"></div>
+      <div class="fg"><label title="Nur Spieler mit Zweikampfwerten von Sofascore (bis zur 3. Liga) und mindestens 40 Zweikämpfen - darunter wäre die Quote Zufall.">Min. Zweikampfquote (%)</label><input type="number" id="f-zk" step="1" min="0" max="100" placeholder="z.B. 55"></div>
       <div class="fg"><label>Mindest-Liga-Note</label><select id="f-ln"><option value="">Keine</option><option value="60">60+</option><option value="65">65+</option><option value="70">70+</option><option value="75">75+</option><option value="80">80+</option></select></div>
       <div class="fg"><label>Vertragsstatus</label><select id="f-vertrag"><option value="">Alle</option><option value="red">Läuft ab (rot)</option><option value="yellow">Kritisch (gelb)</option><option value="green">Stabil (grün)</option><option value="none">Ohne Angabe</option></select></div>
       <div class="fg">
@@ -759,7 +760,7 @@ input[type=range]::-webkit-slider-thumb{box-shadow:none}
   <div class="results-wrap">
     <div class="res-header">
       <div class="res-count"><strong id="res-num">47</strong> Treffer<span class="filt" id="res-filt">Liga-Note 65+ · 2. Bundesliga · OM/Flügel</span></div>
-      <select class="sort-sel" id="f-sort" onchange="renderPlayers()"><option value="ln">Sortieren: Liga-Note ↓</option><option value="pn">Positions-Note ↓</option><option value="age">Alter ↑</option><option value="mv">Marktwert ↓</option><option value="vertrag">Vertragsende ↑</option></select>
+      <select class="sort-sel" id="f-sort" onchange="renderPlayers()"><option value="ln">Sortieren: Liga-Note ↓</option><option value="pn">Positions-Note ↓</option><option value="age">Alter ↑</option><option value="mv">Marktwert ↓</option><option value="vertrag">Vertragsende ↑</option><option value="zk">Zweikampfquote ↓</option></select>
     </div>
     <div id="player-list"></div>
   </div>
@@ -1480,6 +1481,7 @@ function leseFilter(){
   return {name:v('f-name').toLowerCase(),pos:v('f-pos'),ligen:gewaehlteLigen('f-liga'),
           ageVon:parseInt(v('f-age-von'),10),ageBis:parseInt(v('f-age-bis'),10),
           maxMw:parseFloat(v('f-mw')),minLn:parseInt(v('f-ln'),10),
+          minZk:parseFloat(v('f-zk')),
           vertrag:v('f-vertrag'),auslaufend:an('f-auslaufend'),
           underval:an('f-underval'),belastbar:an('f-belastbar'),fit:an('f-fit'),
           sort:v('f-sort')||'ln'};
@@ -1497,6 +1499,9 @@ function filterPlayers(f){
     if(!isNaN(f.ageBis)&&p.age>f.ageBis)return false;
     if(!isNaN(f.maxMw)&&(p.mv_eur??0)>f.maxMw*1e6)return false;
     if(!isNaN(f.minLn)&&p.ln<f.minLn)return false;
+    /* Wer keine belastbare Quote hat, laesst sich nicht pruefen - er faellt
+       heraus, und die Ergebniszeile sagt das. */
+    if(!isNaN(f.minZk)&&!(zkBelastbar(p)&&p.duelle.q>=f.minZk))return false;
     if(f.vertrag&&p.contract!==f.vertrag)return false;
     if(f.auslaufend&&p.contract!=='red')return false;
     if(f.underval&&!p.underval)return false;
@@ -1508,6 +1513,10 @@ function filterPlayers(f){
   });
 }
 
+function zkBelastbar(p){
+  return !!(p.duelle&&p.duelle.q!==null&&p.duelle.q!==undefined&&p.duelle.n>=40);
+}
+
 function sortPlayers(liste,art){
   const kopie=liste.slice();
   if(art==='age')kopie.sort((a,b)=>a.age-b.age||b.ln-a.ln);
@@ -1515,6 +1524,12 @@ function sortPlayers(liste,art){
   else if(art==='pn')kopie.sort((a,b)=>b.pn-a.pn);
   /* Vertragsende aufsteigend: das naechste zuerst. Spieler ohne Datum
      ans Ende, sonst stuenden die Unbekannten vor den Auslaeufern. */
+  /* Zweikampfquote absteigend; ohne belastbare Quote ans Ende - sonst
+     stuenden Spieler ohne Daten zwischen den gemessenen. */
+  else if(art==='zk')kopie.sort((a,b)=>{
+    const qa=zkBelastbar(a)?a.duelle.q:-1, qb=zkBelastbar(b)?b.duelle.q:-1;
+    return qb-qa||b.ln-a.ln;
+  });
   else if(art==='vertrag')kopie.sort((a,b)=>{
     const da=vertragsEnde(a)||'9999',db=vertragsEnde(b)||'9999';
     return da<db?-1:da>db?1:b.ln-a.ln;
@@ -1541,6 +1556,7 @@ function filterText(f){
     t.push('Alter '+(isNaN(f.ageVon)?'':f.ageVon)+'–'+(isNaN(f.ageBis)?'':f.ageBis));
   if(!isNaN(f.maxMw))t.push('max. '+f.maxMw+' Mio. €');
   if(!isNaN(f.minLn))t.push('Liga-Note '+f.minLn+'+');
+  if(!isNaN(f.minZk))t.push('Zweikampfquote ab '+f.minZk+' % (nur mit Zweikampfwerten)');
   if(f.vertrag)t.push('Vertrag '+f.vertrag);
   if(f.auslaufend)t.push('nur Vertragsläufer');
   if(f.underval)t.push('nur unterbewertet');
@@ -2544,6 +2560,19 @@ function wappenImg(p){
    der Notensaison und Position. Gehen NICHT in die Liga-Note ein. */
 const ZK_LIGEN=['buli','buli2','l3','pl','champ','laliga','laliga2','seriea','serieb',
   'ligue1','ligue2','jupiler','primeira','oebuli','ekstraklasa','chance-liga'];
+/* Geht die Quote in die Note ein? Nur bei Abwehr und Mittelfeld (IV, AV,
+   DM/ZM - DM und ZM teilen sich eine Vergleichsgruppe) und nur mit
+   belastbarer Stichprobe. Muss mit compute_grades.py uebereinstimmen. */
+const ZK_IN_NOTE=['IV','LV','RV','DM','ZM'];
+const ZK_MIN=40;
+function zkNotenText(p,d){
+  if(!ZK_IN_NOTE.includes(p.pos))
+    return 'Bei dieser Position nicht Teil der Liga-Note.';
+  if(d.n<ZK_MIN)
+    return 'Mit '+d.n+' Zweikämpfen zu wenig für die Note — dort nicht berücksichtigt.';
+  return 'Geht in die Liga-Note ein (Bereich „Zweikämpfe“).';
+}
+
 function zweikampfAbschnitt(p){
   const d=p.duelle;
   const liga=p.note_liga||p.liga, ligaId=p.note_liga_id||p.liga_id;
@@ -2578,8 +2607,7 @@ function zweikampfAbschnitt(p){
     +vergleich
     +'<div class="param-erklaerung" style="margin-top:12px">'+d.n+' Zweikämpfe in '
       +d.m.toLocaleString('de-DE')+' Minuten · '+p90(d.t)+' Tacklings und '+p90(d.i)
-      +' Interceptions je 90 Min. Quelle: Sofascore, '+liga+'. Fließt nicht in die '
-      +'Liga-Note ein.</div></div>';
+      +' Interceptions je 90 Min. Quelle: Sofascore, '+liga+'. '+zkNotenText(p,d)+'</div></div>';
 }
 
 /* Portraitadresse aus Basis, Spieler-ID und Zeitstempel. Ohne den

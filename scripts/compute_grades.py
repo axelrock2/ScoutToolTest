@@ -62,25 +62,40 @@ GRUPPE = {
 #     Ligen mit unterschiedlich vielen Spieltagen vergleichbar.
 TEAM_KENNZAHLEN = {"team_gegentore_pro_spiel"}
 
+# Ab so vielen Zweikaempfen gilt eine Quote als belastbar - fuer die Note
+# und fuer den Vergleich in der Akte gleichermassen.
+MIN_DUELLE = 40
+
 KENNZAHLEN = {
     "TW":  [("Defensive der Mannschaft", "team_gegentore_pro_spiel", False, 3),
             ("Einsatzanteil der Saison", "einsatz_anteil", True, 3),
             ("Minuten je Einsatz", "min_pro_einsatz", True, 1),
             ("Disziplin (Karten inv.)", "karten_pro90", False, 1)],
 
-    "IV":  [("Defensive der Mannschaft", "team_gegentore_pro_spiel", False, 3),
+    # Zweikampfquote (Sofascore): die erste INDIVIDUELLE Defensivkennzahl.
+    # Bisher bestand die Abwehrnote nur aus Mannschaftsgegentoren und
+    # Verfuegbarkeit. Gewicht 3 = so viel wie die Mannschaftsdefensive; die
+    # Kennzahl fehlt unterhalb der 3. Liga und bei zu kleiner Stichprobe -
+    # dann wird sie uebersprungen, nicht als 0 gewertet.
+    "IV":  [("Zweikampfquote", "zweikampfquote", True, 3),
+            ("Defensive der Mannschaft", "team_gegentore_pro_spiel", False, 3),
             ("Einsatzanteil der Saison", "einsatz_anteil", True, 3),
             ("Minuten je Einsatz", "min_pro_einsatz", True, 1),
             ("Torgefahr bei Standards", "tore_pro90", True, 1),
             ("Disziplin (Karten inv.)", "karten_pro90", False, 1)],
 
-    "AV":  [("Defensive der Mannschaft", "team_gegentore_pro_spiel", False, 2),
+    "AV":  [("Zweikampfquote", "zweikampfquote", True, 2),
+            ("Defensive der Mannschaft", "team_gegentore_pro_spiel", False, 2),
             ("Einsatzanteil der Saison", "einsatz_anteil", True, 2),
             ("Vorlagen / 90", "vorlagen_pro90", True, 2),
             ("Anteil an Teamtoren", "tor_anteil", True, 1),
             ("Disziplin (Karten inv.)", "karten_pro90", False, 1)],
 
-    "ZM":  [("Anteil an Teamtoren", "tor_anteil", True, 2),
+    # DM und ZM bilden eine Vergleichsgruppe. Die Zweikampfquote gilt
+    # deshalb fuer beide - nur fuer den DM waeren die Noten innerhalb
+    # derselben Gruppe unterschiedlich zusammengesetzt.
+    "ZM":  [("Zweikampfquote", "zweikampfquote", True, 2),
+            ("Anteil an Teamtoren", "tor_anteil", True, 2),
             ("Scorerpunkte / 90", "scorer_pro90", True, 2),
             ("Vorlagen / 90", "vorlagen_pro90", True, 2),
             ("Einsatzanteil der Saison", "einsatz_anteil", True, 2),
@@ -145,6 +160,7 @@ BEREICH = {
     "scorer_pro90": "offensiv",
     "tor_anteil": "offensiv",
     "team_gegentore_pro_spiel": "defensiv",
+    "zweikampfquote": "zweikampf",
     "einsatz_anteil": "verfuegbarkeit",
     "min_pro_einsatz": "verfuegbarkeit",
     "minuten": "verfuegbarkeit",
@@ -154,6 +170,7 @@ BEREICH = {
 BEREICH_NAME = {
     "offensiv": "Offensive",
     "defensiv": "Defensive (Mannschaft)",
+    "zweikampf": "Zweikämpfe (individuell)",
     "verfuegbarkeit": "Verfügbarkeit",
     "disziplin": "Disziplin",
 }
@@ -275,7 +292,8 @@ HERKUNFT = {
                    "Tacklings", "Interceptions"],
         "hinweis": "Saison 2025/26 wie die Noten. Nur erste und zweite Ligen "
                    "sowie 3. Liga; für Regional- und Oberligen führt Sofascore "
-                   "keine Spielerstatistik. Geht NICHT in die Liga-Note ein.",
+                   "keine Spielerstatistik. Die Zweikampfquote geht bei Abwehr "
+                   "und Mittelfeld in die Liga-Note ein (ab 40 Zweikämpfen).",
     },
     "understat": {
         "name": "Understat",
@@ -348,6 +366,12 @@ def kennwerte(s: dict) -> dict | None:
             werte["team_gegentore_pro_spiel"] = team_gegen / spiele
     if team_tore:
         werte["tor_anteil"] = (L["tore"] + L["vorlagen"]) / team_tore
+    # Zweikampfquote nur mit belastbarer Stichprobe. Fehlt sie, bleibt der
+    # Schluessel weg - die Note rechnet dann ohne sie, statt eine Luecke
+    # als schlechten Wert zu lesen.
+    d = s.get("duelle") or {}
+    if d.get("quote") is not None and (d.get("gesamt") or 0) >= MIN_DUELLE:
+        werte["zweikampfquote"] = float(d["quote"])
     return werte
 
 
@@ -649,7 +673,6 @@ def main() -> int:
     # Innenverteidiger etwas anderes als bei einem Fluegelspieler, der
     # vorwiegend Dribblings bestreitet. Verglichen werden nur Spieler mit
     # belastbarer Stichprobe: ab 450 Minuten und 40 Zweikaempfen.
-    MIN_DUELLE = 40
     vergleich: dict[tuple, list] = {}
     for p in zusammengefasst:
         d = p.get("duelle")
