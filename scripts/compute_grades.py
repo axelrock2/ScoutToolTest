@@ -267,6 +267,16 @@ HERKUNFT = {
                    "heutigen Kader; wo kein Foto vorliegt, stehen die "
                    "Initialen.",
     },
+    "sofascore": {
+        "name": "Sofascore",
+        "url": "https://www.sofascore.com",
+        "art": "erhoben",
+        "felder": ["Zweikampfquote", "Bodenzweikämpfe", "Kopfballduelle",
+                   "Tacklings", "Interceptions"],
+        "hinweis": "Saison 2025/26 wie die Noten. Nur erste und zweite Ligen "
+                   "sowie 3. Liga; für Regional- und Oberligen führt Sofascore "
+                   "keine Spielerstatistik. Geht NICHT in die Liga-Note ein.",
+    },
     "understat": {
         "name": "Understat",
         "url": "https://understat.com",
@@ -291,11 +301,11 @@ HERKUNFT = {
         "name": "Nicht verfügbar",
         "url": None,
         "art": "fehlt",
-        "felder": ["Zweikämpfe", "Tacklings", "Klärungen", "Passquote",
-                   "Laufleistung", "Charakter", "Gewicht"],
-        "hinweis": "Individuelle Defensiv- und Laufdaten führen nur "
-                   "kostenpflichtige Anbieter; frei zugängliche Quellen "
-                   "(FBref, Sofascore, kicker) sperren den Zugriff.",
+        "felder": ["Zweikämpfe unterhalb der 3. Liga", "Klärungen",
+                   "Passquote", "Laufleistung", "Charakter", "Gewicht"],
+        "hinweis": "Laufdaten führen nur kostenpflichtige Anbieter; FBref "
+                   "und kicker sperren automatisierte Abrufe. Zweikämpfe "
+                   "liefert Sofascore bis zur 3. Liga, darunter nicht.",
     },
 }
 
@@ -501,13 +511,13 @@ def main() -> int:
             heute = s.get("aktuell")
             lg_heute = by_frontend_id(heute["liga_id"]) if heute else None
             if heute and lg_heute:
-                anzeige = {"club": heute["verein"], "liga": lg_heute.name,
-                           "liga_id": heute["liga_id"],
+                anzeige = {"club": heute["verein"], "club_id": heute["verein_id"],
+                           "liga": lg_heute.name, "liga_id": heute["liga_id"],
                            "stufe": lg_heute.stufe, "land": lg_heute.land}
             else:
-                anzeige = {"club": s["verein"], "liga": s["liga"],
-                           "liga_id": s["liga_id"], "stufe": stufe_note,
-                           "land": s["land"]}
+                anzeige = {"club": s["verein"], "club_id": s["verein_id"],
+                           "liga": s["liga"], "liga_id": s["liga_id"],
+                           "stufe": stufe_note, "land": s["land"]}
             anders = (anzeige["club"] != s["verein"]
                       or anzeige["liga_id"] != s["liga_id"])
             spieler_out.append({
@@ -586,6 +596,16 @@ def main() -> int:
                 # Adresse setzt das Frontend aus bild_basis, ID und ihm
                 # zusammen. Fehlt er, bleiben die Initialen stehen.
                 **({"bild": s["bild"]} if s.get("bild") else {}),
+                # Zweikampfwerte von Sofascore, Saison wie die Noten. Kompakt,
+                # weil sie in rund 9000 Datensaetzen stehen; das Percentil
+                # "p" kommt unten dazu. Gehen NICHT in die Note ein - das
+                # waere eine neue Bewertungsgrundlage und ist Ihre
+                # Entscheidung, nicht die dieses Skripts.
+                **({"duelle": {
+                    "q": s["duelle"]["quote"], "n": s["duelle"]["gesamt"],
+                    "b": s["duelle"]["boden_quote"], "l": s["duelle"]["luft_quote"],
+                    "t": s["duelle"]["tacklings"], "i": s["duelle"]["interceptions"],
+                    "m": s["duelle"]["minuten"]}} if s.get("duelle") else {}),
                 # flags und fazit entstehen im Frontend (flagsFuer/fazitFuer).
                 # Als Text mitgeliefert waeren sie rund 8 MB - fast die
                 # Haelfte der Datei - obwohl sie nur beim Oeffnen eines
@@ -619,10 +639,31 @@ def main() -> int:
             # den meisten Minuten ist oft die Zweitvertretung, gefuehrt
             # wird der Vertrag aber beim Profikader.
             for w in eintraege[1:]:
-                for feld in ("auslauf", "vgeprueft", "bild"):
+                for feld in ("auslauf", "vgeprueft", "bild", "duelle"):
                     if feld not in haupt and feld in w:
                         haupt[feld] = w[feld]
         zusammengefasst.append(haupt)
+
+    # Zweikampfquote im Vergleich: je Liga der Notensaison und
+    # Positionsgruppe, wie die Note. Eine Quote von 58 % ist bei einem
+    # Innenverteidiger etwas anderes als bei einem Fluegelspieler, der
+    # vorwiegend Dribblings bestreitet. Verglichen werden nur Spieler mit
+    # belastbarer Stichprobe: ab 450 Minuten und 40 Zweikaempfen.
+    MIN_DUELLE = 40
+    vergleich: dict[tuple, list] = {}
+    for p in zusammengefasst:
+        d = p.get("duelle")
+        if d and d["q"] is not None and d["n"] >= MIN_DUELLE and d["m"] >= MIN_MINUTEN:
+            g = GRUPPE.get(p["pos"], "ZM")
+            vergleich.setdefault((p["_nli"], g), []).append(d["q"])
+    for p in zusammengefasst:
+        d = p.get("duelle")
+        if not d or d["q"] is None:
+            continue
+        feld = vergleich.get((p["_nli"], GRUPPE.get(p["pos"], "ZM")), [])
+        if d["n"] >= MIN_DUELLE and d["m"] >= MIN_MINUTEN and len(feld) >= 5:
+            d["p"] = percentil(d["q"], feld, True)
+            d["g"] = len(feld)                 # Groesse der Vergleichsgruppe
 
     doppelte = len(spieler_out) - len(zusammengefasst)
     spieler_out = zusammengefasst

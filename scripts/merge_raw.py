@@ -93,7 +93,7 @@ def main() -> int:
             # Ebene die Bildadresse und die Vereinslisten der laufenden
             # Saison.
             angesammelt = ("verletzungen", "vertrag", "vertrag_scan", "xg",
-                           "bild", "aktuell", "verein_ausserhalb")
+                           "bild", "aktuell", "verein_ausserhalb", "duelle")
             frueher: dict[str, dict] = {}
             for s in alt.get("spieler", []):
                 vorrat = {k: s[k] for k in angesammelt if s.get(k)}

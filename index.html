@@ -232,6 +232,15 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
   border-radius:14px}
 .ph-herkunft{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.5px;
   color:var(--ink-3);margin-top:5px;text-transform:uppercase}
+/* Vereinswappen vor dem Vereinsnamen - von Transfermarkt nachgeladen. */
+.ph-wappen{width:18px;height:18px;object-fit:contain;vertical-align:-4px;margin-right:5px}
+/* Zweikampfwerte in der Akte */
+.zk-reihe{display:grid;grid-template-columns:140px 1fr 64px;gap:12px;align-items:center;
+  margin-bottom:10px;font-size:13px}
+.zk-reihe .zk-name{color:var(--ink-2)}
+.zk-reihe .zk-bahn{height:7px;background:var(--pitch-2);border-radius:4px;overflow:hidden}
+.zk-reihe .zk-balken{height:100%;border-radius:4px}
+.zk-reihe .zk-wert{font-family:'JetBrains Mono',monospace;text-align:right;color:var(--ink)}
 
 /* ---- Mehrfachauswahl (Ligen) --------------------------------------
    Ein natives <select multiple> verlangt Strg-Klick und zeigt bei 35
@@ -2519,6 +2528,60 @@ function ytUrl(begriff){
   return 'https://www.youtube.com/results?search_query='+encodeURIComponent(begriff);
 }
 
+/* Vereinswappen von Transfermarkt, per Verweis geladen wie die Fotos.
+   Anders als dort genuegt die Vereins-ID: die Adresse traegt keinen
+   Zeitstempel (geprueft: /wappen/normquad/27.png liefert Bayern, eine
+   unbekannte ID 404). Laedt es nicht, verschwindet es - der Vereinsname
+   steht ohnehin daneben. */
+const WAPPEN_BASIS='https://tmssl.akamaized.net/images/wappen/normquad/';
+function wappenImg(p){
+  if(!p.club_id)return '';
+  return '<img class="ph-wappen" src="'+WAPPEN_BASIS+p.club_id+'.png" alt="" '
+    +'loading="lazy" referrerpolicy="no-referrer-when-downgrade" onerror="this.remove()">';
+}
+
+/* Zweikampfwerte in der Akte. Verglichen wird wie bei der Note: je Liga
+   der Notensaison und Position. Gehen NICHT in die Liga-Note ein. */
+const ZK_LIGEN=['buli','buli2','l3','pl','champ','laliga','laliga2','seriea','serieb',
+  'ligue1','ligue2','jupiler','primeira','oebuli','ekstraklasa','chance-liga'];
+function zweikampfAbschnitt(p){
+  const d=p.duelle;
+  const liga=p.note_liga||p.liga, ligaId=p.note_liga_id||p.liga_id;
+  if(p.pos==='TW')return '';       // bei Torhuetern ohne Aussagekraft
+  if(!d){
+    const text=ZK_LIGEN.includes(ligaId)
+      ? 'Für ihn liegen keine Zweikampfwerte vor — Sofascore führt ihn nicht, '
+        +'oder der Name ließ sich nicht eindeutig zuordnen.'
+      : 'Für die '+liga+' führt Sofascore keine Spielerstatistik; erfasst sind '
+        +'erste und zweite Ligen sowie die 3. Liga.';
+    return '<div class="sec"><div class="sec-title">Zweikämpfe</div>'
+      +'<div class="flag"><div class="fdot neu"></div><span>'+text+'</span></div></div>';
+  }
+  const eins={minimumFractionDigits:1,maximumFractionDigits:1};
+  const f=v=>v===null||v===undefined?'—':v.toLocaleString('de-DE',eins)+' %';
+  const balken=(v,farbe)=>'<div class="zk-bahn"><div class="zk-balken" style="width:'
+    +Math.max(0,Math.min(100,v||0))+'%;background:'+farbe+'"></div></div>';
+  const p90=x=>d.m?(x*90/d.m).toLocaleString('de-DE',eins):'—';
+  const vergleich=d.p!==undefined
+    ? '<div class="flag"><div class="fdot '+(d.p>=70?'pos':d.p<35?'neg':'neu')+'"></div><span>'
+      +'Besser als <strong>'+d.p+' %</strong> der '+d.g+' '+p.pos+' der '+liga
+      +' mit belastbarer Stichprobe.</span></div>'
+    : '<div class="flag"><div class="fdot neu"></div><span>Zu wenig Zweikämpfe für einen '
+      +'Vergleich ('+d.n+'; nötig sind 40 und 450 Minuten).</span></div>';
+  return '<div class="sec"><div class="sec-title">Zweikämpfe · Saison '+(dataSaison||'')+'</div>'
+    +'<div class="zk-reihe"><span class="zk-name">Gesamt</span>'+balken(d.q,'var(--lime)')
+      +'<span class="zk-wert">'+f(d.q)+'</span></div>'
+    +'<div class="zk-reihe"><span class="zk-name">Am Boden</span>'+balken(d.b,'var(--green)')
+      +'<span class="zk-wert">'+f(d.b)+'</span></div>'
+    +'<div class="zk-reihe"><span class="zk-name">In der Luft</span>'+balken(d.l,'var(--blue)')
+      +'<span class="zk-wert">'+f(d.l)+'</span></div>'
+    +vergleich
+    +'<div class="param-erklaerung" style="margin-top:12px">'+d.n+' Zweikämpfe in '
+      +d.m.toLocaleString('de-DE')+' Minuten · '+p90(d.t)+' Tacklings und '+p90(d.i)
+      +' Interceptions je 90 Min. Quelle: Sofascore, '+liga+'. Fließt nicht in die '
+      +'Liga-Note ein.</div></div>';
+}
+
 /* Portraitadresse aus Basis, Spieler-ID und Zeitstempel. Ohne den
    Zeitstempel antwortet Transfermarkt mit 404, aus der ID allein laesst
    sie sich also nicht bilden - deshalb steht er in den Daten. */
@@ -2919,7 +2982,7 @@ function renderProfile(p,hasV,vN){
     +'<div class="param-skala"><span>schwächster</span><span>Ligaschnitt</span>'
     +'<span>bester</span></div>';
   document.getElementById('profil-content').innerHTML=rb+
-  '<div class="ph"><div class="ph-banner">'+phAvatar(p)+'<div class="ph-id"><div class="ph-name"><a href="'+tmUrl(p)+'" target="_blank" rel="noopener noreferrer" class="tm-link" title="Profil auf transfermarkt.de öffnen">'+p.name+'<i class="ti ti-external-link"></i></a></div><div class="ph-sub"><span class="pos-tag">'+p.pos+'</span> · '+p.club+' · '+p.liga+(p.number?' · #'+p.number:'')+'</div>'+
+  '<div class="ph"><div class="ph-banner">'+phAvatar(p)+'<div class="ph-id"><div class="ph-name"><a href="'+tmUrl(p)+'" target="_blank" rel="noopener noreferrer" class="tm-link" title="Profil auf transfermarkt.de öffnen">'+p.name+'<i class="ti ti-external-link"></i></a></div><div class="ph-sub"><span class="pos-tag">'+p.pos+'</span> · '+wappenImg(p)+p.club+' · '+p.liga+(p.number?' · #'+p.number:'')+'</div>'+
     /* Note aus einem anderen Verein oder einer anderen Liga: gesagt, nicht
        versteckt - das Percentil gilt dort, wo es erspielt wurde. */
     (p.note_club
@@ -2944,6 +3007,7 @@ function renderProfile(p,hasV,vN){
   tnSec+
   '<div class="sec"><div class="sec-title">Stammdaten</div><div class="sd-grid"><div class="sd"><div class="sd-lbl">Alter</div><div class="sd-val">'+p.age+' J.</div></div><div class="sd"><div class="sd-lbl">Fuß</div><div class="sd-val">'+p.foot+'</div></div><div class="sd"><div class="sd-lbl">Größe</div><div class="sd-val">'+p.height+'</div></div><div class="sd"><div class="sd-lbl">Vertrag bis</div><div class="sd-val">'+vertragText(p)+'</div></div><div class="sd"><div class="sd-lbl">Rückennummer</div><div class="sd-val">'+(p.number?'#'+p.number:'k. A.')+'</div></div></div></div>'+
   vertragsAbschnitt(p)+
+  zweikampfAbschnitt(p)+
   (function(){
     /* Was bedeutet dieser Spieler fuer den gerade betrachteten Verein?
        In der Akte zaehlt auch ein dort gewaehlter Verein, nicht nur einer

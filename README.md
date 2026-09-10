@@ -230,6 +230,64 @@ Grenzen:
 | Platzhalter | Wo Transfermarkt kein Foto hat, liefert es `default.jpg`. Der wird verworfen — eine graue Silhouette sagt weniger als die Initialen. |
 | Hotlinking | Die Bilder liegen weiter bei Transfermarkt und werden beim Öffnen einer Akte von dort geladen, nicht hier gespeichert. Wird der Verweis eines Tages gesperrt, greift der Rückfall. |
 
+## Zweikampfquoten
+
+Individuelle Defensivwerte fehlten dem Werkzeug von Anfang an — der Grund,
+weshalb Innenverteidiger nur über Mannschaftswerte zu bewerten waren. Die
+Suche nach einer freien Quelle, 2026 erneut geprüft:
+
+| Quelle | Ergebnis |
+|---|---|
+| OneFootball | führt keine individuellen Zweikampfwerte |
+| FBref, kicker | sperren automatisierte Abrufe (403), auch mit Browser |
+| FotMob | 66 Kennzahlen je Liga (Tacklings, Interceptions, Klärungen …), Zweikämpfe aber nur auf jeder einzelnen Spielerseite |
+| **Sofascore** | antwortet, sobald die Anfrage die Kopfzeilen der eigenen Seite trägt — und liefert die Werte **gesammelt je Liga** |
+
+Ein Abruf bringt 100 Spieler einer Liga mit frei wählbaren Feldern — rund
+fünf Abrufe je Liga statt eines je Spieler:
+
+```bash
+python3 scripts/zweikaempfe.py            # alle abgedeckten Ligen, Saison wie die Noten
+python3 scripts/compute_grades.py
+```
+
+Erfasst: **Zweikampfquote gesamt, am Boden, in der Luft**, dazu Tacklings
+und Interceptions — für alle ersten und zweiten Ligen und die 3. Liga
+(16 Ligen, 8.339 bewertete Spieler). Für Regional- und Oberligen führt
+Sofascore keine Spielerstatistik; dort bleibt das Feld leer und die Akte
+sagt es, statt zu schätzen.
+
+**Zuordnung ohne gemeinsame ID.** Sofascore und Transfermarkt schreiben
+Namen verschieden. Zuerst zählt der Name innerhalb der Liga; wo er nicht
+wörtlich passt, eine zweite Stufe — aber **nur beim selben Verein**:
+andere Reihenfolge („Kim Min-jae" / „Min-jae Kim"), Zusatzname („Rasmus
+Kristensen" / „Rasmus Nissen Kristensen"), Kurzform („Ezequiel" / „Equi")
+und Buchstaben, die die Akzententfernung nicht auflöst („Dźwigała"). Die
+Nachnamen-Stufe prüft zusätzlich, ob die Einsatzminuten beider Quellen
+zusammenpassen — sonst könnte ein Nachwuchsspieler gleichen Namens die
+Quote des Stammspielers überschreiben. Bundesliga: 498 von 499 zugeordnet.
+
+**Vergleich wie bei der Note:** je Liga und Position, nur mit belastbarer
+Stichprobe (ab 40 Zweikämpfen und 450 Minuten). 58 % sind bei einem
+Innenverteidiger etwas anderes als bei einem Stürmer — Kane gewinnt 52,7 %
+und liegt damit unter den Bundesliga-Stürmern bei Percentil 98.
+
+**Die Zweikampfwerte fließen nicht in die Liga-Note ein.** Sie stehen in
+der Akte daneben. Ob sie eingehen sollen, ist eine Bewertungsfrage und
+bleibt eine eigene Entscheidung.
+
+Beim Abgleich aufgefallen: Die Jupiler League war für 2025/26 nur mit
+15 von 16 Vereinen gesammelt — Sint-Truiden fehlte, der Verein hatte keine
+einzige Note. Nachgeholt (31 Spieler, 24 mit Einsätzen).
+
+## Vereinswappen
+
+In jeder Spielerakte steht das Wappen des heutigen Vereins vor dem
+Vereinsnamen, per Verweis von Transfermarkt geladen wie die Fotos. Anders
+als dort genügt die Vereins-ID — die Adresse trägt keinen Zeitstempel
+(`…/wappen/normquad/<id>.png`). Lädt es nicht, verschwindet es; der Name
+steht ohnehin daneben.
+
 ## Kader 2026/27, Noten 2025/26
 
 Zwei Saisons, zwei Aussagen — und beide stehen ausdrücklich da:

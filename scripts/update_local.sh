@@ -50,6 +50,15 @@ echo
 echo "== xG-Werte (Understat, nur Topligen) =="
 "$PY" scripts/understat.py || echo "  xG uebersprungen - Bestand bleibt gueltig"
 
+echo
+echo "== Zweikampfwerte (Sofascore, bis zur 3. Liga) =="
+if [ -n "$LIGEN" ]; then
+  "$PY" scripts/zweikaempfe.py --ligen "$LIGEN" \
+    || echo "  Zweikaempfe uebersprungen - Bestand bleibt gueltig"
+else
+  "$PY" scripts/zweikaempfe.py || echo "  Zweikaempfe uebersprungen - Bestand bleibt gueltig"
+fi
+
 # Auslaufende Vertraege. Ein Abruf je Verein und Sommer, also rund 1200
 # Seiten - deutlich weniger als der Kaderlauf, aber kein Nebenbei. Wer nur
 # schnell die Kader auffrischen will, setzt VERTRAEGE=0.

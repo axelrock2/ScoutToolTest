@@ -870,7 +870,7 @@ def main() -> int:
             # gesetzt; alt uebernommen behauptete er einen Abgang, den es
             # laengst nicht mehr gibt.
             ANGESAMMELT = ("verletzungen", "vertrag", "vertrag_scan", "xg",
-                           "bild", "aktuell", "verein_ausserhalb")
+                           "bild", "aktuell", "verein_ausserhalb", "duelle")
             frueher = {}
             for s_alt in alt.get("spieler", []):
                 vorrat = {k: s_alt[k] for k in ANGESAMMELT if s_alt.get(k)}

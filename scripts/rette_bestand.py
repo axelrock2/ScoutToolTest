@@ -30,7 +30,7 @@ ZIEL = os.path.join(os.path.dirname(__file__), "..", "data",
 # nicht_mehr_im_kader fehlt hier bewusst: der Vermerk gilt fuer einen
 # Stichtag und wird von build_players.py --kader-aktuell neu gesetzt.
 FELDER = ("verletzungen", "vertrag", "vertrag_scan", "xg", "bild", "aktuell",
-          "verein_ausserhalb")
+          "verein_ausserhalb", "duelle")
 
 
 def main() -> int:
