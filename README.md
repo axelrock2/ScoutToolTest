@@ -232,6 +232,24 @@ Grenzen:
 | Platzhalter | Wo Transfermarkt kein Foto hat, liefert es `default.jpg`. Der wird verworfen — eine graue Silhouette sagt weniger als die Initialen. |
 | Hotlinking | Die Bilder liegen weiter bei Transfermarkt und werden beim Öffnen einer Akte von dort geladen, nicht hier gespeichert. Wird der Verweis eines Tages gesperrt, greift der Rückfall. |
 
+## Scout-Fazit
+
+Neutral und aus den Daten, nicht werbend. Früher stand dort „überzeugt vor
+allem bei …", höchstens eine Schwäche und „wirtschaftlich interessant" —
+ein Verkaufstext. Jetzt drei Absätze:
+
+| Absatz | Inhalt |
+|---|---|
+| **Einordnung** | Verein und Liga heute; wo die Note erspielt wurde; was die Liga-Note bedeutet (gewichteter Durchschnitt der Percentile, 50 = Ligaschnitt) und gegen wie viele Spieler verglichen wird; bei Wechslern die umgerechnete Note; Stichprobe |
+| **Stärken und Schwächen** | stärkster und schwächster Bereich, bis zu drei Kennzahlen darüber und darunter — Mannschaftswerte als solche gekennzeichnet —, Zweikampfquote, bei Offensivspielern xG gegen Tore, Anteil der Mannschaftswerte an der Note |
+| **Rahmen** | Verletzungen (mit Stand), Vertrag samt Option oder Leihe, Marktwert gegen Leistungsniveau — auch wenn er *höher* liegt —, und was die Daten nicht enthalten |
+
+Regeln für den Ton: Zahlen statt Adjektiven, keine Empfehlung, ein Mangel
+wird genauso ausgesprochen wie eine Stärke. Aussagen, die eine Saison nicht
+tragen kann, stehen auch nicht da — eine Chancenverwertung über dem
+Erwartungswert heißt „ob sie sich wiederholt, lässt sich aus einer Saison
+nicht ablesen", nicht „wird sich fortsetzen" und nicht „wird einbrechen".
+
 ## Zweikampfquoten
 
 Individuelle Defensivwerte fehlten dem Werkzeug von Anfang an — der Grund,

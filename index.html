@@ -329,6 +329,7 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 .fdot.neg{background:var(--red)}
 .fdot.neu{background:var(--ink-3)}
 .fazit{background:var(--pitch-2);border:1px solid var(--line);border-left:3px solid var(--lime);border-radius:10px;padding:18px 20px;font-size:14px;color:var(--ink);line-height:1.7}
+.fazit p{margin:0 0 10px}.fazit p:last-child{margin-bottom:0}
 .kad-wrap{max-width:1180px;margin:0 auto}
 .kad-head{margin-bottom:26px}
 .kad-head h2{font-size:32px;font-weight:800;letter-spacing:-1px;text-transform:uppercase;margin-bottom:8px}
@@ -2390,19 +2391,137 @@ function flagsFuer(p){
   return f;
 }
 
+/* ---------- Scout-Fazit -------------------------------------------------
+   Neutral und aus den Daten, nicht werbend. Frueher stand hier "ueberzeugt
+   vor allem bei ...", hoechstens eine Schwaeche und "wirtschaftlich
+   interessant" - ein Verkaufstext. Jetzt drei Absaetze:
+
+     Einordnung       wo er spielt, was die Note bedeutet, worauf sie beruht
+     Staerken und     beides mit Zahlen, dazu Zweikaempfe und xG, soweit
+     Schwaechen       vorhanden, und wie viel der Note Mannschaftswert ist
+     Rahmen           Verfuegbarkeit, Verletzungen, Vertrag, Marktwert - und
+                      was die Daten NICHT hergeben
+
+   Regeln fuer den Ton: Zahlen statt Adjektiven, keine Empfehlung, und ein
+   Mangel wird genauso ausgesprochen wie eine Staerke. */
+/* Genitiv ("besser als 69 % der Stuermer") und Dativ ("im Vergleich mit
+   44 Stuermern") unterscheiden sich im Plural - beide Formen noetig. */
+const GRUPPEN_NAME={TW:'Torhüter',IV:'Innenverteidiger',LV:'Außenverteidiger',
+  RV:'Außenverteidiger',DM:'zentralen Mittelfeldspieler',ZM:'zentralen Mittelfeldspieler',
+  OM:'Offensivspieler',LA:'Offensivspieler',RA:'Offensivspieler',ST:'Stürmer'};
+const GRUPPEN_DATIV={TW:'Torhütern',IV:'Innenverteidigern',LV:'Außenverteidigern',
+  RV:'Außenverteidigern',DM:'zentralen Mittelfeldspielern',ZM:'zentralen Mittelfeldspielern',
+  OM:'Offensivspielern',LA:'Offensivspielern',RA:'Offensivspielern',ST:'Stürmern'};
+
 function fazitFuer(p){
-  const par=p.params||[];
-  const st=par.filter(x=>x.p>=75).slice(0,2).map(x=>x.n.toLowerCase());
-  const sw=par.filter(x=>x.p<35).slice(0,1).map(x=>x.n.toLowerCase());
-  const t=[];
-  t.push(st.length?p.name+' überzeugt vor allem bei '+st.join(' und ')
-                 :p.name+' zeigt ein ausgeglichenes Profil ohne herausstechende Spitzenwerte');
-  t.push('Leistungsnote '+p.ln+' im Ligavergleich der Position '+p.pos);
-  if(sw.length)t.push('Ausbaufähig: '+sw[0]);
-  if(p.underval_index>=10)t.push('Marktwert liegt unter dem gezeigten Niveau — wirtschaftlich interessant');
+  const zahl=(v,st)=>Number(v).toLocaleString('de-DE',{minimumFractionDigits:st||0,maximumFractionDigits:st||0});
+  const gruppe=GRUPPEN_NAME[p.pos]||'Spieler seiner Position';
+  const notenLiga=p.note_liga||p.liga;
+  const par=(p.params||[]).slice();
+  const abs=[];
+
+  /* ---- 1. Einordnung */
+  const e=[];
+  e.push(p.name+' ('+p.age+' J., '+p.pos+') spielt für '+p.club+' in der '+p.liga+'.');
+  if(p.note_club)
+    e.push('Seine Werte stammen aus der Saison '+(dataSaison||'')+' bei '+p.note_club
+      +(p.note_liga_id&&p.note_liga_id!==p.liga_id?' in der '+p.note_liga:'')+'.');
+  e.push('Die Liga-Note von '+p.ln+' ist ein gewichteter Durchschnitt seiner Percentile im Vergleich mit '
+    +(p.basis&&p.basis.gruppe?p.basis.gruppe+' ':'')+(GRUPPEN_DATIV[p.pos]||gruppe)+' der '+notenLiga
+    +'; 50 entspräche genau dem Ligadurchschnitt.');
+  const ein=(p.note_liga_id&&p.note_liga_id!==p.liga_id)?eingeordneteNote(p,niveauVonLiga(p.liga_id)):null;
+  if(ein)
+    e.push('Auf das Niveau der '+p.liga+' umgerechnet entspricht das etwa '+ein.wert
+      +' — eine Schätzung, gemessen ist nur der Wert in der '+notenLiga+'.');
+  e.push('Grundlage sind '+zahl(p.minuten||0)+' Ligaminuten in '+(p.einsaetze||0)+' Einsätzen'
+    +(p.belastbar===false?' — eine dünne Stichprobe; die Werte sind ein Hinweis, keine belastbare Bewertung.':'.'));
+  abs.push(e.join(' '));
+
+  /* ---- 2. Staerken und Schwaechen */
+  const s2=[];
+  const tn=p.teilnoten||{}, bn=window.BEREICHE||{};
+  const ber=Object.keys(tn).filter(k=>bn[k]).sort((a,b)=>tn[b]-tn[a]);
+  if(ber.length>=2){
+    const oben=ber[0], unten=ber[ber.length-1];
+    s2.push('Stärkster Bereich: '+bn[oben]+' mit '+tn[oben]+', schwächster: '
+      +bn[unten]+' mit '+tn[unten]+'.');
+  }
+  const stark=par.filter(x=>x.p>=75).sort((a,b)=>b.p-a.p).slice(0,3);
+  const schwach=par.filter(x=>x.p<35).sort((a,b)=>a.p-b.p).slice(0,3);
+  /* Mannschaftswerte kenntlich machen: "Defensive der Mannschaft" ist
+     nicht seine Staerke, sondern die seiner Abwehr. */
+  const nenn=x=>x.n+(x.team?' (Mannschaftswert)':'')+' – '
+    +(x.p>=99?'Spitzenwert der Liga':'besser als '+x.p+' %');
+  if(stark.length)s2.push('Im Ligavergleich stark: '+stark.map(nenn).join('; ')+'.');
+  if(schwach.length)s2.push('Unter dem Ligaschnitt: '+schwach.map(nenn).join('; ')+'.');
+  if(!stark.length&&!schwach.length)
+    s2.push('Keine Kennzahl weicht deutlich vom Ligaschnitt ab — weder nach oben noch nach unten.');
+  const d=p.duelle;
+  if(d&&d.q!==null&&d.q!==undefined&&p.pos!=='TW'){
+    s2.push('Zweikampfquote '+zahl(d.q,1)+' % bei '+d.n+' Zweikämpfen'
+      +(d.p!==undefined?', besser als '+d.p+' % der '+gruppe+' der Liga'
+                        :' (Stichprobe zu klein für einen Vergleich: nötig sind 40 Zweikämpfe und 450 Minuten)')
+      +(d.b!=null&&d.l!=null?'; am Boden '+zahl(d.b,1)+' %, in der Luft '+zahl(d.l,1)+' %':'')+'.');
+  }
+  const x=p.xg;
+  if(x&&x.minuten>=900&&['OM','LA','RA','ST'].includes(p.pos)&&typeof x.ueber_xg==='number'){
+    const u=x.ueber_xg;
+    s2.push(Math.abs(u)<1.5
+      ? 'Tore und Erwartungswert (xG '+zahl(x.xG,1)+') liegen nah beieinander.'
+      : 'Er erzielte '+zahl(Math.abs(u),1)+' Tore '+(u>0?'mehr':'weniger')
+        +' als der Erwartungswert (xG '+zahl(x.xG,1)+') — '
+        +(u>0?'eine überdurchschnittliche Chancenverwertung; ob sie sich wiederholt, lässt sich aus einer Saison nicht ablesen.'
+             :'die Chancen waren da, die Verwertung blieb darunter.'));
+  }
+  if(p.anteil_team>=30)
+    s2.push(p.anteil_team+' % der Note beruhen auf Mannschaftswerten (Gegentore der Mannschaft); '
+      +'sie beschreiben die Abwehr als Ganzes, nicht seinen eigenen Anteil.');
+  abs.push(s2.join(' '));
+
+  /* ---- 3. Rahmen */
+  const r=[];
+  const v=p.verletzungen;
+  if(v){
+    if(v.aktuell_verletzt)r.push('Laut Transfermarkt'+(v.geholt?' (Stand '+dtm(v.geholt)+')':'')
+      +' verletzt, ohne bekanntes Rückkehrdatum.');
+    r.push(v.anzahl_3j
+      ? v.anzahl_3j+' Ausfälle in den letzten drei Jahren, zusammen '+v.tage_3j+' Tage und '
+        +v.spiele_3j+' verpasste Spiele.'
+      : 'In den letzten drei Jahren ohne verzeichneten Ausfall.');
+  }else{
+    r.push('Eine Verletzungshistorie ist für ihn nicht erfasst.');
+  }
   const m=restmonate(p);
-  if(m!==null&&m<=6)t.push('Auslaufender Vertrag macht einen Zugriff ohne oder mit geringer Ablöse realistisch');
-  return t.join('. ')+'.';
+  const a=p.auslauf;
+  if(a&&a.leihe)r.push('Er ist ausgeliehen; die Leihe endet am '+dtm(a.bis)+'.');
+  else if(p.contract_until||a){
+    const bis=p.contract_until||a.bis;
+    r.push('Vertrag bis '+dtm(bis)+(m!==null?' ('+Math.max(m,0)+' Monate)':'')
+      +(a&&a.option?', mit eingetragener Option: '+a.option:'')+'.');
+  }else r.push('Ein Vertragsende ist nicht bekannt.');
+  if(p.mv_eur){
+    let t='Marktwert '+p.mv+' €';
+    const u=p.underval_index;
+    if(typeof u==='number'&&u>=10)
+      t+=' — niedriger, als seine Leistungsdaten im Ligavergleich erwarten ließen (Index +'+u+').';
+    else if(typeof u==='number'&&u<=-10)
+      t+=' — höher, als die Leistungsdaten allein erwarten ließen (Index '+u
+        +'); der Markt bewertet Faktoren mit, die hier nicht gemessen werden, etwa Alter, Entwicklung oder Vertragslage.';
+    else t+=', im Rahmen dessen, was die Leistungsdaten erwarten lassen.';
+    r.push(t);
+  }else r.push('Für diese Liga führt die Quelle keinen Marktwert.');
+  if(p.weg)r.push(p.extern
+    ? p.club+' spielt in keiner hier erfassten Liga mehr.'
+    : 'Er steht nicht mehr im Kader von '+p.club+'; die Werte stammen aus seiner Zeit dort.');
+  /* Was fehlt, gehoert zum Fazit - sonst liest es sich vollstaendiger, als
+     es ist. */
+  const luecken=['Laufleistung','Passquote'];
+  if(!p.duelle&&p.pos!=='TW')luecken.unshift('Zweikampfwerte');
+  if(!p.xg&&['OM','LA','RA','ST'].includes(p.pos))luecken.push('xG');
+  r.push('Nicht in der Bewertung enthalten: '+luecken.join(', ')+'.');
+  abs.push(r.join(' '));
+
+  return abs.map(t=>'<p>'+t+'</p>').join('');
 }
 
 /* Link auf das Transfermarkt-Profil. Verwendet die Spieler-ID, mit der
