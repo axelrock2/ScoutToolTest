@@ -389,6 +389,15 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 /* Direktvergleich. Zwei Balken je Zeile, gemeinsamer Massstab, dazu der
    Median der Vergleichsgruppe als senkrechter Strich - ohne ihn sagt ein
    laengerer Balken nur "mehr als der andere". */
+.mk-blk .mk-row{cursor:pointer;border-radius:5px;transition:background 0.12s;margin-left:-5px;margin-right:-5px;padding:0 5px}
+.mk-blk .mk-row:hover{background:rgba(199,249,75,0.06)}
+.mk-blk .mk-row.mk-offen{background:rgba(199,249,75,0.09)}
+.mk-blk .mk-row.mk-offen .mk-name{color:var(--lime)}
+.mk-schwarm{margin-top:14px;padding:14px 16px;background:var(--pitch-2);border:1px solid var(--line);border-radius:12px}
+.mk-schwarm:empty{display:none}
+.mk-schwarm-t{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--lime);text-transform:uppercase;letter-spacing:1.4px;margin-bottom:8px}
+.mk-svg{width:100%;height:auto;display:block}
+.mk-hinweis{font-size:11px;color:var(--ink-3);line-height:1.5;margin-top:2px}
 /* Rollenprofil */
 .rl-row{display:flex;align-items:center;gap:12px;margin-bottom:11px}
 .rl-name{font-size:13px;color:var(--ink-2);flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
@@ -3087,7 +3096,9 @@ function metrikAbschnitt(p){
       const farbe=pct===null?'var(--ink-3)'
         :f.neutral?'var(--ink-3)'
         :pct>=70?'var(--lime)':pct<40?'var(--amber)':'var(--blue)';
-      return '<div class="mk-row"><span class="mk-name">'+f.n+inNote+'</span>'
+      return '<div class="mk-row" data-k="'+f.k+'" onclick="schwarmAuf(this,\''+f.k+'\')" '
+        +'title="Verteilung dieser Kennzahl in der Liga zeigen">'
+        +'<span class="mk-name">'+f.n+inNote+'</span>'
         +'<span class="mk-roh">'+metrikWertText(f,wert)+'</span>'
         +'<span class="mk-bahn"><span class="mk-fuell" style="width:'
         +(pct===null?0:pct)+'%;background:'+farbe+'"></span></span>'
@@ -3121,8 +3132,110 @@ function metrikAbschnitt(p){
         +'. Alle übrigen sind zusätzliche Information.'
       : '<strong>Diese Werte gehen nicht in die Note ein</strong> — sie sind '
         +'zusätzliche Information, keine Bewertung.')
+    +' <strong>Ein Klick auf eine Zeile</strong> zeigt, wie die ganze Liga auf '
+    +'dieser Kennzahl verteilt ist — ein Percentil sagt, wie viele schlechter '
+    +'sind, nicht wie viel besser.'
     +'</div>'
-    +'<div class="mk-grid">'+bloecke+'</div></div>';
+    +'<div class="mk-grid">'+bloecke+'</div>'
+    +'<div id="mk-schwarm" class="mk-schwarm"></div></div>';
+}
+
+/* ---------- Verteilung einer Kennzahl (Beeswarm) -------------------------
+   Ein Percentil sagt, wie viele schlechter sind - nicht, WIE VIEL besser.
+   Percentil 80 kann einen deutlichen Vorsprung bedeuten oder einen
+   Wimpernschlag, je nachdem wie eng das Feld beieinanderliegt. Genau das
+   zeigt der Schwarm: jeder Punkt ein Spieler der Vergleichsgruppe, die
+   Lage auf der Achse sein Wert.
+
+   Gezeichnet wird erst auf Klick - fuer vierzig Kennzahlen gleichzeitig
+   waere es unlesbar, und die meisten interessieren beim Durchsehen nicht. */
+function schwarmSVG(k,ligaId,gruppe,wert,vglWert,vglName){
+  const felder={}; (METRIK.felder||[]).forEach(f=>{felder[f.k]=f});
+  const f=felder[k];
+  const werte=(metrikVerteilung(ligaId,gruppe)[k]||[]);
+  if(!f||werte.length<8)
+    return '<div class="mk-hinweis">Zu wenige Spieler dieser Position in der '
+      +'Liga für eine Verteilung.</div>';
+  const min=werte[0],max=werte[werte.length-1],spanne=(max-min)||1;
+  const B=880,H=82,rand=16,R=3.4;
+  const x=v=>rand+(B-2*rand)*(v-min)/spanne;
+  const mitte=H/2-6;
+
+  /* Stapeln: gleiche Werte wuerden uebereinanderliegen. Punkte in
+     derselben Spalte wandern abwechselnd nach oben und unten. */
+  const eimer={};
+  let g='';
+  werte.forEach(function(v){
+    const spalte=Math.round(x(v)/(2*R+0.8));
+    const i=(eimer[spalte]=(eimer[spalte]===undefined?0:eimer[spalte]+1));
+    const cy=mitte+((i%2===0)?-1:1)*(Math.floor(i/2)+0.5)*(2*R+0.6);
+    g+='<circle cx="'+x(v).toFixed(1)+'" cy="'+cy.toFixed(1)+'" r="'+R
+      +'" fill="var(--line-bright)"/>';
+  });
+
+  /* Median als Bezug - dieselbe Linie, die auch der Direktvergleich zeigt. */
+  const med=metrikMedian(k,ligaId,gruppe);
+  if(med!==null)
+    g+='<line x1="'+x(med).toFixed(1)+'" y1="4" x2="'+x(med).toFixed(1)+'" y2="'+(H-18)
+      +'" stroke="var(--ink-3)" stroke-width="1" stroke-dasharray="3 3"/>'
+      +'<text x="'+x(med).toFixed(1)+'" y="'+(H-8)+'" fill="var(--ink-3)" font-size="8" '
+      +'font-family="JetBrains Mono, monospace" text-anchor="middle">Ø '
+      +metrikWertText(f,med).replace('&nbsp;',' ')+'</text>';
+
+  const marke=(v,farbe,beschriftung,oben)=>
+    '<line x1="'+x(v).toFixed(1)+'" y1="4" x2="'+x(v).toFixed(1)+'" y2="'+(H-18)
+    +'" stroke="'+farbe+'" stroke-width="1.4"/>'
+    +'<circle cx="'+x(v).toFixed(1)+'" cy="'+mitte+'" r="5" fill="'+farbe
+    +'" stroke="var(--pitch-2)" stroke-width="1.5"/>'
+    +(beschriftung?'<text x="'+x(v).toFixed(1)+'" y="'+(oben?10:(H-8))+'" fill="'+farbe
+      +'" font-size="8" font-family="JetBrains Mono, monospace" text-anchor="middle">'
+      +beschriftung+'</text>':'');
+
+  if(vglWert!==undefined&&vglWert!==null)
+    g+=marke(vglWert,'var(--blue)',vglName||'Vergleich',true);
+  g+=marke(wert,'var(--lime)','',false);
+
+  /* Achsenenden - ohne sie haette der Schwarm keinen Massstab. */
+  g+='<text x="'+rand+'" y="'+(H-8)+'" fill="var(--ink-3)" font-size="8" '
+    +'font-family="JetBrains Mono, monospace" text-anchor="start">'
+    +metrikWertText(f,min).replace('&nbsp;',' ')+'</text>'
+    +'<text x="'+(B-rand)+'" y="'+(H-8)+'" fill="var(--ink-3)" font-size="8" '
+    +'font-family="JetBrains Mono, monospace" text-anchor="end">'
+    +metrikWertText(f,max).replace('&nbsp;',' ')+'</text>';
+  return '<svg viewBox="0 0 '+B+' '+H+'" class="mk-svg" role="img" aria-label="Verteilung '
+    +f.n+'">'+g+'</svg>'
+    +'<div class="mk-hinweis">'+werte.length+' '+gruppe+' der Liga, je ein Punkt. '
+    +'Grün: dieser Spieler'+(vglWert!==undefined&&vglWert!==null?', blau: der Vergleich':'')
+    +'. Gestrichelt: der Median.</div>';
+}
+
+/* Klick auf eine Kennzahlzeile zeigt ihre Verteilung - in EINEM Feld
+   unter den Bloecken, nicht in der Zeile selbst. In der schmalen Spalte
+   waeren achtzig Punkte nebeneinander nicht zu unterscheiden; ueber die
+   ganze Breite schon. */
+function schwarmAuf(el,k){
+  const box=document.getElementById('mk-schwarm');
+  if(!box||!activePlayer||!METRIK)return;
+  document.querySelectorAll('#metrik-block .mk-row.mk-offen')
+    .forEach(x=>x.classList.remove('mk-offen'));
+  if(box.dataset.k===k){box.innerHTML='';box.dataset.k='';return;}
+  box.dataset.k=k;
+  const p=activePlayer;
+  const gruppe=(window.POSGRUPPE||{})[p.pos]||'ZM';
+  const ligaId=p.note_liga_id||p.liga_id;
+  const w=(METRIK.werte||{})[p.id]||{};
+  const b=vergleichId?PLAYERS.find(x=>x.id===vergleichId):null;
+  /* Der Vergleichsspieler wird nur eingezeichnet, wenn er in DERSELBEN
+     Verteilung steht - sonst saesse ein Wert aus einer anderen Liga in
+     einem Schwarm, in den er nicht gehoert. */
+  const passt=b&&(b.note_liga_id||b.liga_id)===ligaId
+             &&((window.POSGRUPPE||{})[b.pos]||'ZM')===gruppe;
+  const wb=passt?((METRIK.werte||{})[b.id]||{})[k]:null;
+  const felder={}; (METRIK.felder||[]).forEach(f=>{felder[f.k]=f});
+  box.innerHTML='<div class="mk-schwarm-t">'+((felder[k]||{}).n||k)+'</div>'
+    +schwarmSVG(k,ligaId,gruppe,w[k],wb,passt?b.name.split(' ').pop():null);
+  el.classList.add('mk-offen');
+  box.scrollIntoView({block:'nearest'});
 }
 
 /* ---------- Rollenprofile ------------------------------------------------

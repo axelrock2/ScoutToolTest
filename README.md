@@ -359,6 +359,54 @@ Zahl nur einmal in der Datei statt zweimal.
 ausdrücklicher Freigabe, siehe *Erweiterter Notensatz*. Welche Zeile
 zählt, steht an der Zeile selbst.
 
+### Rollenprofile, Direktvergleich und Verteilung
+
+Drei Ansichten, die aus denselben Kennzahlen entstehen und dieselbe
+Vergleichsgruppe benutzen wie die Note (Liga der Note, Positionsgruppe,
+ab 450 Minuten).
+
+**Rollenprofil.** Die Note sagt, *wie gut* jemand ist — nicht, *was für
+einer*. Ein Innenverteidiger, der aufbaut, ist etwas anderes als einer,
+der Kopfbälle gewinnt, auch wenn beide 70 haben. Drei bis vier Rollen je
+Positionsgruppe, jede eine gewichtete Auswahl aus den vorhandenen
+Kennzahlen; die Übereinstimmung ist der gewichtete Mittelwert der
+Percentile darin — dieselbe Rechnung wie bei der Note, nur mit anderer
+Auswahl.
+
+| Spieler | Rollenprofil |
+|---|---|
+| Jonathan Tah | Aufbauverteidiger **88 %**, Luftherrscher 68 %, Zweikampfverteidiger **28 %** |
+| Joshua Kimmich | Kreativspieler **98 %**, Aufbau-Sechser 94 %, Balleroberer **42 %** |
+| Manuel Neuer | Mitspielender Torwart **59 %**, Strafraum-Torhüter **35 %** |
+| Harry Kane | Strafraumstürmer **97 %**, Mitspielender Stürmer 89 % |
+
+**Was das nicht ist:** eine Aussage darüber, wie ein Spieler *eingesetzt*
+wird. Dafür bräuchte es Positions- und Laufdaten, die kein freier
+Anbieter herausgibt. 88 % bei „Aufbauverteidiger" heißt: seine Zahlen
+sehen aus wie die eines Aufbauverteidigers. Ob sein Trainer ihn so
+spielen lässt, steht hier nicht.
+
+**Direktvergleich.** Zwei Spieler Zeile für Zeile, die Balken
+gegeneinander laufend, Rohwert und Percentil an beiden Enden. Der
+senkrechte Strich in den Balken ist der **Median der Vergleichsgruppe** —
+ohne ihn sagt ein längerer Balken nur „mehr als der andere", nicht „viel
+für diese Position". Verschiedene Ligen oder Positionsgruppen werden
+benannt statt verschwiegen: die Rohwerte sind unmittelbar vergleichbar,
+die Percentile nicht.
+
+**Verteilung (Beeswarm).** Ein Klick auf eine Kennzahlzeile zeigt die
+ganze Liga als Punktwolke, ein Punkt je Spieler, mit dem Betrachteten in
+Grün und dem Vergleichsspieler in Blau. Ein Percentil sagt, *wie viele*
+schlechter sind — nicht *wie viel* besser. Percentil 80 kann ein
+deutlicher Vorsprung sein oder ein Wimpernschlag, je nachdem wie eng das
+Feld liegt. Beispiel: Tahs 5,51 Klärungen je 90 ergeben Percentil 40, der
+Median liegt bei 5,47 und das Feld reicht von 2,59 bis 10,56 — der
+Percentilwert verbirgt, wie dicht es dort zugeht.
+
+**Radar.** Der Ring bei 50 ist als Ligaschnitt gekennzeichnet (bei
+Percentilen ist 50 per Definition der Schnitt) und trägt bei einem
+Direktvergleich die zweite Kurve.
+
 ### Gegenprobe gegen FotMob (Opta)
 
 Sofascore ist als Quelle umstritten. Der Vorwurf trifft zwei verschiedene
