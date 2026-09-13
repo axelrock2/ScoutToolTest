@@ -386,6 +386,43 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 .mk-fuell{display:block;height:100%;border-radius:4px;position:relative;z-index:1}
 .mk-pct{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3);width:24px;text-align:right;flex-shrink:0}
 .mk-pct b{color:var(--ink);font-weight:700}
+/* Direktvergleich. Zwei Balken je Zeile, gemeinsamer Massstab, dazu der
+   Median der Vergleichsgruppe als senkrechter Strich - ohne ihn sagt ein
+   laengerer Balken nur "mehr als der andere". */
+/* Rollenprofil */
+.rl-row{display:flex;align-items:center;gap:12px;margin-bottom:11px}
+.rl-name{font-size:13px;color:var(--ink-2);flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.rl-name i{font-style:normal;font-size:11px;color:var(--ink-3)}
+.rl-top .rl-name{color:var(--ink);font-weight:600}
+.rl-wert{font-family:'JetBrains Mono',monospace;font-size:13px;width:52px;text-align:right;flex-shrink:0;font-weight:700}
+.rl-luecke{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--amber);border:1px solid rgba(245,166,35,0.35);border-radius:3px;padding:0 3px;margin-left:6px}
+.vgl-kopf{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+.vgl-kopf-sp{display:flex;align-items:center;gap:12px;flex:1;min-width:230px}
+.vgl-kopf-sp .ph-av{width:52px;height:52px;font-size:16px;flex-shrink:0}
+.vgl-kopf-tx{display:flex;flex-direction:column;gap:2px;min-width:0}
+.vgl-kopf-tx strong{font-size:15px;line-height:1.25}
+.vgl-kopf-tx span{font-size:11.5px;color:var(--ink-3)}
+.vgl-kopf-tx b{color:var(--ink)}
+.vgl-ein{color:var(--amber)!important}
+.vgl-gegen{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink-3);text-transform:uppercase;letter-spacing:1.6px;flex-shrink:0}
+.vgl-blk{background:var(--pitch-2);border:1px solid var(--line);border-radius:12px;padding:15px 17px;margin-bottom:12px}
+.vgl-row{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+.vgl-name{font-size:12px;color:var(--ink-2);flex:1;min-width:110px}
+.vgl-wert{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--ink);width:92px;flex-shrink:0;text-align:right}
+.vgl-row .vgl-wert:last-child{text-align:left}
+.vgl-wert i{color:var(--ink-3);font-style:normal;font-size:10px;margin-left:5px}
+.vgl-bahn{display:block;position:relative;width:74px;height:8px;background:var(--pitch);border:1px solid var(--line);border-radius:4px;overflow:hidden;flex-shrink:0}
+.vgl-row .vgl-bahn:first-of-type{transform:scaleX(-1)}
+.vgl-fuell{display:block;height:100%;border-radius:4px}
+.vgl-ref{position:absolute;top:-1px;bottom:-1px;width:1.5px;background:var(--ink);opacity:0.75;z-index:2}
+.vgl-feld{background:var(--input);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit;font-size:12.5px;color:var(--ink);min-width:220px}
+.vgl-feld:focus{outline:none;border-color:var(--lime)}
+.vgl-liste{flex-basis:100%;display:flex;flex-direction:column;gap:4px}
+.vgl-tr{display:flex;flex-direction:column;gap:1px;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 11px;color:var(--ink);font:inherit;font-size:12.5px;cursor:pointer}
+.vgl-tr:hover{border-color:var(--lime)}
+.vgl-tr span{font-size:11px;color:var(--ink-3)}
+.vgl-leer{font-size:12px;color:var(--ink-3);padding:6px 2px}
+@media(max-width:760px){.vgl-name{min-width:0}.vgl-bahn{width:40px}.vgl-wert{width:74px}}
 .mk-note{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--lime);border:1px solid rgba(199,249,75,0.35);border-radius:3px;padding:1px 3px;letter-spacing:0.5px;vertical-align:1px;white-space:nowrap}
 @media(max-width:900px){.mk-grid{grid-template-columns:1fr}}
 .bar.mid{background:var(--blue)}
@@ -1143,17 +1180,46 @@ function ringCard(code,name,val,sub,color){
   const c=213.6,off=(c*(1-Math.max(0,Math.min(100,val))/100)).toFixed(1);
   return '<div class="nc"><div class="nc-lbl">'+name+' <span>'+code+'</span></div><div class="ring-wrap"><svg width="84" height="84" viewBox="0 0 84 84"><circle class="ring-bg" cx="42" cy="42" r="34"></circle><circle class="ring-fg" cx="42" cy="42" r="34" style="stroke:'+color+';stroke-dasharray:213.6;stroke-dashoffset:'+off+'"></circle></svg><div class="ring-num" style="color:'+color+'">'+val+'</div></div><div class="nc-sub">'+sub+'</div></div>';
 }
-function radarSVG(params){
+/* Radar der Notenparameter.
+
+   Zwei Zutaten, die frueher fehlten:
+
+     * Der Ring bei 50 ist jetzt als LIGASCHNITT gekennzeichnet. Vorher
+       sahen alle vier Ringe gleich aus - die Kurve schwebte in einem
+       Gitter, ohne dass erkennbar war, wo das Mittelmass liegt. Bei
+       Percentilen ist 50 per Definition der Schnitt, das muss man nur
+       zeigen.
+     * Eine zweite Kurve fuer den Direktvergleich (vgl).
+
+   vgl erwartet dieselben Anzeigenamen; Kennzahlen, die nur einer von
+   beiden hat, bleiben bei ihm leer statt auf 0 zu fallen - eine 0 haette
+   ausgesehen wie ein miserabler Wert statt wie eine Luecke. */
+function radarSVG(params,vgl){
   const ps=params.slice(0,8);const n=ps.length;if(n<3)return '';
   const cx=130,cy=122,R=86;
   const pt=(i,v)=>{const a=-Math.PI/2+i*2*Math.PI/n;return [(cx+Math.cos(a)*R*v/100).toFixed(1),(cy+Math.sin(a)*R*v/100).toFixed(1)];};
   let g='';
-  [25,50,75,100].forEach(l=>{g+='<polygon points="'+ps.map((_,i)=>pt(i,l).join(',')).join(' ')+'" fill="none" stroke="var(--line)" stroke-width="1"/>';});
+  [25,75,100].forEach(l=>{g+='<polygon points="'+ps.map((_,i)=>pt(i,l).join(',')).join(' ')+'" fill="none" stroke="var(--line)" stroke-width="1"/>';});
+  g+='<polygon points="'+ps.map((_,i)=>pt(i,50).join(',')).join(' ')
+    +'" fill="none" stroke="var(--ink-3)" stroke-width="1.2" stroke-dasharray="3 3"/>';
   ps.forEach((_,i)=>{const q=pt(i,100);g+='<line x1="'+cx+'" y1="'+cy+'" x2="'+q[0]+'" y2="'+q[1]+'" stroke="var(--line)" stroke-width="1"/>';});
+  if(vgl&&vgl.length){
+    const nach={};vgl.forEach(x=>{nach[x.n]=x.p});
+    const punkte=ps.map((pm,i)=>nach[pm.n]===undefined?null:pt(i,nach[pm.n]));
+    if(punkte.every(Boolean)){
+      g+='<polygon points="'+punkte.map(q=>q.join(',')).join(' ')
+        +'" fill="rgba(77,166,255,0.12)" stroke="var(--blue)" stroke-width="2"/>';
+      punkte.forEach(q=>{g+='<circle cx="'+q[0]+'" cy="'+q[1]+'" r="2.6" fill="var(--blue)"/>';});
+    }
+  }
   g+='<polygon points="'+ps.map((pm,i)=>pt(i,pm.p).join(',')).join(' ')+'" fill="rgba(199,249,75,0.14)" stroke="var(--lime)" stroke-width="2"/>';
   ps.forEach((pm,i)=>{const q=pt(i,pm.p);g+='<circle cx="'+q[0]+'" cy="'+q[1]+'" r="3" fill="var(--lime)"/>';});
   ps.forEach((pm,i)=>{const q=pt(i,120);const short=pm.n.length>15?pm.n.slice(0,14)+'…':pm.n;
     g+='<text x="'+q[0]+'" y="'+q[1]+'" fill="var(--ink-3)" font-size="8.5" font-family="JetBrains Mono, monospace" text-anchor="middle">'+short+'</text>';});
+  /* Beschriftung des Schnitt-Rings: auf der Achse nach oben, leicht
+     versetzt, damit sie nicht auf der Kurve sitzt. */
+  g+='<text x="'+(cx+4)+'" y="'+(cy-R*0.5+10)+'" fill="var(--ink-3)" font-size="7.5" '
+    +'font-family="JetBrains Mono, monospace">Ø Liga</text>';
   return '<svg viewBox="0 0 260 250" role="img" aria-label="Parameter-Radar">'+g+'</svg>';
 }
 const DIM_NAME={pressing:'Pressing',ballbesitz:'Ballbesitz',konter:'Konter',aufbau:'Aufbau von hinten',standards:'Standardsituationen'};
@@ -3059,6 +3125,314 @@ function metrikAbschnitt(p){
     +'<div class="mk-grid">'+bloecke+'</div></div>';
 }
 
+/* ---------- Rollenprofile ------------------------------------------------
+   Die Note sagt, WIE GUT ein Spieler ist. Sie sagt nicht, WAS FUER EINER
+   er ist - und danach sucht ein Scout zuerst: ein Innenverteidiger, der
+   aufbaut, ist etwas anderes als einer, der Kopfbaelle gewinnt, auch wenn
+   beide 70 haben.
+
+   Eine Rolle ist eine gewichtete Auswahl aus den Kennzahlen, die es
+   ohnehin gibt. Die Uebereinstimmung ist der gewichtete Mittelwert der
+   Percentile in genau diesen Kennzahlen - also dieselbe Rechnung wie bei
+   der Note, nur mit anderer Auswahl.
+
+   WAS DAS NICHT IST: eine Aussage darueber, wie der Spieler eingesetzt
+   wird. Dafuer braeuchte es Positions- und Laufdaten, die kein freier
+   Anbieter herausgibt. 80 % bei "Aufbauverteidiger" heisst: seine Zahlen
+   sehen aus wie die eines Aufbauverteidigers. Ob sein Trainer ihn so
+   spielen laesst, steht hier nicht.
+
+   Verwendet werden nur Kennzahlen, die es in den Bloecken DIESER
+   Positionsgruppe gibt - sonst stuende eine Rolle auf einer Kennzahl, die
+   fuer die Gruppe gar nicht erhoben wird. Fehlt eine (etwa xG in der
+   3. Liga), wird sie uebersprungen und das Gewicht neu verteilt; die
+   Anzeige sagt, auf wie vielen Kennzahlen die Zahl beruht. */
+const ROLLEN={
+  TW:[
+    {n:'Strafraum-Torhüter', b:'hält, was auf sein Tor kommt',
+     k:[['vth90',3],['par90',1],['phalt',1]]},
+    {n:'Mitspielender Torwart', b:'eröffnet das Spiel, statt nur zu klären',
+     k:[['pq',3],['pd90',2],['la90',1]]},
+    {n:'Strafraumbeherrscher', b:'nimmt Flanken herunter, läuft heraus',
+     k:[['hoch90',2],['rausq',2],['lq',1]]},
+  ],
+  IV:[
+    {n:'Aufbauverteidiger', b:'eröffnet und behält den Ball',
+     k:[['pq',3],['pd90',2],['bv100',2],['la90',1]]},
+    {n:'Zweikampfverteidiger', b:'sucht den direkten Zweikampf',
+     k:[['zq',3],['bq',2],['tkl90',2]]},
+    {n:'Luftherrscher', b:'gewinnt Kopfbälle in beiden Strafräumen',
+     k:[['kq',3],['kg90',2],['klr90',1],['tore90',1]]},
+    {n:'Absichernder Verteidiger', b:'antizipiert, statt zu attackieren',
+     k:[['int90',2],['blk90',2],['ausg90',2],['ftor',1]]},
+  ],
+  AV:[
+    {n:'Offensiver Außenverteidiger', b:'schiebt auf, flankt, dribbelt',
+     k:[['fa90',2],['fq',1],['skp90',2],['dr90',2],['pd90',1]]},
+    {n:'Defensiver Außenverteidiger', b:'verteidigt die Seite zu',
+     k:[['zq',2],['tkl90',2],['int90',2],['ausg90',2]]},
+    {n:'Aufbau-Außenverteidiger', b:'rückt ein und spielt',
+     k:[['pq',3],['pd90',2],['bv100',1]]},
+  ],
+  ZM:[
+    {n:'Aufbau-Sechser', b:'verteilt von hinten, verliert selten',
+     k:[['pq',3],['pd90',2],['bv100',2],['la90',1]]},
+    {n:'Balleroberer', b:'gewinnt Bälle zurück',
+     k:[['tkl90',2],['int90',2],['zq',2],['bg390',1]]},
+    {n:'Box-to-Box', b:'überall am Ball, in beide Richtungen',
+     k:[['zg90',2],['dr90',2],['kon90',1],['tore90',1],['tkl90',1]]},
+    {n:'Kreativspieler', b:'öffnet Räume mit dem letzten Pass',
+     k:[['skp90',3],['gck90',2],['xa90',2]]},
+  ],
+  OFF:[
+    {n:'Dribbler', b:'geht ins Eins-gegen-eins',
+     k:[['dr90',3],['drq',2],['gef90',1]]},
+    {n:'Flankengeber', b:'bringt den Ball von außen herein',
+     k:[['fa90',3],['fq',2],['skp90',1]]},
+    {n:'Torgefährlicher Flügel', b:'zieht nach innen und schließt ab',
+     k:[['xg90',3],['tore90',2],['sch90',1],['schq',1]]},
+    {n:'Vorbereiter', b:'legt auf, statt selbst zu schießen',
+     k:[['xa90',3],['skp90',2],['gck90',2]]},
+  ],
+  ST:[
+    {n:'Strafraumstürmer', b:'macht aus wenigen Chancen Tore',
+     k:[['schq',3],['xg90',2],['schtq',2],['tore90',1]]},
+    {n:'Wandspieler', b:'hält den Ball, gewinnt die Kopfbälle',
+     k:[['kq',3],['kg90',2],['gef90',1]]},
+    {n:'Pressingstürmer', b:'stört die gegnerische Eröffnung',
+     k:[['bg390',3],['tkl90',2],['zg90',1]]},
+    {n:'Mitspielender Stürmer', b:'kommt entgegen und kombiniert',
+     k:[['skp90',2],['pq',2],['xa90',2],['kon90',1]]},
+  ],
+};
+
+function rollenFuer(p){
+  if(!METRIK||!METRIK.werte)return [];
+  const w=METRIK.werte[p.id];
+  if(!w)return [];
+  const gruppe=(window.POSGRUPPE||{})[p.pos]||'ZM';
+  const liste=ROLLEN[gruppe]||[];
+  const ligaId=p.note_liga_id||p.liga_id;
+  const vert=metrikVerteilung(ligaId,gruppe);
+  const felder={}; (METRIK.felder||[]).forEach(f=>{felder[f.k]=f});
+  return liste.map(function(r){
+    let summe=0,gew=0,dabei=0;
+    const traeger=[];
+    r.k.forEach(function(paar){
+      const k=paar[0],g=paar[1],f=felder[k];
+      if(!f||w[k]===undefined)return;
+      const pct=metrikPercentil(w[k],vert[k],!!f.hoch);
+      if(pct===null)return;
+      summe+=pct*g; gew+=g; dabei++;
+      traeger.push({n:f.n,p:pct});
+    });
+    if(!gew)return null;
+    traeger.sort((a,b)=>b.p-a.p);
+    return {name:r.n,beschreibung:r.b,wert:Math.round(summe/gew),
+            dabei:dabei,gesamt:r.k.length,traeger:traeger};
+  }).filter(Boolean).sort((a,b)=>b.wert-a.wert);
+}
+
+function rollenAbschnitt(p){
+  const r=rollenFuer(p);
+  if(!r.length)return '';
+  const gruppe=(window.POSGRUPPE||{})[p.pos]||'ZM';
+  const liga=p.note_liga||p.liga;
+  const zeilen=r.map(function(x,i){
+    const farbe=x.wert>=70?'var(--lime)':x.wert<40?'var(--amber)':'var(--blue)';
+    const luecke=x.dabei<x.gesamt
+      ? ' <span class="rl-luecke" title="Für die übrigen liegen keine Werte vor">'
+        +x.dabei+'/'+x.gesamt+'</span>' : '';
+    return '<div class="rl-row'+(i===0?' rl-top':'')+'">'+
+      '<span class="rl-name">'+x.name+luecke+'<i>'+x.beschreibung+'</i></span>'+
+      '<span class="mk-bahn" style="width:110px"><span class="mk-fuell" style="width:'
+      +x.wert+'%;background:'+farbe+'"></span></span>'+
+      '<span class="rl-wert" style="color:'+farbe+'">'+x.wert+'&nbsp;%</span></div>';
+  }).join('');
+  const beste=r[0];
+  const traeger=beste.traeger.slice(0,3)
+    .map(t=>t.n+' ('+t.p+'.)').join(', ');
+  return '<div class="sec"><div class="sec-title">Rollenprofil</div>'+
+    '<div class="param-erklaerung">Die Note sagt, <strong>wie gut</strong> ein '+
+    'Spieler ist — nicht, <strong>was für einer</strong>. Jede Rolle ist eine '+
+    'gewichtete Auswahl aus den Kennzahlen oben; die Zahl ist der gewichtete '+
+    'Mittelwert seiner Percentile darin, verglichen mit den '+gruppe+' der '+liga+'. '+
+    '<strong>Das beschreibt sein Zahlenbild, nicht seinen Einsatz</strong> — wie '+
+    'ein Trainer ihn aufstellt, verraten frei verfügbare Daten nicht.</div>'+
+    zeilen+
+    '<div class="flag" style="margin-top:14px"><div class="fdot '
+    +(beste.wert>=70?'pos':beste.wert<40?'neg':'neu')+'"></div><span>Am ehesten '
+    +'<strong>'+beste.name+'</strong> ('+beste.wert+' %), getragen von '+traeger+'.'
+    +(r[r.length-1].wert<=35
+      ? ' Am wenigsten <strong>'+r[r.length-1].name+'</strong> ('
+        +r[r.length-1].wert+' %).' : '')
+    +'</span></div></div>';
+}
+
+/* ---------- Direktvergleich zweier Spieler -------------------------------
+   Eine Note nebeneinander zu stellen sagt wenig - zwei 66er koennen auf
+   voellig verschiedenen Staerken beruhen. Verglichen wird deshalb Zeile
+   fuer Zeile, mit Rohwert, Percentil und einer REFERENZLINIE: dem Median
+   der Vergleichsgruppe des erstgenannten Spielers. Ohne sie sagt ein
+   laengerer Balken nur "mehr als der andere", nicht "viel fuer diese
+   Position".
+
+   Ligengrenze: Percentile gelten je Liga. Ein Percentil 80 der
+   Bundesliga und eines der Regionalliga bedeuten nicht dasselbe, und das
+   steht auch so da. Die ROHWERTE sind dagegen unmittelbar vergleichbar -
+   deshalb stehen sie zuerst. */
+let vergleichId=null;
+
+function vglEsc(s){
+  return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+}
+
+function vergleichVorschlag(q){
+  const box=document.getElementById('vgl-vorschlag');
+  if(!box)return;
+  const s=(q||'').trim().toLowerCase();
+  if(s.length<2){box.innerHTML='';return;}
+  const eigen=(activePlayer||{}).id;
+  const treffer=PLAYERS.filter(x=>x.id!==eigen&&x.name.toLowerCase().indexOf(s)>=0)
+    /* Namensanfang zuerst, dann die staerkere Note - wer "mueller" tippt,
+       sucht selten den Viertligisten. */
+    .sort((a,b)=>{
+      const aa=a.name.toLowerCase().indexOf(s)===0?0:1, bb=b.name.toLowerCase().indexOf(s)===0?0:1;
+      return aa-bb || b.ln-a.ln;
+    }).slice(0,8);
+  box.innerHTML=treffer.length
+    ? treffer.map(x=>'<button type="button" class="vgl-tr" onclick="vergleichSetzen('+x.id+')">'
+        +'<strong>'+vglEsc(x.name)+'</strong><span>'+vglEsc(x.pos)+' · '+vglEsc(x.club)
+        +' · '+vglEsc(x.liga)+' · LN '+x.ln+'</span></button>').join('')
+    : '<div class="vgl-leer">Kein Spieler dieses Namens im Bestand.</div>';
+}
+
+function vergleichSetzen(id){
+  vergleichId=id;
+  if(activePlayer)showProfile(activePlayer.id);
+}
+function vergleichWeg(){
+  vergleichId=null;
+  if(activePlayer)showProfile(activePlayer.id);
+}
+
+/* Median der Vergleichsgruppe - die Referenzlinie. Kommt aus derselben
+   Verteilung, aus der auch die Percentile stammen, damit beide dasselbe
+   meinen. */
+function metrikMedian(schluessel,ligaId,gruppe){
+  const v=metrikVerteilung(ligaId,gruppe)[schluessel];
+  if(!v||v.length<5)return null;
+  const m=Math.floor(v.length/2);
+  return v.length%2?v[m]:(v[m-1]+v[m])/2;
+}
+
+function vergleichAbschnitt(p){
+  const b=vergleichId?PLAYERS.find(x=>x.id===vergleichId):null;
+  const suche='<div class="pf-passung" style="margin-top:0">'+
+    '<span class="pfl">Zweiter Spieler</span>'+
+    '<input type="text" class="vgl-feld" placeholder="Spieler suchen …" '
+      +'oninput="vergleichVorschlag(this.value)" autocomplete="off">'+
+    (b?'<button type="button" class="pf-weg" onclick="vergleichWeg()">Aufheben</button>':'')+
+    '<div id="vgl-vorschlag" class="vgl-liste"></div></div>';
+
+  if(!b)
+    return '<div class="sec"><div class="sec-title">Direktvergleich</div>'+
+      '<div class="param-erklaerung">Zwei Spieler Zeile für Zeile nebeneinander — '+
+      'Rohwert, Percentil und der Median der Vergleichsgruppe als Referenz.</div>'+
+      suche+'</div>';
+
+  const gA=(window.POSGRUPPE||{})[p.pos]||'ZM', gB=(window.POSGRUPPE||{})[b.pos]||'ZM';
+  const lA=p.note_liga_id||p.liga_id, lB=b.note_liga_id||b.liga_id;
+  const nameA=p.note_liga||p.liga, nameB=b.note_liga||b.liga;
+  const zahl=(v,n)=>Number(v).toLocaleString('de-DE',{minimumFractionDigits:n,maximumFractionDigits:n});
+
+  /* ---- Kopf: die beiden Spieler und ihre Noten */
+  const kopf=[p,b].map((x,i)=>{
+    const ein=(i===1&&lA!==lB)?eingeordneteNote(x,niveauVonLiga(lA)):null;
+    return '<div class="vgl-kopf-sp">'+phAvatar(x)+
+      '<div class="vgl-kopf-tx"><strong style="color:'+(i?'var(--blue)':'var(--lime)')+'">'
+      +vglEsc(x.name)+'</strong>'+
+      '<span>'+vglEsc(x.pos)+' · '+x.age+' J. · '+vglEsc(x.club)+'</span>'+
+      '<span>'+vglEsc(x.note_liga||x.liga)+' · LN <b>'+x.ln+'</b> · PN <b>'+x.pn+'</b></span>'+
+      (ein?'<span class="vgl-ein">≈ '+ein.wert+' auf dem Niveau der '+vglEsc(nameA)+'</span>':'')+
+      '</div></div>';
+  }).join('<div class="vgl-gegen">gegen</div>');
+
+  /* ---- Hinweise, bevor Zahlen verglichen werden */
+  const hinweise=[];
+  if(gA!==gB)
+    hinweise.push({c:'neg',t:'Verschiedene Positionsgruppen ('+gA+' und '+gB+'). '
+      +'Verglichen werden nur die Kennzahlen, die für beide erhoben sind — und '
+      +'auch die messen unterschiedliche Aufgaben. Ein Vergleich über '
+      +'Positionsgrenzen hinweg sagt wenig über Eignung.'});
+  if(lA!==lB)
+    hinweise.push({c:'neu',t:'Verschiedene Ligen. Die Rohwerte sind direkt '
+      +'vergleichbar, die Percentile nicht: sie gelten je Liga. '
+      +vglEsc(nameA)+' hat Niveau '+niveauVonLiga(lA)+', '+vglEsc(nameB)+' Niveau '
+      +niveauVonLiga(lB)+'.'});
+  if(p.belastbar===false||b.belastbar===false)
+    hinweise.push({c:'neg',t:'Mindestens einer der beiden hat unter '
+      +(window.MIN_MINUTEN||450)+' Ligaminuten — die Werte sind ein Hinweis, '
+      +'keine belastbare Bewertung.'});
+
+  /* ---- Kennzahlen Zeile fuer Zeile */
+  let tabelle='';
+  const wA=((METRIK||{}).werte||{})[p.id], wB=((METRIK||{}).werte||{})[b.id];
+  if(!METRIK){
+    tabelle='<div class="flag"><div class="fdot neu"></div><span>Kennzahlen werden geladen …</span></div>';
+  }else if(!wA||!wB){
+    const fehlt=!wA?p.name:b.name;
+    tabelle='<div class="flag"><div class="fdot neu"></div><span>Für <strong>'
+      +vglEsc(fehlt)+'</strong> liegen keine Einzelkennzahlen vor — Sofascore führt '
+      +'Spielerstatistik nur bis zur 3. Liga. Verglichen werden können nur die Noten.'
+      +'</span></div>';
+  }else{
+    const jeBereich={}; METRIK.felder.forEach(f=>{(jeBereich[f.b]||(jeBereich[f.b]=[])).push(f)});
+    const bnamen={}; (METRIK.bereiche||[]).forEach(x=>{bnamen[x.id]=x.name});
+    const folge=(METRIK.bloecke||{})[gA]||[];
+    const bloecke=folge.map(function(bid){
+      const felder=(jeBereich[bid]||[]).filter(f=>wA[f.k]!==undefined&&wB[f.k]!==undefined);
+      if(!felder.length)return '';
+      const zeilen=felder.map(function(f){
+        const va=wA[f.k], vb=wB[f.k];
+        const ref=metrikMedian(f.k,lA,gA);
+        const pa=metrikPercentil(va,metrikVerteilung(lA,gA)[f.k],!!f.hoch);
+        const pb=metrikPercentil(vb,metrikVerteilung(lB,gB)[f.k],!!f.hoch);
+        /* Gemeinsamer Massstab fuer beide Balken, damit ihre Laenge
+           vergleichbar ist. Die Referenzlinie muss hineinpassen, sonst
+           stuende sie am Rand. */
+        const max=Math.max(Math.abs(va),Math.abs(vb),ref===null?0:Math.abs(ref))*1.12||1;
+        const breite=v=>Math.max(1,Math.min(100,100*Math.abs(v)/max));
+        const refPos=ref===null?null:Math.min(100,100*Math.abs(ref)/max);
+        const besser=f.neutral?null:(f.hoch?(va>vb?0:(vb>va?1:null)):(va<vb?0:(vb<va?1:null)));
+        const bahn=(v,i)=>'<span class="vgl-bahn">'
+          +(refPos===null?'':'<span class="vgl-ref" style="left:'+refPos.toFixed(1)+'%"></span>')
+          +'<span class="vgl-fuell" style="width:'+breite(v).toFixed(1)+'%;background:'
+          +(besser===i?(i?'var(--blue)':'var(--lime)'):'var(--ink-3)')+'"></span></span>';
+        const wert=(v,pct)=>'<span class="vgl-wert">'+metrikWertText(f,v)
+          +'<i>'+(pct===null?'–':'P'+pct)+'</i></span>';
+        return '<div class="vgl-row"><span class="vgl-name">'+f.n+'</span>'
+          +wert(va,pa)+bahn(va,0)+bahn(vb,1)+wert(vb,pb)+'</div>';
+      }).join('');
+      return '<div class="vgl-blk"><div class="mk-blk-t">'+(bnamen[bid]||bid)+'</div>'+zeilen+'</div>';
+    }).filter(Boolean).join('');
+    tabelle=bloecke||'<div class="flag"><div class="fdot neu"></div><span>Keine '
+      +'Kennzahl liegt für beide vor.</span></div>';
+  }
+
+  return '<div class="sec"><div class="sec-title">Direktvergleich</div>'+
+    '<div class="vgl-kopf">'+kopf+'</div>'+
+    hinweise.map(h=>'<div class="flag"><div class="fdot '+h.c+'"></div><span>'+h.t+'</span></div>').join('')+
+    '<div class="param-erklaerung" style="margin:16px 0 4px">Links der Wert von '
+    +'<strong style="color:var(--lime)">'+vglEsc(p.name)+'</strong>, rechts der von '
+    +'<strong style="color:var(--blue)">'+vglEsc(b.name)+'</strong>; die farbige '
+    +'Seite ist die bessere. Der senkrechte Strich in den Balken ist der '
+    +'<strong>Median der '+vglEsc(gA)+' in der '+vglEsc(nameA)+'</strong> — daran '
+    +'lässt sich ablesen, ob ein Vorsprung viel bedeutet oder beide über dem '
+    +'Schnitt liegen. <i>P</i> ist das Percentil in der jeweils eigenen Liga.</div>'+
+    tabelle+suche+'</div>';
+}
+
 /* ---------- Kaderansicht --------------------------------------------------
    Aufgebaut wie der Kader auf Transfermarkt: Positionsgruppen Torwart,
    Abwehr, Mittelfeld, Sturm, darin die dort uebliche Reihenfolge der
@@ -3646,6 +4020,8 @@ function renderProfile(p,hasV,vN){
   /* Wird nachgereicht, sobald data/metriken.json geladen ist - siehe
      metrikenLaden() am Ende von renderProfile(). */
   '<div id="metrik-block"></div>'+
+  '<div id="rollen-block"></div>'+
+  '<div id="vergleich-block">'+vergleichAbschnitt(p)+'</div>'+
   (function(){
     /* Was bedeutet dieser Spieler fuer den gerade betrachteten Verein?
        In der Akte zaehlt auch ein dort gewaehlter Verein, nicht nur einer
@@ -3785,9 +4161,10 @@ function renderProfile(p,hasV,vN){
     +'nicht mit anderen Ligen. <strong>×2</strong> und <strong>×3</strong> zeigen, '
     +'wie stark eine Kennzahl in die Note dieser Position eingeht. '
     +'Mit <strong>Team</strong> markierte Werte beschreiben die Mannschaft, '
-    +'nicht den einzelnen Spieler — für Abwehrpositionen gibt es frei keine '
-    +'individuellen Defensivdaten.</div>'+
-    '<div class="radar-grid"><div class="radar-box">'+radarSVG(p.params)+'</div><div>'+bars+'</div></div>'+
+    +'nicht den einzelnen Spieler. Der gestrichelte Ring im Radar ist der '
+    +'Ligaschnitt.</div>'+
+    '<div class="radar-grid"><div class="radar-box">'+radarSVG(p.params,
+       (vergleichId?(PLAYERS.find(x=>x.id===vergleichId)||{}).params:null))+'</div><div>'+bars+'</div></div>'+
     '<div class="legend"><div class="leg-item"><div class="leg-dot" style="background:var(--lime)"></div>ab 70 % — über dem Schnitt</div><div class="leg-item"><div class="leg-dot" style="background:var(--blue)"></div>40–69 % — im Schnitt</div><div class="leg-item"><div class="leg-dot" style="background:var(--amber)"></div>unter 40 % — Schwachpunkt</div></div></div>'+
   '<div class="sec"><div class="sec-title">Normabweichungs-Flags</div><div class="flag-list">'+flagsArr.map(f=>'<div class="flag"><div class="fdot '+f.c+'"></div><span>'+f.t+'</span></div>').join('')+'</div></div>'+
   '<div class="sec"><div class="sec-title">Scout-Fazit</div><div class="fazit">'+fazitFuer(p)+'</div></div>'+
@@ -3798,8 +4175,13 @@ function renderProfile(p,hasV,vN){
      Vergleich mit activePlayer verhindert, dass ein spaet eintreffender
      Abruf in eine inzwischen andere Akte schreibt. */
   metrikenLaden().then(function(){
+    if(activePlayer!==p)return;
     const ziel=document.getElementById('metrik-block');
-    if(ziel&&activePlayer===p)ziel.innerHTML=metrikAbschnitt(p);
+    if(ziel)ziel.innerHTML=metrikAbschnitt(p);
+    const rl=document.getElementById('rollen-block');
+    if(rl)rl.innerHTML=rollenAbschnitt(p);
+    const vgl=document.getElementById('vergleich-block');
+    if(vgl&&vergleichId)vgl.innerHTML=vergleichAbschnitt(p);
   });
 }
 function openModal(){
