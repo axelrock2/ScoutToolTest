@@ -386,6 +386,7 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 .mk-fuell{display:block;height:100%;border-radius:4px;position:relative;z-index:1}
 .mk-pct{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3);width:24px;text-align:right;flex-shrink:0}
 .mk-pct b{color:var(--ink);font-weight:700}
+.mk-note{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--lime);border:1px solid rgba(199,249,75,0.35);border-radius:3px;padding:1px 3px;letter-spacing:0.5px;vertical-align:1px;white-space:nowrap}
 @media(max-width:900px){.mk-grid{grid-template-columns:1fr}}
 .bar.mid{background:var(--blue)}
 .bar.low{background:var(--amber)}
@@ -2998,6 +2999,8 @@ function metrikAbschnitt(p){
   const jeBereich={};
   (METRIK.felder||[]).forEach(function(f){(jeBereich[f.b]||(jeBereich[f.b]=[])).push(f)});
   const folge=(METRIK.bloecke||{})[gruppe]||(METRIK.bereiche||[]).map(function(b){return b.id});
+  const imNote=(METRIK.in_note||{})[gruppe]||[];
+  const zusammen=(METRIK.in_note_zusammengesetzt||{})[gruppe]||[];
 
   let gruppengroesse=0;
   const bloecke=folge.map(function(bid){
@@ -3006,6 +3009,11 @@ function metrikAbschnitt(p){
     const zeilen=felder.map(function(f){
       const wert=v[f.k];
       const pct=metrikPercentil(wert,vert[f.k],!!f.hoch);
+      /* Seit der Freigabe des erweiterten Notensatzes geht ein Teil
+         dieser Werte in die Liga-Note ein. Welcher, steht an der Zeile -
+         sonst muesste man es dem Text am Kopf glauben. */
+      const inNote=(imNote.indexOf(f.k)>=0)
+        ? ' <span class="mk-note" title="Geht in die Liga-Note ein">Note</span>' : '';
       if(vert[f.k])gruppengroesse=Math.max(gruppengroesse,vert[f.k].length);
       /* Mengenangaben ohne eigene Wertung (Paraden, Gegentore,
          Ballkontakte) bekommen keine Farbe nach Gut und Schlecht - der
@@ -3013,7 +3021,7 @@ function metrikAbschnitt(p){
       const farbe=pct===null?'var(--ink-3)'
         :f.neutral?'var(--ink-3)'
         :pct>=70?'var(--lime)':pct<40?'var(--amber)':'var(--blue)';
-      return '<div class="mk-row"><span class="mk-name">'+f.n+'</span>'
+      return '<div class="mk-row"><span class="mk-name">'+f.n+inNote+'</span>'
         +'<span class="mk-roh">'+metrikWertText(f,wert)+'</span>'
         +'<span class="mk-bahn"><span class="mk-fuell" style="width:'
         +(pct===null?0:pct)+'%;background:'+farbe+'"></span></span>'
@@ -3037,8 +3045,17 @@ function metrikAbschnitt(p){
     +'Graue Balken sind reine Mengenangaben ohne Wertung — 1,5 Paraden je 90 '
     +'Minuten heißen nicht, dass ein Torwart schlechter hält, sondern dass '
     +'seine Abwehr weniger zulässt. '
-    +'<strong>Diese Werte gehen nicht in die Note ein</strong> — sie sind '
-    +'zusätzliche Information, keine Bewertung.</div>'
+    +(imNote.length
+      ? 'Mit <span class="mk-note">Note</span> markierte Zeilen gehen in die '
+        +'Liga-Note ein'
+        +(zusammen.length
+          ? '; dazu kommt '+zusammen.join(' und ')+' — dort fasst die Note '
+            +'mehrere dieser Zeilen zu einer Kennzahl zusammen'
+          : '')
+        +'. Alle übrigen sind zusätzliche Information.'
+      : '<strong>Diese Werte gehen nicht in die Note ein</strong> — sie sind '
+        +'zusätzliche Information, keine Bewertung.')
+    +'</div>'
     +'<div class="mk-grid">'+bloecke+'</div></div>';
 }
 
@@ -3666,13 +3683,16 @@ function renderProfile(p,hasV,vN){
     const ue=x.ueber_xg;
     const ueText=(ue>0?'+':'')+String(ue).replace('.',',');
     const ueFarbe=ue>=1?'var(--green)':ue<=-1?'var(--red)':'var(--ink)';
-    return '<div class="sec"><div class="sec-title">Erweiterte Werte · xG</div>'+
+    return '<div class="sec"><div class="sec-title">Zweite xG-Quelle · Understat</div>'+
       '<div class="param-erklaerung">Erwartete Tore (xG) messen die '+
       '<strong>Qualität der Chancen</strong>, nicht nur ihre Zahl. '+
-      'Quelle: Understat, nur Ligaspiele. '+
-      '<strong>Diese Werte gehen nicht in die Liga-Note ein</strong> — sie liegen '+
-      'nur für die fünf großen ersten Ligen vor, und eine Note daraus wäre mit '+
-      'den übrigen 28 Ligen nicht vergleichbar.</div>'+
+      'Quelle: Understat, nur Ligaspiele, nur die fünf großen ersten Ligen. '+
+      'In die Note geht das xG von <strong>Sofascore</strong> ein (13 Ligen, '+
+      'oben im Block „Abschluss“); diese Zahlen stehen daneben, weil '+
+      'Understat zwei Werte führt, die Sofascore nicht hat: <strong>npxG</strong> '+
+      'ohne Elfmeter und die <strong>Aufbaubeteiligung</strong>. Zwei '+
+      'Anbieter, zwei Modelle — Abweichungen sind normal und ein Hinweis '+
+      'darauf, wie genau xG überhaupt ist.</div>'+
       '<div class="sd-grid">'+
         z('Erwartete Tore (xG)',zahl(x.xG),'· '+zahl(x.xG90)+' / 90')+
         z('Tore über Erwartung','<span style="color:'+ueFarbe+'">'+ueText+'</span>',
@@ -3702,11 +3722,12 @@ function renderProfile(p,hasV,vN){
     const t=p.anteil_team||0;
     const warnung=t>=30
       ? '<div class="flag"><div class="fdot neg"></div><span><strong>'+t
-        +' % der Note stammen aus Mannschaftswerten.</strong> Bei dieser '
-        +'Position gibt es keine individuellen Defensivdaten — ein Spieler '
-        +'einer starken Abwehr profitiert davon, ohne dass sein eigener '
-        +'Beitrag messbar wäre. Zwischen Vereinen schwankt die Note deshalb '
-        +'spürbar.</span></div>'
+        +' % der Note stammen aus Mannschaftswerten.</strong> Für diesen '
+        +'Spieler liegen keine individuellen Werte vor — Sofascore führt '
+        +'Spielerstatistik nur bis zur 3. Liga. Ein Spieler einer starken '
+        +'Abwehr profitiert davon, ohne dass sein eigener Beitrag messbar '
+        +'wäre. Zwischen Vereinen schwankt die Note deshalb spürbar.'
+        +'</span></div>'
       : '<div class="flag"><div class="fdot pos"></div><span>'+(t?t:'0')
         +' % der Note stammen aus Mannschaftswerten — sie beschreibt also '
         +'überwiegend den Spieler selbst.</span></div>';

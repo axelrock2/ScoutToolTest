@@ -69,7 +69,7 @@ TEAM_KENNZAHLEN = {"team_gegentore_pro_spiel"}
 # und fuer den Vergleich in der Akte gleichermassen.
 MIN_DUELLE = 40
 
-KENNZAHLEN = {
+KENNZAHLEN_BISHER = {
     "TW":  [("Defensive der Mannschaft", "team_gegentore_pro_spiel", False, 3),
             ("Einsatzanteil der Saison", "einsatz_anteil", True, 3),
             ("Minuten je Einsatz", "min_pro_einsatz", True, 1),
@@ -122,35 +122,36 @@ KENNZAHLEN = {
 
 
 # ---------------------------------------------------------------------
-# Vorschlag fuer ein erweitertes Notenmodell (noch nicht in Kraft)
+# Der geltende Notensatz (freigegeben am 13.09.2026)
 #
 # Erst mit der Sofascore-Erweiterung gibt es genug individuelle Werte, um
 # eine Note zu bilden, die ueberwiegend den Spieler beschreibt statt seine
-# Mannschaft. Was das aendert, laesst sich mit
+# Mannschaft. Bis dahin bestand die Note eines Torhueters aus
+# Mannschaftsgegentoren und Verfuegbarkeit - aus nichts, was er selbst
+# getan hat.
 #
-#     SCOUT_NEUE_NOTE=1 SCOUT_ZIEL=/tmp/probe.json python3 scripts/compute_grades.py
-#
-# ausrechnen, ohne den Bestand anzufassen. In Kraft tritt es erst auf
-# ausdrueckliche Entscheidung - Bewertungsgrundlagen aendert dieses Skript
-# nicht von sich aus.
-#
-# Zwei Dinge bleiben unveraendert:
+# Zwei Dinge bleiben auch jetzt unveraendert:
 #   * Fehlt eine Kennzahl, wird sie UEBERSPRUNGEN und die uebrigen
 #     Gewichte neu verteilt - nie als schlechter Wert gelesen. Nur so
 #     bleiben Regional- und Oberliga ueberhaupt bewertbar.
 #   * Verfuegbarkeit und Disziplin behalten ihr Gewicht. Ein Spieler, der
 #     nicht spielt, nuetzt keinem Verein, so gut seine Quoten sind.
-KENNZAHLEN_NEU = {
-    # Regel dieses Entwurfs: Die bestehenden Kennzahlen behalten ihr
-    # Gewicht UNVERAENDERT, neue kommen hinzu. Das ist keine Kosmetik -
-    # nur so bleibt die Note dort, wo es keine Sofascore-Daten gibt
-    # (Regional- und Oberliga, 9.400 Spieler), exakt die heutige. Ein
-    # erster Entwurf, der auch die alten Gewichte umstellte, verschob
-    # deren Noten um im Median 3 Punkte, ohne dass eine einzige neue
-    # Zahl dahintergestanden haette.
+KENNZAHLEN = {
+    # Regel dieses Satzes: Die zuvor geltenden Kennzahlen behalten ihr
+    # Gewicht UNVERAENDERT, die neuen kommen hinzu. Das ist keine
+    # Kosmetik - nur so bleibt die Note dort, wo es keine
+    # Sofascore-Daten gibt (Regional- und Oberliga, 9.400 Spieler),
+    # exakt die bisherige. Ein erster Entwurf, der auch die alten
+    # Gewichte umstellte, verschob deren Noten um im Median 3 Punkte,
+    # ohne dass eine einzige neue Zahl dahintergestanden haette; die
+    # Zusicherung unter dieser Tabelle verhindert das jetzt.
     #
     # Weil die Summe der Gewichte waechst, faellt der Anteil der
-    # Mannschaftswerte von selbst - genau das ist der Zweck.
+    # Mannschaftswerte von selbst - genau das ist der Zweck. Gemessen
+    # beim Umstellen: Torhueter 38 -> 21 %, Innenverteidiger 25 -> 18 %,
+    # Aussenverteidiger 20 -> 12 %. Die Noten der Stufen 1 bis 3
+    # verschoben sich um im Median 4 Punkte, hoechstens 25; die Stufen 4
+    # und 5 blieben zu 100 % gleich.
 
     # Bisher enthielt die Torwartnote KEINE einzige individuelle
     # Kennzahl. "Verhinderte Tore" trennt die Haltequalitaet von der Zahl
@@ -221,16 +222,21 @@ KENNZAHLEN_NEU = {
             ("Disziplin (Karten inv.)", "karten_pro90", False, 1)],
 }
 
-# Probe: der Entwurf MUSS die bestehenden Kennzahlen unveraendert
-# enthalten. Sonst verschoeben sich Noten in Ligen ohne Sofascore-Daten,
-# ohne dass eine neue Zahl dahinterstuende.
-for _g, _felder in KENNZAHLEN.items():
-    _neu = {(a, k): w for a, k, _h, w in KENNZAHLEN_NEU[_g]}
+# Zusicherung: der geltende Satz MUSS die frueheren Kennzahlen mit
+# unveraendertem Gewicht enthalten. Sonst verschoeben sich Noten in Ligen
+# ohne Sofascore-Daten, ohne dass eine neue Zahl dahinterstuende. Wer
+# eine alte Gewichtung aendern will, aendert bewusst auch KENNZAHLEN_BISHER
+# - dann steht es im Verlauf und faellt nicht nebenbei an.
+for _g, _felder in KENNZAHLEN_BISHER.items():
+    _jetzt = {(a, k): w for a, k, _h, w in KENNZAHLEN[_g]}
     for _a, _k, _h, _w in _felder:
-        assert _neu.get((_a, _k)) == _w, f"{_g}: {_a} war {_w}, ist {_neu.get((_a, _k))}"
+        assert _jetzt.get((_a, _k)) == _w, \
+            f"{_g}: {_a} hatte Gewicht {_w}, hat jetzt {_jetzt.get((_a, _k))}"
 
-if os.environ.get("SCOUT_NEUE_NOTE"):
-    KENNZAHLEN = KENNZAHLEN_NEU
+# Zum Vergleich laesst sich der fruehere Satz wieder einschalten:
+#     SCOUT_ALTE_NOTE=1 SCOUT_ZIEL=/tmp/alt.json python3 scripts/compute_grades.py
+if os.environ.get("SCOUT_ALTE_NOTE"):
+    KENNZAHLEN = KENNZAHLEN_BISHER
 
 # Alle vorkommenden Anzeigenamen, einmalig. Die Reihenfolge ist der
 # Index, den die params der Spieler referenzieren.
@@ -437,6 +443,25 @@ BLOECKE_JE_GRUPPE = {
             "disziplin"],
     "ST":  ["abschluss", "kreativ", "zweikampf", "ball", "pass", "defensiv",
             "disziplin"],
+}
+
+# Kennzahl des Blocks -> Kennzahl der Note, wo beide DENSELBEN Wert
+# meinen. Damit kann die Akte jede Zeile kennzeichnen, die in die Note
+# eingeht - sonst stuende dort eine Behauptung, wo eine Auskunft
+# moeglich ist.
+#
+# Nicht enthalten sind Kennzahlen, die die Note aus MEHREREN Blockwerten
+# bildet (Defensivaktionen aus Tacklings, Interceptions, Klaerungen und
+# Blocks; Paradenquote aus Paraden und Gegentoren) - und solche, die die
+# Note aus einer anderen Quelle nimmt (Tore und Vorlagen stehen in der
+# Note mit den Transfermarkt-Zahlen).
+BLOCK_ZU_NOTE = {
+    "pq": "passquote", "pd90": "letztes_drittel90",
+    "lq": "lange_baelle_quote", "skp90": "schluesselpaesse90",
+    "gck90": "grosschancen90", "xg90": "xg90", "xa90": "xa90",
+    "schq": "abschlussquote", "zq": "zweikampfquote",
+    "bv100": "ballverluste100", "drq": "dribbelquote",
+    "vth90": "verhinderte_tore90", "ausg90": "ausgespielt90",
 }
 
 # Mindest-Grundgesamtheit je Quote
@@ -676,9 +701,14 @@ HERKUNFT = {
                    "zweiten Ligen sowie die 3. Liga). Für Regional- und "
                    "Oberligen führt Sofascore keine Spielerstatistik; xG und "
                    "xA fehlen zusätzlich in 3. Liga, LaLiga 2 und Ligue 2. "
-                   "In die Liga-Note geht davon NUR die Zweikampfquote ein "
-                   "(Abwehr und Mittelfeld, ab 40 Zweikämpfen) – alles Übrige "
-                   "steht als Kennzahlenblock in der Spielerakte. Die "
+                   "In die Liga-Note gehen davon die Zweikampfquote, "
+                   "Passquote, Defensivaktionen, Ballsicherheit, xG/xA, "
+                   "Abschlussquote sowie bei Torhütern verhinderte Tore und "
+                   "Paradenquote ein – je nach Position unterschiedlich, in "
+                   "der Akte an jeder Zeile gekennzeichnet. Wo die Werte "
+                   "fehlen (Regional- und Oberliga), wird die Kennzahl "
+                   "übersprungen und die übrigen Gewichte neu verteilt; "
+                   "deren Noten sind dieselben wie vorher. Die "
                    "Sofascore-eigene Spielnote (6,0–10,0) wird bewusst nicht "
                    "verwendet: ihre Rechenvorschrift ist nicht offengelegt. "
                    "Die Zählwerte dagegen sind gegen FotMob (Opta) "
@@ -690,8 +720,11 @@ HERKUNFT = {
         "art": "erhoben",
         "felder": ["xG", "npxG", "xA", "Schlüsselpässe", "Schüsse",
                    "Aufbaubeteiligung"],
-        "hinweis": "Nur die fünf großen ersten Ligen. Geht bewusst NICHT "
-                   "in die Liga-Note ein.",
+        "hinweis": "Nur die fünf großen ersten Ligen. Geht NICHT in die "
+                   "Liga-Note ein – dort zählt das xG von Sofascore, das für "
+                   "13 Ligen vorliegt. Understat steht als zweite Quelle "
+                   "daneben, weil es npxG (ohne Elfmeter) und die "
+                   "Aufbaubeteiligung führt, die Sofascore nicht hat.",
     },
     "abgeleitet": {
         "name": "Von diesem Werkzeug berechnet",
@@ -1369,6 +1402,16 @@ def main() -> int:
                         "nur aus Spielern ab " + str(MIN_MINUTEN) + " Minuten."),
             "bereiche": [{"id": i, "name": n} for i, n in METRIK_BEREICHE],
             "bloecke": BLOECKE_JE_GRUPPE,
+            # Welche Zeilen je Positionsgruppe in die Note eingehen.
+            "in_note": {g: sorted(b for b, n in BLOCK_ZU_NOTE.items()
+                                  if any(k == n for _a, k, _h, _w in felder))
+                        for g, felder in KENNZAHLEN.items()},
+            # Kennzahlen, die die Note aus mehreren Blockwerten bildet -
+            # sie lassen sich keiner einzelnen Zeile zuordnen.
+            "in_note_zusammengesetzt": {
+                g: [a for a, k, _h, _w in felder
+                    if k in ("defensivaktionen90", "paradenquote")]
+                for g, felder in KENNZAHLEN.items()},
             "felder": [{"k": k, "n": n, "b": b,
                         "art": "zahl" if k in OHNE_PROZENT else art,
                         "hoch": 1 if hoch else 0, "nk": nk,

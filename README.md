@@ -355,9 +355,9 @@ beim ersten Profil nach. Die **Percentile rechnet das Frontend**, nicht
 das Skript — es kennt die Vergleichsgruppe ohnehin, und so steht jede
 Zahl nur einmal in der Datei statt zweimal.
 
-**Diese Werte gehen nicht in die Note ein.** Das wäre eine neue
-Bewertungsgrundlage und ist eine Entscheidung des Nutzers, keine dieses
-Skripts.
+**Ein Teil dieser Werte geht seit dem 13.09.2026 in die Note ein** — nach
+ausdrücklicher Freigabe, siehe *Erweiterter Notensatz*. Welche Zeile
+zählt, steht an der Zeile selbst.
 
 ### Gegenprobe gegen FotMob (Opta)
 
@@ -776,26 +776,73 @@ hat deshalb ihr eigenes Profil mit Gewichten:
 
 | Position | dreifach | zweifach |
 |---|---|---|
-| Torwart | Defensive der Mannschaft, Einsatzanteil | — |
-| Innenverteidigung | Defensive der Mannschaft, Einsatzanteil | — |
-| Außenverteidigung | — | Defensive, Einsatzanteil, Vorlagen / 90 |
-| Zentrales Mittelfeld | — | Anteil an Teamtoren, Scorerpunkte, Vorlagen, Einsatzanteil |
-| Offensive | Scorerpunkte / 90 | Anteil an Teamtoren, Vorlagen, Tore / 90 |
-| Sturm | Tore / 90 | Anteil an Teamtoren, Scorerpunkte / 90 |
+| Torwart | **verhinderte Tore / 90**, Defensive der Mannschaft, Einsatzanteil | **Paradenquote** |
+| Innenverteidigung | Zweikampfquote, Defensive der Mannschaft, Einsatzanteil | **Defensivaktionen / 90**, **Passquote** |
+| Außenverteidigung | — | Zweikampfquote, **Defensivaktionen**, **Schlüsselpässe**, Defensive, Einsatzanteil, Vorlagen |
+| Zentrales Mittelfeld | — | **Passquote**, **Pässe ins letzte Drittel**, **Defensivaktionen**, **Schlüsselpässe**, Zweikampfquote, Teamtore, Scorerpunkte, Vorlagen, Einsatzanteil |
+| Offensive | Scorerpunkte / 90 | **xG / 90**, **xA / 90**, **Schlüsselpässe**, Teamtore, Vorlagen, Tore / 90 |
+| Sturm | Tore / 90 | **xG / 90**, **Abschlussquote**, Teamtore, Scorerpunkte / 90 |
 
-Der Effekt ist deutlich: Bayerns Innenverteidigung stieg von Platz 8 auf
-**Platz 1 der Liga**, Heidenheim fiel auf Platz 17. Die Abwehrnoten folgen
-jetzt den tatsächlichen Gegentoren — Dortmund (34 Gegentore) führt, Heidenheim
-(72) schließt ab.
+Fett: seit dem 13.09.2026 dabei (siehe *Erweiterter Notensatz* weiter unten).
+
+Der Effekt der Positionsgewichtung war schon vorher deutlich: Bayerns
+Innenverteidigung stieg von Platz 8 auf **Platz 1 der Liga**, Heidenheim
+fiel auf Platz 17. Die Abwehrnoten folgen den tatsächlichen Gegentoren —
+Dortmund (34 Gegentore) führt, Heidenheim (72) schließt ab.
 
 **Die Defensive der Mannschaft ist ein Mannschaftswert**, kein individueller.
-Das Profil kennzeichnet sie als solchen. Ein Innenverteidiger einer starken
-Abwehr bekommt davon einen guten Wert, auch wenn sein eigener Anteil daran
-in der Note nicht abgebildet ist. Seit der Sofascore-Erweiterung stehen die
-individuellen Werte — Zweikämpfe, Tacklings, Klärungen, Passquote — zwar in
-der Akte, aber bis auf die Zweikampfquote **bewusst nicht in der Note**:
-darüber entscheidet der Nutzer, nicht dieses Skript. Der Anteil der
-Mannschaftswerte an jeder Note steht in der Akte.
+Das Profil kennzeichnet sie als solchen. Ihr Gewicht ist unverändert, ihr
+*Anteil* an der Note aber gesunken, weil individuelle Kennzahlen
+dazugekommen sind: bei Torhütern von 38 auf 21 %, bei Innenverteidigern
+von 25 auf 18 %, bei Außenverteidigern von 20 auf 12 %. Wo es keine
+individuellen Daten gibt — Regional- und Oberliga —, bleibt alles wie
+zuvor, und die Akte sagt es dort ausdrücklich.
+
+### Erweiterter Notensatz (freigegeben am 13.09.2026)
+
+Bis dahin bestand die Note eines **Torhüters** aus Mannschaftsgegentoren
+und Verfügbarkeit — aus nichts, was er selbst getan hat. Mit der
+Sofascore-Erweiterung gibt es genug individuelle Werte, um das zu ändern.
+
+**Die Regel: bestehende Gewichte bleiben unangetastet, neue Kennzahlen
+kommen hinzu.** Ein erster Entwurf, der auch die alten Gewichte umstellte,
+verschob die Noten von Regional- und Oberliga um im Median 3 Punkte,
+obwohl es dort keine einzige neue Zahl gibt. Eine Zusicherung im Code
+(`KENNZAHLEN_BISHER`) prüft das jetzt bei jedem Lauf.
+
+Gemessen beim Umstellen:
+
+| Spielklasse | Spieler | unverändert | Median-Verschiebung | max |
+|---|---:|---:|---:|---:|
+| 1 (Erste Ligen) | 3.557 | 7,6 % | 4 | 25 |
+| 2 (Zweite Ligen) | 2.200 | 6,8 % | 4 | 25 |
+| 3 (3. Liga) | 418 | 7,4 % | 4 | 18 |
+| 4–5 (Regional-, Oberliga) | 6.490 | **100 %** | 0 | 0 |
+
+Beispiele aus der Bundesliga:
+
+| Spieler | vorher | nachher | Grund |
+|---|---:|---:|---|
+| Janis Blaswich | 34 | 59 | verhinderte 3,8 Tore über Erwartung |
+| Daniel Batz | 40 | 57 | verhinderte 9,1 Tore über Erwartung |
+| Exequiel Palacios | 37 | 53 | 90,7 % Passquote, 25,4 Pässe ins letzte Drittel |
+| Frederik Rönnow | 39 | 25 | kassierte 8,8 Tore **mehr** als erwartet |
+| Rani Khedira | 59 | 43 | 66,6 % Passquote, 0,51 Schlüsselpässe / 90 |
+| Nico Schlotterbeck | 79 | 68 | Dortmunds starke Abwehr zählt weniger für ihn |
+
+**Zwei Einschränkungen, die dazugehören.** Die Passquote belohnt auch den
+sicheren Querpass; bei Innenverteidigern hat sie Gewicht 2 von 17, also
+12 %. Und die Defensivaktionen hängen leicht davon ab, wie viel Ball die
+Mannschaft hat — nachgemessen in der Bundesliga: Korrelation −0,21 bei
+Innenverteidigern, −0,11 im Mittelfeld. Messbar, aber schwach; Kimmichs
+3,2 Aktionen je 90 sind nicht Bayerns Ballbesitz geschuldet, Goretzka
+kommt beim selben Verein auf 5,0. Eine Ballbesitz-Korrektur (Padj.) wäre
+eine Verfeinerung, keine Reparatur.
+
+**In der Akte ist jede Zeile gekennzeichnet**, die in die Note eingeht —
+mit einem kleinen Zeichen *Note* neben dem Namen. Was die Note aus
+mehreren Zeilen zusammensetzt (Defensivaktionen, Paradenquote), steht im
+Kopftext. So muss niemand den Beteuerungen glauben, er kann nachsehen.
 
 ### Erweiterte Werte: xG (nur fünf Ligen)
 
