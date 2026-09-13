@@ -121,6 +121,117 @@ KENNZAHLEN = {
 }
 
 
+# ---------------------------------------------------------------------
+# Vorschlag fuer ein erweitertes Notenmodell (noch nicht in Kraft)
+#
+# Erst mit der Sofascore-Erweiterung gibt es genug individuelle Werte, um
+# eine Note zu bilden, die ueberwiegend den Spieler beschreibt statt seine
+# Mannschaft. Was das aendert, laesst sich mit
+#
+#     SCOUT_NEUE_NOTE=1 SCOUT_ZIEL=/tmp/probe.json python3 scripts/compute_grades.py
+#
+# ausrechnen, ohne den Bestand anzufassen. In Kraft tritt es erst auf
+# ausdrueckliche Entscheidung - Bewertungsgrundlagen aendert dieses Skript
+# nicht von sich aus.
+#
+# Zwei Dinge bleiben unveraendert:
+#   * Fehlt eine Kennzahl, wird sie UEBERSPRUNGEN und die uebrigen
+#     Gewichte neu verteilt - nie als schlechter Wert gelesen. Nur so
+#     bleiben Regional- und Oberliga ueberhaupt bewertbar.
+#   * Verfuegbarkeit und Disziplin behalten ihr Gewicht. Ein Spieler, der
+#     nicht spielt, nuetzt keinem Verein, so gut seine Quoten sind.
+KENNZAHLEN_NEU = {
+    # Regel dieses Entwurfs: Die bestehenden Kennzahlen behalten ihr
+    # Gewicht UNVERAENDERT, neue kommen hinzu. Das ist keine Kosmetik -
+    # nur so bleibt die Note dort, wo es keine Sofascore-Daten gibt
+    # (Regional- und Oberliga, 9.400 Spieler), exakt die heutige. Ein
+    # erster Entwurf, der auch die alten Gewichte umstellte, verschob
+    # deren Noten um im Median 3 Punkte, ohne dass eine einzige neue
+    # Zahl dahintergestanden haette.
+    #
+    # Weil die Summe der Gewichte waechst, faellt der Anteil der
+    # Mannschaftswerte von selbst - genau das ist der Zweck.
+
+    # Bisher enthielt die Torwartnote KEINE einzige individuelle
+    # Kennzahl. "Verhinderte Tore" trennt die Haltequalitaet von der Zahl
+    # der Schuesse: gemessen wird die Differenz zwischen den erwarteten
+    # Gegentoren aus den Schuessen auf sein Tor und den tatsaechlichen.
+    "TW":  [("Verhinderte Tore / 90", "verhinderte_tore90", True, 3),
+            ("Paradenquote", "paradenquote", True, 2),
+            ("Passquote", "passquote", True, 1),
+            ("Defensive der Mannschaft", "team_gegentore_pro_spiel", False, 3),
+            ("Einsatzanteil der Saison", "einsatz_anteil", True, 3),
+            ("Minuten je Einsatz", "min_pro_einsatz", True, 1),
+            ("Disziplin (Karten inv.)", "karten_pro90", False, 1)],
+
+    "IV":  [("Zweikampfquote", "zweikampfquote", True, 3),
+            ("Defensivaktionen / 90", "defensivaktionen90", True, 2),
+            ("Passquote", "passquote", True, 2),
+            ("Ballverluste je 100 Kontakte", "ballverluste100", False, 1),
+            ("Defensive der Mannschaft", "team_gegentore_pro_spiel", False, 3),
+            ("Einsatzanteil der Saison", "einsatz_anteil", True, 3),
+            ("Minuten je Einsatz", "min_pro_einsatz", True, 1),
+            ("Torgefahr bei Standards", "tore_pro90", True, 1),
+            ("Disziplin (Karten inv.)", "karten_pro90", False, 1)],
+
+    "AV":  [("Zweikampfquote", "zweikampfquote", True, 2),
+            ("Defensivaktionen / 90", "defensivaktionen90", True, 2),
+            ("Schlüsselpässe / 90", "schluesselpaesse90", True, 2),
+            ("Passquote", "passquote", True, 1),
+            ("Ausgespielt worden / 90", "ausgespielt90", False, 1),
+            ("Defensive der Mannschaft", "team_gegentore_pro_spiel", False, 2),
+            ("Einsatzanteil der Saison", "einsatz_anteil", True, 2),
+            ("Vorlagen / 90", "vorlagen_pro90", True, 2),
+            ("Anteil an Teamtoren", "tor_anteil", True, 1),
+            ("Disziplin (Karten inv.)", "karten_pro90", False, 1)],
+
+    "ZM":  [("Passquote", "passquote", True, 2),
+            ("Pässe ins letzte Drittel / 90", "letztes_drittel90", True, 2),
+            ("Defensivaktionen / 90", "defensivaktionen90", True, 2),
+            ("Schlüsselpässe / 90", "schluesselpaesse90", True, 2),
+            ("Ballverluste je 100 Kontakte", "ballverluste100", False, 1),
+            ("Zweikampfquote", "zweikampfquote", True, 2),
+            ("Anteil an Teamtoren", "tor_anteil", True, 2),
+            ("Scorerpunkte / 90", "scorer_pro90", True, 2),
+            ("Vorlagen / 90", "vorlagen_pro90", True, 2),
+            ("Einsatzanteil der Saison", "einsatz_anteil", True, 2),
+            ("Defensive der Mannschaft", "team_gegentore_pro_spiel", False, 1),
+            ("Disziplin (Karten inv.)", "karten_pro90", False, 1)],
+
+    "OFF": [("xG / 90", "xg90", True, 2),
+            ("xA / 90", "xa90", True, 2),
+            ("Schlüsselpässe / 90", "schluesselpaesse90", True, 2),
+            ("Großchancen kreiert / 90", "grosschancen90", True, 1),
+            ("Dribbelquote", "dribbelquote", True, 1),
+            ("Scorerpunkte / 90", "scorer_pro90", True, 3),
+            ("Anteil an Teamtoren", "tor_anteil", True, 2),
+            ("Vorlagen / 90", "vorlagen_pro90", True, 2),
+            ("Tore / 90", "tore_pro90", True, 2),
+            ("Einsatzanteil der Saison", "einsatz_anteil", True, 1),
+            ("Disziplin (Karten inv.)", "karten_pro90", False, 1)],
+
+    "ST":  [("xG / 90", "xg90", True, 2),
+            ("Abschlussquote", "abschlussquote", True, 2),
+            ("Großchancen kreiert / 90", "grosschancen90", True, 1),
+            ("Tore / 90", "tore_pro90", True, 3),
+            ("Anteil an Teamtoren", "tor_anteil", True, 2),
+            ("Scorerpunkte / 90", "scorer_pro90", True, 2),
+            ("Vorlagen / 90", "vorlagen_pro90", True, 1),
+            ("Einsatzanteil der Saison", "einsatz_anteil", True, 1),
+            ("Disziplin (Karten inv.)", "karten_pro90", False, 1)],
+}
+
+# Probe: der Entwurf MUSS die bestehenden Kennzahlen unveraendert
+# enthalten. Sonst verschoeben sich Noten in Ligen ohne Sofascore-Daten,
+# ohne dass eine neue Zahl dahinterstuende.
+for _g, _felder in KENNZAHLEN.items():
+    _neu = {(a, k): w for a, k, _h, w in KENNZAHLEN_NEU[_g]}
+    for _a, _k, _h, _w in _felder:
+        assert _neu.get((_a, _k)) == _w, f"{_g}: {_a} war {_w}, ist {_neu.get((_a, _k))}"
+
+if os.environ.get("SCOUT_NEUE_NOTE"):
+    KENNZAHLEN = KENNZAHLEN_NEU
+
 # Alle vorkommenden Anzeigenamen, einmalig. Die Reihenfolge ist der
 # Index, den die params der Spieler referenzieren.
 KENNZAHL_NAMEN = sorted({anzeige for felder in KENNZAHLEN.values()
@@ -164,6 +275,20 @@ BEREICH = {
     "tor_anteil": "offensiv",
     "team_gegentore_pro_spiel": "defensiv",
     "zweikampfquote": "zweikampf",
+    "passquote": "pass",
+    "letztes_drittel90": "pass",
+    "lange_baelle_quote": "pass",
+    "schluesselpaesse90": "kreativ",
+    "grosschancen90": "kreativ",
+    "xg90": "offensiv",
+    "xa90": "offensiv",
+    "abschlussquote": "offensiv",
+    "defensivaktionen90": "defensiv_ind",
+    "ausgespielt90": "defensiv_ind",
+    "ballverluste100": "ballsicherheit",
+    "dribbelquote": "ballsicherheit",
+    "verhinderte_tore90": "torwart",
+    "paradenquote": "torwart",
     "einsatz_anteil": "verfuegbarkeit",
     "min_pro_einsatz": "verfuegbarkeit",
     "minuten": "verfuegbarkeit",
@@ -174,6 +299,11 @@ BEREICH_NAME = {
     "offensiv": "Offensive",
     "defensiv": "Defensive (Mannschaft)",
     "zweikampf": "Zweikämpfe (individuell)",
+    "pass": "Passspiel",
+    "kreativ": "Chancen & Kreativität",
+    "defensiv_ind": "Defensivaktionen (individuell)",
+    "ballsicherheit": "Ballsicherheit",
+    "torwart": "Torwartspiel",
     "verfuegbarkeit": "Verfügbarkeit",
     "disziplin": "Disziplin",
 }
@@ -635,7 +765,73 @@ def kennwerte(s: dict) -> dict | None:
     d = s.get("duelle") or {}
     if d.get("quote") is not None and (d.get("gesamt") or 0) >= MIN_DUELLE:
         werte["zweikampfquote"] = float(d["quote"])
+    werte.update(sofa_kennwerte(s.get("sofa") or {}, minuten))
     return werte
+
+
+def sofa_kennwerte(sofa: dict, tm_minuten: int) -> dict:
+    """Notenfaehige Kennzahlen aus den Sofascore-Rohsummen.
+
+    Getrennt von metrikwerte(): dort geht es um die ANZEIGE, hier um
+    Werte, die in eine Note eingehen koennen. Der Unterschied ist nicht
+    kosmetisch - fuer die Note werden Einzelwerte zu Gruppen
+    zusammengefasst (vier Defensivaktionen zu einer Kennzahl), damit die
+    Note nicht von einer einzelnen Zaehlweise abhaengt.
+
+    Ob diese Werte tatsaechlich in die Note eingehen, entscheidet allein
+    KENNZAHLEN. Berechnet werden sie immer - das kostet nichts und macht
+    einen Vergleich zweier Notenmodelle moeglich, ohne den Bestand
+    anzufassen.
+    """
+    minuten = sofa.get("min") or 0
+    if minuten < 90:
+        return {}
+    p90 = minuten / 90.0
+    g = lambda k: float(sofa.get(k) or 0)                       # noqa: E731
+    w: dict[str, float] = {}
+
+    # Passspiel
+    if g("pg") >= 100:
+        w["passquote"] = 100.0 * g("pa") / g("pg")
+    w["letztes_drittel90"] = g("pd") / p90
+    if g("lb") >= 20:
+        w["lange_baelle_quote"] = 100.0 * g("la") / g("lb")
+
+    # Chancen
+    w["schluesselpaesse90"] = g("skp") / p90
+    w["grosschancen90"] = g("gck") / p90
+
+    # Abschluss. xG fehlt in drei der sechzehn Ligen - dann bleibt der
+    # Schluessel weg und die Note rechnet ohne ihn weiter.
+    if sofa.get("xg") is not None:
+        w["xg90"] = g("xg") / p90
+    if sofa.get("xa") is not None:
+        w["xa90"] = g("xa") / p90
+    if g("sch") >= 10:
+        w["abschlussquote"] = 100.0 * g("tore") / g("sch")
+
+    # Defensivaktionen als EINE Kennzahl. Einzeln genommen belohnte
+    # "Klaerungen je 90" eine schlechte Mannschaft und "Tacklings je 90"
+    # eine bestimmte Spielweise; zusammen messen sie, wie viel ein Spieler
+    # gegen den Ball tut.
+    w["defensivaktionen90"] = (g("tkl") + g("int") + g("klr") + g("blk")) / p90
+    w["ausgespielt90"] = g("ausg") / p90
+
+    # Ballsicherheit
+    if g("kon") >= 100:
+        w["ballverluste100"] = 100.0 * g("bv") / g("kon")
+    if sofa.get("drq") and g("dr") >= 10:
+        w["dribbelquote"] = float(sofa["drq"])
+
+    # Torwart. "Verhinderte Tore" ist die einzige Kennzahl, die die
+    # Haltequalitaet von der Zahl der Schuesse trennt: sie misst die
+    # Differenz zwischen den erwarteten Gegentoren aus den Schuessen auf
+    # sein Tor und den tatsaechlichen. Sie fehlt, wo auch xG fehlt.
+    if sofa.get("vth") is not None:
+        w["verhinderte_tore90"] = float(sofa["vth"]) / p90
+    if g("par") + g("geg") >= 20:
+        w["paradenquote"] = 100.0 * g("par") / (g("par") + g("geg"))
+    return w
 
 
 def percentil(wert: float, alle: list[float], hoeher_besser: bool) -> int:
