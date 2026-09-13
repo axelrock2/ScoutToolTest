@@ -203,6 +203,13 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 /* Herkunftszeile unter der Auslaeufer-Suche: leise, aber lesbar - sie
    sagt, worauf die Auskunft beruht und wo sie aufhoert. */
 .a-quelle{font-size:11px;line-height:1.6;color:var(--ink-3);margin:14px 0 0;font-style:italic}
+/* Abschnittskopf in der Trefferliste (Auslaeufer nach Art getrennt) */
+.gruppe-kopf{margin:26px 0 12px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.gruppe-kopf:first-child{margin-top:0}
+.gruppe-kopf h3{margin:0;font-size:15px;display:flex;align-items:center;gap:9px}
+.gruppe-kopf h3 span{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3);
+  border:1px solid var(--line);border-radius:20px;padding:2px 9px}
+.gruppe-kopf p{margin:5px 0 0;font-size:12px;color:var(--ink-3);line-height:1.6}
 
 /* ---- Passung gegen einen Verein, direkt in der Akte ---------------- */
 .pf-passung{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:14px;
@@ -744,8 +751,8 @@ input[type=range]::-webkit-slider-thumb{box-shadow:none}
       <div class="fg"><label>Max. Marktwert (Mio. €)</label><input type="number" id="a-mw" step="0.1" placeholder="z.B. 10"></div>
       <div class="fg"><label>Mindest-Liga-Note</label><select id="a-ln"><option value="">Keine</option><option value="60">60+</option><option value="65">65+</option><option value="70">70+</option><option value="75">75+</option><option value="80">80+</option></select></div>
       <div class="fg">
-        <div class="tr"><label title="Eine vereinbarte Verlängerungsoption kann der Verein ziehen — der Spieler ist dann nicht frei. Diese Fälle bleiben außen vor.">Nur ohne Verlängerungsoption</label><label class="tog"><input type="checkbox" id="a-ohne-option"><span class="tslider"></span></label></div>
-        <div class="tr"><label title="Bei Leihspielern endet die Leihe, nicht der Vertrag beim Stammverein. Standardmäßig ausgeblendet.">Leihspieler ausblenden</label><label class="tog"><input type="checkbox" id="a-ohne-leihe" checked><span class="tslider"></span></label></div>
+        <div class="tr"><label title="Spieler mit Verlängerungsoption stehen in einem eigenen Abschnitt. Hier lassen sie sich ganz ausblenden.">Nur ohne Verlängerungsoption</label><label class="tog"><input type="checkbox" id="a-ohne-option"><span class="tslider"></span></label></div>
+        <div class="tr"><label title="Leihspieler stehen in einem eigenen Abschnitt, weil bei ihnen die Leihe endet und nicht der Vertrag. Hier lassen sie sich ganz ausblenden.">Leihspieler ausblenden</label><label class="tog"><input type="checkbox" id="a-ohne-leihe"><span class="tslider"></span></label></div>
         <div class="tr"><label title="Blendet Spieler mit sehr wenig Saisonminuten aus">Nur belastbare Stichprobe</label><label class="tog"><input type="checkbox" id="a-belastbar" checked><span class="tslider"></span></label></div>
         <div class="tr"><label title="Blendet Spieler mit 90+ Ausfalltagen in drei Jahren aus. Betrifft nur Spieler, für die eine Historie vorliegt.">Verletzungsanfällige ausblenden</label><label class="tog"><input type="checkbox" id="a-fit"><span class="tslider"></span></label></div>
       </div>
@@ -2329,7 +2336,7 @@ function renderPlayers(){
      sonst die gefilterte Liga. Ohne Bezugspunkt keine Einordnung - sie
      waere sonst willkuerlich. */
   /* Im Matching-Modus enthaelt treffer Paare {p,tn}, sonst reine Spieler. */
-  document.getElementById('player-list').innerHTML=treffer.map(e=>{
+  const karten=treffer.map(e=>{
     const p=e.p||e, tn=e.tn||null;
     const ein=eingeordneteNote(p,refNiv);
     const einBadge=ein
@@ -2408,7 +2415,50 @@ function renderPlayers(){
       : '<div class="score-cap primary"><div class="scl">LN</div><div class="scv">'+p.ln+'</div><div class="scbar" style="width:'+p.ln+'%"></div></div>'
         +'<div class="score-cap"><div class="scl">PN</div><div class="scv">'+p.pn+'</div><div class="scbar" style="width:'+p.pn+'%;background:var(--blue)"></div></div>';
     return '<div class="pcard" onclick="showProfile('+p.id+')"><div class="av">'+p.ini+''+(p.number?'<span class="num">'+p.number+'</span>':'')+'</div><div class="pi"><h4><a href="'+tmUrl(p)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Profil auf transfermarkt.de öffnen" class="tm-link">'+p.name+'<i class="ti ti-external-link"></i></a></h4><div class="meta"><span class="pos-tag">'+p.pos+'</span><span>'+p.club+'</span><span>'+p.liga+'</span><span>'+p.age+' J.</span></div><div class="badges">'+cbadge(p.contract)+'<span class="badge b-blue">'+p.mv+' €</span>'+(p.underval?'<span class="badge b-teal"><i class="ti ti-trending-up" style="font-size:10px"></i> Unterbewertet</span>':'')+auslaufBadge(p,fromPage==='auslaufer')+bewBadge+verlBadge+wegBadge+herkunftBadge+einBadge+duenn+luecken+'</div></div><div class="scores">'+note+'</div></div>';
-  }).join('');
+  });
+
+  /* In der Auslaeufer-Suche nach Art des Vertragsendes trennen.
+     Ein Leihende ist kein Vertragsende - dort laeuft der Vertrag beim
+     Stammverein weiter -, und mit gezogener Verlaengerungsoption wird
+     niemand frei. Beides in eine Liste zu werfen hiesse, drei verschiedene
+     Sachverhalte als einen auszugeben. */
+  document.getElementById('player-list').innerHTML=
+    fromPage==='auslaufer'
+      ? auslaufGruppiert(treffer,karten)
+      : karten.join('');
+}
+
+const AUSLAUF_GRUPPEN=[
+  {id:'frei', name:'Ablösefrei',
+   erklaerung:'Vertrag endet, keine Verlängerungsoption eingetragen — ein '
+     +'Wechsel wäre ohne Ablöse möglich.',
+   passt:p=>p.auslauf&&!p.auslauf.leihe
+     &&!(p.auslauf.option&&optionArt(p.auslauf.option)==='verlaengerung')},
+  {id:'option', name:'Mit Verlängerungsoption',
+   erklaerung:'Der Verein kann verlängern. Zieht er die Option, wird der '
+     +'Spieler zu diesem Termin nicht frei.',
+   passt:p=>p.auslauf&&!p.auslauf.leihe
+     &&p.auslauf.option&&optionArt(p.auslauf.option)==='verlaengerung'},
+  {id:'leihe', name:'Leihende',
+   erklaerung:'Nur die Leihe endet; der Vertrag beim Stammverein läuft '
+     +'weiter. Ein Wechsel kostet Ablöse — kein Vertragsausläufer.',
+   passt:p=>p.auslauf&&p.auslauf.leihe},
+  {id:'rest', name:'Vertragsende ohne Angabe zur Option',
+   erklaerung:'Datum aus der Kaderansicht; ob eine Option besteht, führt '
+     +'sie nicht. Die Vertragsende-Seite deckt erst spätere Sommer ab.',
+   passt:p=>!p.auslauf},
+];
+
+function auslaufGruppiert(treffer,karten){
+  const html=[];
+  AUSLAUF_GRUPPEN.forEach(g=>{
+    const teil=karten.filter((k,i)=>g.passt(treffer[i].p||treffer[i]));
+    if(!teil.length)return;
+    html.push('<div class="gruppe-kopf"><h3>'+g.name
+      +' <span>'+teil.length+'</span></h3><p>'+g.erklaerung+'</p></div>'
+      +teil.join(''));
+  });
+  return html.join('');
 }
 /* Flags und Fazit werden hier erzeugt, nicht in der JSON mitgeliefert.
    Beides ist reiner Fliesstext, der sich vollstaendig aus den uebrigen
