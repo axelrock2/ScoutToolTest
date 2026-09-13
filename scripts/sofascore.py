@@ -1,27 +1,43 @@
 #!/usr/bin/env python3
-"""Holt Zweikampfquoten der Notensaison von Sofascore.
+"""Holt die Spielerstatistik der Notensaison von Sofascore.
 
-Warum Sofascore? Individuelle Defensivwerte fehlten dem Werkzeug bisher
-ganz - der Grund, weshalb Innenverteidiger nur ueber Mannschaftswerte zu
-bewerten waren. Geprueft wurden:
+Warum Sofascore? Individuelle Werte fehlten dem Werkzeug fast ganz - der
+Grund, weshalb Innenverteidiger nur ueber Mannschaftswerte zu bewerten
+waren und die Torwartnote keine einzige eigene Kennzahl enthielt.
+Geprueft wurden:
 
     OneFootball   fuehrt keine individuellen Zweikampfwerte
     FBref, kicker sperren automatisierte Abrufe (403)
-    FotMob        66 Kennzahlen je Liga, aber Zweikaempfe nur je Spielerseite
+    FotMob        offene JSON-Dateien (Opta), aber je Kennzahl ein Abruf,
+                  keine Zweikaempfe auf Ligaebene und lueckenhafte Listen
     Sofascore     antwortet, sobald die Anfrage die Kopfzeilen der eigenen
-                  Seite traegt - und liefert die Werte gesammelt je Liga
+                  Seite traegt - und liefert 82 Felder gesammelt je Liga
 
-Ein Abruf liefert 100 Spieler einer Liga mit frei waehlbaren Feldern, also
-rund fuenf Abrufe je Liga statt eines je Spieler.
+Ein Abruf liefert 100 Spieler einer Liga mit ALLEN unten aufgefuehrten
+Feldern, also rund fuenf Abrufe je Liga statt eines je Spieler und
+Kennzahl. Das ist der Grund, weshalb der Umfang von zehn auf ueber
+fuenfzig Kennzahlen wachsen konnte, ohne dass ein einziger Abruf
+dazukam.
 
-    python3 scripts/zweikaempfe.py                 # alle abgedeckten Ligen
-    python3 scripts/zweikaempfe.py --ligen buli
+    python3 scripts/sofascore.py                   # alle abgedeckten Ligen
+    python3 scripts/sofascore.py --ligen buli
 
 Danach compute_grades.py laufen lassen.
 
+Was hier NICHT geholt wird
+--------------------------
+Die Sofascore-Note (Feld "rating", 6,0 bis 10,0). Sie ist der Teil des
+Angebots, an dem sich die Kritik entzuendet: eine eigene Rechenvorschrift,
+die der Anbieter nicht offenlegt. Die Zaehlwerte dagegen stammen aus
+derselben Erfassung wie bei den grossen Anbietern - nachgerechnet an 272
+Bundesligaspielern gegen FotMob/Opta, Korrelation 0,999 (siehe
+scripts/gegenprobe.py). Uebernommen werden deshalb nur Zaehlwerte.
+
 Abdeckung: alle ersten und zweiten Ligen sowie die 3. Liga. Fuer die
 Regional- und Oberligen fuehrt Sofascore keine Spielerstatistik - dort
-bleibt das Feld leer, statt geschaetzt zu werden.
+bleiben die Felder leer, statt geschaetzt zu werden. xG und xA fehlen
+zusaetzlich in der 3. Liga, LaLiga 2 und Ligue 2; Sofascore fuehrt sie
+dort nicht.
 """
 
 from __future__ import annotations
@@ -61,9 +77,69 @@ TURNIERE = {
     "ekstraklasa": 202, "chance-liga": 172,
 }
 
-FELDER = ("minutesPlayed,appearances,totalDuelsWon,totalDuelsWonPercentage,"
-          "groundDuelsWon,groundDuelsWonPercentage,aerialDuelsWon,"
-          "aerialDuelsWonPercentage,tackles,interceptions")
+# Sofascore-Feld -> Kurzname im Bestand.
+#
+# Gespeichert werden ROHE SAISONSUMMEN, nicht Werte je 90 Minuten: die
+# Umrechnung gehoert in compute_grades.py. So laesst sich die Darstellung
+# aendern, ohne neu zu erheben - und der Rohwert bleibt nachpruefbar, was
+# bei der Herkunft der Zahlen der Punkt ist.
+#
+# Nicht enthalten ist "rating" (siehe Kopf), und nicht enthalten sind
+# Felder, die die Schnittstelle zwar annimmt, aber nicht beantwortet:
+# totalDuels, groundDuels, aerialDuels, dribbleAttempts, totalCrosses,
+# totalClearance, blockedScoringAttempt. Die Grundgesamtheiten lassen sich
+# aus Treffer und Quote zurueckrechnen, wo sie gebraucht werden.
+FELD_KURZ = {
+    # Einsatz
+    "minutesPlayed": "min", "appearances": "sp", "matchesStarted": "elf",
+    # Abschluss
+    "goals": "tore", "assists": "vorl",
+    "expectedGoals": "xg", "expectedAssists": "xa",
+    "totalShots": "sch", "shotsOnTarget": "scht",
+    "goalConversionPercentage": "schq",
+    "bigChancesMissed": "gcv", "bigChancesCreated": "gck",
+    "headedGoals": "kopftore", "penaltyGoals": "elfmeter",
+    # Passspiel
+    "accuratePasses": "pa", "totalPasses": "pg",
+    "accuratePassesPercentage": "pq",
+    "accurateFinalThirdPasses": "pd",
+    "accurateLongBalls": "la", "totalLongBalls": "lb",
+    "accurateLongBallsPercentage": "lq",
+    "accurateCrosses": "fa", "accurateCrossesPercentage": "fq",
+    "keyPasses": "skp",
+    # Defensivaktionen
+    "tackles": "tkl", "interceptions": "int", "clearances": "klr",
+    "blockedShots": "blk", "dribbledPast": "ausg",
+    "errorLeadToGoal": "ftor", "errorLeadToShot": "fsch",
+    "possessionWonAttThird": "bg3",
+    # Zweikaempfe
+    "totalDuelsWon": "zg", "totalDuelsWonPercentage": "zq",
+    "groundDuelsWon": "bg", "groundDuelsWonPercentage": "bq",
+    "aerialDuelsWon": "kg", "aerialDuelsWonPercentage": "kq",
+    "aerialLost": "kv",
+    # Ballbesitz
+    "successfulDribbles": "dr", "successfulDribblesPercentage": "drq",
+    "touches": "kon", "possessionLost": "bv",
+    # Disziplin
+    "fouls": "fo", "wasFouled": "gef",
+    "yellowCards": "gelb", "redCards": "rot", "offsides": "abs",
+    # Torwart
+    "saves": "par", "savedShotsFromInsideTheBox": "pari",
+    "savedShotsFromOutsideTheBox": "para",
+    "goalsConceded": "geg", "goalsPrevented": "vth",
+    "cleanSheet": "zu0", "highClaims": "hoch",
+    "runsOut": "raus", "successfulRunsOut": "rausok", "punches": "faust",
+    "penaltyFaced": "pgegen", "penaltySave": "pgehalten",
+    "crossesNotClaimed": "fverpasst",
+}
+assert len(set(FELD_KURZ.values())) == len(FELD_KURZ), "Kurzname doppelt"
+
+FELDER = ",".join(FELD_KURZ)
+
+# Prozentfelder: ohne Grundgesamtheit ist eine 0 keine Aussage, sondern
+# "nie versucht". Sie wird deshalb weggelassen statt als schlechtester
+# Wert in die Verteilung zu geraten.
+QUOTEN = {"schq", "pq", "lq", "fq", "zq", "bq", "kq", "drq"}
 
 _letzter = 0.0
 
@@ -157,7 +233,7 @@ def zweite_stufe(sname: str, team: str, ziel: dict[str, list],
       * Zusatzname              "Rasmus Kristensen" / "Rasmus Nissen Kristensen"
       * Kurzform des Vornamens  "Ezequiel Fernandez" / "Equi Fernandez"
     Ohne passenden Verein wird nichts zugeordnet - lieber eine Luecke als
-    die Quote eines anderen Spielers.
+    die Werte eines anderen Spielers.
     """
     sw = schluessel(sname).split()
     if not sw:
@@ -176,7 +252,7 @@ def zweite_stufe(sname: str, team: str, ziel: dict[str, list],
         return t
     # gleicher Nachname, beim Verein nur einmal vertreten - und die
     # Einsatzminuten beider Quellen passen zusammen. Ohne diese Probe koennte
-    # ein Nachwuchsspieler gleichen Namens, den wir nicht fuehren, die Quote
+    # ein Nachwuchsspieler gleichen Namens, den wir nicht fuehren, die Werte
     # des Stammspielers ueberschreiben.
     t = [sp for sp in beim_verein
          if schluessel(sp["name"]).split()[-1:] == sw[-1:]
@@ -189,30 +265,56 @@ def minuten_passen(sp: dict, sofa_minuten: int) -> bool:
     return abs(tm - sofa_minuten) <= max(270, 0.25 * max(tm, sofa_minuten))
 
 
-def eintrag(r: dict) -> dict | None:
+def roh(r: dict) -> dict | None:
+    """Alle gelieferten Felder unter ihren Kurznamen, ohne Nullen.
+
+    Weggelassen wird, was 0 oder None ist: bei Zaehlwerten ist 0 die
+    Vorgabe und muss nicht neunttausendmal in der Datei stehen, bei
+    Quoten waere eine 0 ohne Versuche irrefuehrend.
+    """
     minuten = int(r.get("minutesPlayed") or 0)
     if not minuten:
         return None
-    def zahl(k):
-        v = r.get(k)
-        return round(float(v), 1) if v is not None else None
-    gewonnen = int(r.get("totalDuelsWon") or 0)
-    pct = zahl("totalDuelsWonPercentage")
+    out: dict[str, float] = {}
+    for feld, kurz in FELD_KURZ.items():
+        v = r.get(feld)
+        if v is None:
+            continue
+        v = round(float(v), 2)
+        if v == 0:
+            continue
+        out[kurz] = int(v) if v == int(v) and kurz not in QUOTEN else v
+    out["min"] = minuten
+    pid = (r.get("player") or {}).get("id")
+    if pid:
+        out["sid"] = pid
+    return out
+
+
+def eintrag(s: dict) -> dict:
+    """Die Zweikampfwerte in der bisherigen Form.
+
+    Bleibt erhalten, obwohl alles auch in "sofa" steht: die Note rechnet
+    seit der Freigabe mit diesen Feldern, und an der Note wird hier nichts
+    geaendert.
+    """
+    gewonnen = int(s.get("zg") or 0)
+    pct = s.get("zq")
     return {
         "quelle": "sofascore",
         "geholt": date.today().isoformat(),
-        "minuten": minuten,
+        "minuten": s["min"],
         "quote": pct,
         "gewonnen": gewonnen,
         # Gesamtzahl aus Quote und Gewonnenen - Sofascore fuehrt sie nicht
         # als eigenes Feld, sie entscheidet aber, wie belastbar die Quote ist.
         "gesamt": round(gewonnen * 100 / pct) if pct else gewonnen,
-        "boden_quote": zahl("groundDuelsWonPercentage"),
-        "luft_quote": zahl("aerialDuelsWonPercentage"),
-        "luft_gewonnen": int(r.get("aerialDuelsWon") or 0),
-        "tacklings": int(r.get("tackles") or 0),
-        "interceptions": int(r.get("interceptions") or 0),
-        "sofascore_id": (r.get("player") or {}).get("id"),
+        "boden_quote": s.get("bq"),
+        "luft_quote": s.get("kq"),
+        "luft_gewonnen": int(s.get("kg") or 0),
+        "tacklings": int(s.get("tkl") or 0),
+        "interceptions": int(s.get("int") or 0),
+        "sofascore_id": s.get("sid"),
     }
 
 
@@ -229,9 +331,9 @@ def main() -> int:
     with gzip.open(BESTAND, "rt", encoding="utf-8") as fh:
         bestand = json.load(fh)
 
-    # Notensaison "2025/26" -> "25/26". Die Zweikaempfe muessen aus
-    # DERSELBEN Saison stammen wie die Noten, sonst stuende eine Quote aus
-    # zwei Spieltagen neben einer Note aus 34.
+    # Notensaison "2025/26" -> "25/26". Die Werte muessen aus DERSELBEN
+    # Saison stammen wie die Noten, sonst stuende eine Quote aus zwei
+    # Spieltagen neben einer Note aus 34.
     jahr = args.saison or re.sub(r"^20(\d\d)/(\d\d)$", r"\1/\2",
                                  str(bestand.get("saison") or "2025/26"))
     ligen = [x.strip() for x in args.ligen.split(",") if x.strip()] or list(TURNIERE)
@@ -264,14 +366,14 @@ def main() -> int:
         ziel = nach_liga.get(fid, {})
         treffer = mehrdeutig = 0
         for r in werte:
-            e = eintrag(r)
-            if not e:
+            sofa = roh(r)
+            if not sofa:
                 continue
             sname = (r.get("player") or {}).get("name", "")
             kandidaten = ziel.get(schluessel(sname))
             if not kandidaten:
                 kandidaten = zweite_stufe(sname, (r.get("team") or {}).get("name", ""),
-                                          ziel, e["minuten"])
+                                          ziel, sofa["min"])
             if not kandidaten:
                 continue
             # Mehrere Datensaetze desselben Spielers (Wechsel innerhalb der
@@ -283,8 +385,10 @@ def main() -> int:
                 if len({k["id"] for k in kandidaten}) != 1:
                     mehrdeutig += 1
                     continue
+            d = eintrag(sofa)
             for k in kandidaten:
-                k["duelle"] = e
+                k["sofa"] = sofa
+                k["duelle"] = d
             treffer += 1
         gesamt += treffer
         print(f"  [ok] {namen[fid]:24s} {treffer:4d} von {len(werte)} zugeordnet"
@@ -294,10 +398,11 @@ def main() -> int:
     if not gesamt:
         print("Nichts zugeordnet - Bestand bleibt unangetastet.", file=sys.stderr)
         return 0
+    bestand["sofa_felder"] = FELD_KURZ
     bestand["stand"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
     with gzip.open(BESTAND, "wt", encoding="utf-8") as fh:
         json.dump(bestand, fh, ensure_ascii=False, separators=(",", ":"))
-    print(f"\n{gesamt} Spieler mit Zweikampfwerten ({jahr}). "
+    print(f"\n{gesamt} Spieler mit Sofascore-Werten ({jahr}). "
           f"Danach compute_grades.py laufen lassen.", file=sys.stderr)
     return 0
 

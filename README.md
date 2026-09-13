@@ -152,7 +152,7 @@ Spielerakte unter *Datenherkunft*, in Kurzform auf der Startseite.
 | **erhoben** | [Transfermarkt](https://www.transfermarkt.de) | Stammdaten, Marktwert, Vertrag, Einsätze, Tore, Vorlagen, Karten, Minuten, Mannschaftswerte, Verletzungshistorie |
 | **erhoben** | Transfermarkt · Vereinsseite *Vertragsende* | Auslaufender Vertrag, Vertragsoption, Leihe |
 | **erhoben** | [Understat](https://understat.com) | xG, npxG, xA, Schlüsselpässe, Schüsse, Aufbaubeteiligung *(nur 5 Ligen)* |
-| **erhoben** | [Sofascore](https://www.sofascore.com) | Zweikampfquote gesamt/Boden/Luft, Tacklings, Interceptions *(16 Ligen bis zur 3. Liga)* |
+| **erhoben** | [Sofascore](https://www.sofascore.com) | über fünfzig Zählwerte: Zweikämpfe, Tacklings, Interceptions, Klärungen, Passquote, lange Bälle, Flanken, Schlüsselpässe, Großchancen, xG/xA, Schüsse, Dribblings, Ballkontakte, Paraden, verhinderte Tore, Fouls *(16 Ligen bis zur 3. Liga; nachgerechnet gegen FotMob/Opta)* |
 | **erhoben** | Transfermarkt · Bilder | Spielerfoto, Vereinswappen *(per Verweis, nicht gespeichert)* |
 | **berechnet** | dieses Werkzeug | Liga-Note, Positions-Note, Team-Note, Percentile, Liganiveau, Unterbewertet-Index |
 | **fehlt** | — | Zweikämpfe unterhalb der 3. Liga, Klärungen, Passquote, Laufleistung, Gewicht |
@@ -279,26 +279,147 @@ tragen kann, stehen auch nicht da — eine Chancenverwertung über dem
 Erwartungswert heißt „ob sie sich wiederholt, lässt sich aus einer Saison
 nicht ablesen", nicht „wird sich fortsetzen" und nicht „wird einbrechen".
 
-## Zweikampfquoten
+## Spielerstatistik von Sofascore
 
-Individuelle Defensivwerte fehlten dem Werkzeug von Anfang an — der Grund,
-weshalb Innenverteidiger nur über Mannschaftswerte zu bewerten waren. Die
-Suche nach einer freien Quelle, 2026 erneut geprüft:
+Individuelle Werte fehlten dem Werkzeug von Anfang an — der Grund, weshalb
+Innenverteidiger nur über Mannschaftswerte zu bewerten waren und die
+Torwartnote keine einzige eigene Kennzahl enthielt. Die Suche nach einer
+freien Quelle, 2026 erneut geprüft:
 
 | Quelle | Ergebnis |
 |---|---|
 | OneFootball | führt keine individuellen Zweikampfwerte |
 | FBref, kicker | sperren automatisierte Abrufe (403), auch mit Browser |
-| FotMob | 66 Kennzahlen je Liga (Tacklings, Interceptions, Klärungen …), Zweikämpfe aber nur auf jeder einzelnen Spielerseite |
-| **Sofascore** | antwortet, sobald die Anfrage die Kopfzeilen der eigenen Seite trägt — und liefert die Werte **gesammelt je Liga** |
+| FotMob | 66 Kennzahlen je Liga, aber **je Kennzahl ein eigener Abruf**, keine Zweikämpfe auf Ligaebene und unvollständige Listen |
+| **Sofascore** | antwortet, sobald die Anfrage die Kopfzeilen der eigenen Seite trägt — und liefert **82 Felder gesammelt je Liga** |
 
-Ein Abruf bringt 100 Spieler einer Liga mit frei wählbaren Feldern — rund
-fünf Abrufe je Liga statt eines je Spieler:
+Ein Abruf bringt 100 Spieler einer Liga mit allen Feldern zugleich — rund
+fünf Abrufe je Liga statt eines je Spieler **und Kennzahl**:
 
 ```bash
-python3 scripts/zweikaempfe.py            # alle abgedeckten Ligen, Saison wie die Noten
+python3 scripts/sofascore.py              # alle abgedeckten Ligen, Saison wie die Noten
+python3 scripts/gegenprobe.py             # gegen FotMob nachrechnen
 python3 scripts/compute_grades.py
 ```
+
+### Von zehn auf über fünfzig Kennzahlen
+
+Anfangs wurden zehn Felder angefragt. Dass derselbe Abruf 82 beantwortet,
+fiel erst beim Nachsehen auf — die Erweiterung kostete also **keinen
+einzigen zusätzlichen Abruf**. Dazugekommen sind:
+
+| Bereich | Kennzahlen |
+|---|---|
+| Passspiel | Passquote, angekommene Pässe, Pässe ins letzte Drittel, lange Bälle, Flanken |
+| Chancen | Schlüsselpässe, herausgespielte und vergebene Großchancen, xA |
+| Abschluss | xG, Schüsse, Schüsse aufs Tor, Abschlussquote, Tore über xG |
+| Defensivaktionen | Klärungen, geblockte Schüsse, ausgespielt worden, Ballgewinne im Angriffsdrittel, Fehler zum Gegentor |
+| Ballbesitz | Dribblings, Dribbelquote, Ballkontakte, Ballverluste je 100 Kontakte |
+| Torwart | Paraden, **verhinderte Tore**, Zu-Null-Anteil, hohe Bälle, Herauslaufen, gehaltene Elfmeter |
+
+Am meisten ändert das für **Torhüter**: deren Note bestand bis dahin
+ausschließlich aus Mannschaftsgegentoren und Verfügbarkeit. Und **xG
+liegt jetzt für 13 statt 5 Ligen vor** — Understat deckt nur die fünf
+großen ersten Ligen ab, Sofascore alle außer 3. Liga, LaLiga 2 und
+Ligue 2.
+
+Gespeichert werden **rohe Saisonsummen**, nicht Werte je 90 Minuten: die
+Umrechnung gehört in `compute_grades.py`, damit sich die Darstellung
+ändern lässt, ohne neu zu erheben — und damit der Rohwert nachprüfbar
+bleibt.
+
+### Kennzahlenblöcke in der Akte
+
+In der Spielerakte stehen sie nach Themen geordnet, zweispaltig, mit
+**Rohwert *und* Percentil nebeneinander**. Ein Percentil allein verbirgt,
+worauf es beruht: 90 aus 2,1 Tacklings je 90 Minuten ist etwas anderes als
+90 aus 0,4.
+
+Welche Blöcke ein Spieler bekommt, hängt von seiner Position ab — und in
+welcher Reihenfolge. Ein Torwart mit „Tore / 90: 0,00" wäre kein Befund,
+sondern Füllmaterial; ein Innenverteidiger braucht die Zweikämpfe zuerst,
+ein Stürmer den Abschluss. Was nicht gezeigt wird, wird auch **nicht
+gespeichert** und kann so kein Percentil aus einer Gruppe erzeugen, in der
+die Kennzahl nichts bedeutet.
+
+**Graue Balken sind Mengenangaben ohne Wertung.** 1,5 Paraden je 90
+Minuten heißen nicht, dass ein Torwart schlechter hält, sondern dass seine
+Abwehr weniger zulässt — Neuer steht damit auf Percentil 2 von 23
+Bundesliga-Torhütern, während seine *verhinderten Tore* bei 46 liegen.
+Dasselbe gilt für Gegentore und Ballkontakte.
+
+**Eigene Datei, nachgeladen.** `data/metriken.json` ist 2,8 MB (631 KB
+komprimiert) und wird nur gebraucht, wenn jemand eine Akte öffnet. Beim
+Seitenaufruf bleibt es bei `data/players.json`; die Kennzahlen kommen
+beim ersten Profil nach. Die **Percentile rechnet das Frontend**, nicht
+das Skript — es kennt die Vergleichsgruppe ohnehin, und so steht jede
+Zahl nur einmal in der Datei statt zweimal.
+
+**Diese Werte gehen nicht in die Note ein.** Das wäre eine neue
+Bewertungsgrundlage und ist eine Entscheidung des Nutzers, keine dieses
+Skripts.
+
+### Gegenprobe gegen FotMob (Opta)
+
+Sofascore ist als Quelle umstritten. Der Vorwurf trifft zwei verschiedene
+Dinge, die auseinandergehalten gehören:
+
+* Die **Sofascore-Note** (6,0–10,0) ist eine eigene Rechenvorschrift, die
+  der Anbieter nicht offenlegt. Sie wird hier **nicht verwendet**.
+* Die **Zählwerte** stammen aus derselben Erfassung wie bei den großen
+  Anbietern. Ob das stimmt, lässt sich prüfen statt glauben.
+
+`scripts/gegenprobe.py` vergleicht dieselben Spieler derselben Saison mit
+FotMob, dessen Ligastatistik offen als JSON liegt und von **Opta** stammt.
+Bundesliga, Premier League und Serie A, 9.921 Wertepaare, nur Spieler ab
+450 Minuten:
+
+| Kennzahl | Grundlage | Spieler | r | Ø-Abw. | einig |
+|---|---|---:|---:|---:|---:|
+| Tore | Saisonsumme | 753 | 1,0000 | 0,00 % | **100 %** |
+| Vorlagen | Saisonsumme | 725 | 1,0000 | 0,00 % | **100 %** |
+| Großchancen kreiert | Saisonsumme | 856 | 1,0000 | 0,00 % | **100 %** |
+| xG | Saisonsumme | 1.051 | 0,9999 | 0,96 % | 99,6 % |
+| Klärungen | je 90 Min. | 916 | 0,9998 | 1,37 % | 96,5 % |
+| angekommene Pässe | je 90 Min. | 920 | 0,9998 | 0,55 % | 83,4 % |
+| Tacklings | je 90 Min. | 890 | 0,9989 | 2,01 % | 94,8 % |
+| Paraden | je 90 Min. | 57 | 0,9988 | 0,77 % | 100 % |
+| gewonnene Dribblings | je 90 Min. | 867 | 0,9987 | 3,83 % | 98,2 % |
+| Fouls | je 90 Min. | 881 | 0,9979 | 2,47 % | 96,8 % |
+| Interceptions | je 90 Min. | 869 | 0,9978 | 3,48 % | 99,0 % |
+| Einsatzminuten | Saisonsumme | 1.136 | 0,9999 | 0,37 % | 78,1 % |
+
+Tore, Vorlagen und Großchancen stimmen bei **jedem einzelnen Spieler**
+überein. Die verbleibenden Abweichungen sind zu einem großen Teil
+Rundung: FotMob veröffentlicht Werte je 90 Minuten auf **eine**
+Nachkommastelle (3,7 statt 3,7113), wir rechnen ungerundet. Der Rest sind
+leicht abweichende Einsatzminuten — im Mittel 6,4 Minuten über eine ganze
+Saison.
+
+Zwei Fallen, die der erste Durchlauf zeigte und die der zweite behebt:
+
+* **Ohne Mindestspielzeit** entstanden Ausreißer von 13,5 „Vorlagen je
+  90". Dahinter stand ein Spieler mit *einer* Vorlage in 10 Minuten
+  (Sofascore) beziehungsweise 4 Minuten (FotMob) — das sagt nichts über
+  Datenqualität, sondern etwas über Division. Seitdem: ab 450 Minuten.
+* **Summen gegen Durchschnitte** zu vergleichen macht jede Korrelation
+  wertlos. FotMob liefert je nach Kennzahl beides; der Titel der Liste
+  („Tackles per 90" gegen „Top scorer") entscheidet, und das Skript liest
+  ihn aus.
+
+Das Ergebnis steht in der **Datenherkunft jeder Spielerakte** — damit ist
+es nachlesbar und nicht bloß eine Zusage. Es läuft bei jedem
+`update_local.sh` mit (rund 40 Abrufe); `GEGENPROBE=0` schaltet es ab.
+
+**Warum dann nicht gleich FotMob als Quelle?** Zwei Gründe, beide
+gemessen: je Kennzahl ein eigener Abruf statt aller in einem — und die
+Listen sind unvollständig. Bei den Tacklings standen 286 Spieler, obwohl
+385 die Mindestspielzeit erreichten; Torhüter mit 3.060 Minuten fehlten,
+während andere geführt wurden. Für Percentile wäre das gefährlich, für
+eine Gegenprobe ist es unerheblich: verglichen wird nur, wer in beiden
+Listen steht.
+
+### Zweikampfquoten
 
 Erfasst: **Zweikampfquote gesamt, am Boden, in der Luft**, dazu Tacklings
 und Interceptions — für alle ersten und zweiten Ligen und die 3. Liga
@@ -670,8 +791,11 @@ jetzt den tatsächlichen Gegentoren — Dortmund (34 Gegentore) führt, Heidenhe
 **Die Defensive der Mannschaft ist ein Mannschaftswert**, kein individueller.
 Das Profil kennzeichnet sie als solchen. Ein Innenverteidiger einer starken
 Abwehr bekommt davon einen guten Wert, auch wenn sein eigener Anteil daran
-nicht messbar ist — individuelle Zweikampf- und Passdaten führt keine freie
-Quelle.
+in der Note nicht abgebildet ist. Seit der Sofascore-Erweiterung stehen die
+individuellen Werte — Zweikämpfe, Tacklings, Klärungen, Passquote — zwar in
+der Akte, aber bis auf die Zweikampfquote **bewusst nicht in der Note**:
+darüber entscheidet der Nutzer, nicht dieses Skript. Der Anteil der
+Mannschaftswerte an jeder Note steht in der Akte.
 
 ### Erweiterte Werte: xG (nur fünf Ligen)
 

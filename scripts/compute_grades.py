@@ -32,6 +32,9 @@ QUELLE = os.environ.get("SCOUT_QUELLE") or os.path.join(
     os.path.dirname(__file__), "..", "data", "players_raw.json.gz")
 ZIEL = os.environ.get("SCOUT_ZIEL") or os.path.join(
     os.path.dirname(__file__), "..", "data", "players.json")
+# Kennzahlen der Spielerakte. Eigene Datei, weil das Frontend sie erst
+# nachlaedt, wenn jemand ein Profil oeffnet - siehe METRIKEN.
+ZIEL_METRIK = os.path.join(os.path.dirname(ZIEL), "metriken.json")
 
 MIN_MINUTEN = 450          # darunter ist die Stichprobe zu duenn
 
@@ -177,6 +180,249 @@ BEREICH_NAME = {
 
 
 # ---------------------------------------------------------------------
+# Kennzahlenblöcke der Spielerakte (Sofascore)
+#
+# Diese Werte gehen AUSDRUECKLICH NICHT in die Note ein. Sie stehen in der
+# Akte, nach Themen geordnet, mit Rohwert und Percentil nebeneinander -
+# genau wie es die Darstellung professioneller Werkzeuge vormacht. Ueber
+# eine Aufnahme in die Note entscheidet der Nutzer, nicht dieses Skript;
+# bis dahin bleibt die Notenzusammensetzung unveraendert.
+#
+# Warum nicht in players.json? Rund vierzig Zahlen fuer 8700 Spieler
+# waeren gut ein Megabyte mehr beim Seitenaufruf - gebraucht werden sie
+# aber nur, wenn jemand eine Akte oeffnet. Sie stehen deshalb in
+# data/metriken.json und werden nachgeladen.
+#
+# Gespeichert wird der FERTIGE Wert (je 90 Minuten oder Prozent), das
+# Percentil rechnet das Frontend: es kennt die Vergleichsgruppe ohnehin,
+# und so steht jede Zahl nur einmal in der Datei.
+METRIK_BEREICHE = [
+    ("abschluss",  "Abschluss"),
+    ("kreativ",    "Chancen & Kreativität"),
+    ("pass",       "Passspiel"),
+    ("zweikampf",  "Zweikämpfe"),
+    ("defensiv",   "Defensivaktionen"),
+    ("ball",       "Ballbesitz & Dribbling"),
+    ("torwart",    "Torwartspiel"),
+    ("disziplin",  "Disziplin"),
+]
+
+# (Schluessel, Anzeigename, Bereich, Art, hoeher_besser, Nachkommastellen)
+#
+# Art  "p90"    Saisonsumme je 90 Minuten
+#      "quote"  Prozentwert
+#      "summe"  Saisonsumme unveraendert
+#
+# Mindestzahlen bei den Quoten: eine Flankenquote aus drei Flanken ist
+# keine Quote, sondern Zufall. Wo die Grundgesamtheit darunter liegt,
+# bleibt das Feld leer - wie bei der Zweikampfquote in der Note.
+METRIKEN = [
+    ("tore90",    "Tore / 90",                     "abschluss", "p90",   True,  2),
+    ("xg90",      "xG / 90",                       "abschluss", "p90",   True,  2),
+    ("ueber_xg",  "Tore über xG",                  "abschluss", "summe", True,  1),
+    ("sch90",     "Schüsse / 90",                  "abschluss", "p90",   True,  2),
+    ("schtq",     "Schüsse aufs Tor (Quote)",      "abschluss", "quote", True,  1),
+    ("schq",      "Abschlussquote",                "abschluss", "quote", True,  1),
+    ("gcv90",     "Großchancen vergeben / 90",     "abschluss", "p90",   False, 2),
+
+    ("vorl90",    "Vorlagen / 90",                 "kreativ",   "p90",   True,  2),
+    ("xa90",      "xA / 90",                       "kreativ",   "p90",   True,  2),
+    ("skp90",     "Schlüsselpässe / 90",           "kreativ",   "p90",   True,  2),
+    ("gck90",     "Großchancen kreiert / 90",      "kreativ",   "p90",   True,  2),
+    ("fa90",      "Flanken angekommen / 90",       "kreativ",   "p90",   True,  2),
+    ("fq",        "Flankenquote",                  "kreativ",   "quote", True,  1),
+
+    ("pa90",      "Pässe angekommen / 90",         "pass",      "p90",   True,  1),
+    ("pq",        "Passquote",                     "pass",      "quote", True,  1),
+    ("pd90",      "Pässe ins letzte Drittel / 90", "pass",      "p90",   True,  2),
+    ("la90",      "Lange Bälle angekommen / 90",   "pass",      "p90",   True,  2),
+    ("lq",        "Quote lange Bälle",             "pass",      "quote", True,  1),
+
+    ("zq",        "Zweikampfquote",                "zweikampf", "quote", True,  1),
+    ("zg90",      "Zweikämpfe gewonnen / 90",      "zweikampf", "p90",   True,  2),
+    ("bq",        "Bodenzweikämpfe (Quote)",       "zweikampf", "quote", True,  1),
+    ("kq",        "Kopfballduelle (Quote)",        "zweikampf", "quote", True,  1),
+    ("kg90",      "Kopfbälle gewonnen / 90",       "zweikampf", "p90",   True,  2),
+
+    ("tkl90",     "Tacklings / 90",                "defensiv",  "p90",   True,  2),
+    ("int90",     "Interceptions / 90",            "defensiv",  "p90",   True,  2),
+    ("klr90",     "Klärungen / 90",                "defensiv",  "p90",   True,  2),
+    ("blk90",     "Geblockte Schüsse / 90",        "defensiv",  "p90",   True,  2),
+    ("bg390",     "Ballgewinne im Angriffsdrittel / 90", "defensiv", "p90", True, 2),
+    ("ausg90",    "Ausgespielt worden / 90",       "defensiv",  "p90",   False, 2),
+    ("ftor",      "Fehler zum Gegentor",           "defensiv",  "summe", False, 0),
+
+    ("dr90",      "Dribblings gewonnen / 90",      "ball",      "p90",   True,  2),
+    ("drq",       "Dribbelquote",                  "ball",      "quote", True,  1),
+    ("kon90",     "Ballkontakte / 90",             "ball",      "p90",   True,  1),
+    ("bv100",     "Ballverluste je 100 Kontakte",  "ball",      "quote", False, 1),
+
+    ("par90",     "Paraden / 90",                  "torwart",   "p90",   True,  2),
+    ("vth",       "Verhinderte Tore (Saison)",     "torwart",   "summe", True,  2),
+    ("vth90",     "Verhinderte Tore / 90",         "torwart",   "p90",   True,  3),
+    ("geg90",     "Gegentore / 90",                "torwart",   "p90",   False, 2),
+    ("zu0q",      "Zu-Null-Anteil",                "torwart",   "quote", True,  0),
+    ("hoch90",    "Hohe Bälle gefangen / 90",      "torwart",   "p90",   True,  2),
+    ("rausq",     "Herauslaufen erfolgreich",      "torwart",   "quote", True,  0),
+    ("phalt",     "Gehaltene Elfmeter",            "torwart",   "summe", True,  0),
+
+    ("fo90",      "Fouls / 90",                    "disziplin", "p90",   False, 2),
+    ("gef90",     "Gefoult worden / 90",           "disziplin", "p90",   True,  2),
+    ("abs90",     "Abseits / 90",                  "disziplin", "p90",   False, 2),
+]
+
+# Einzelne Kennzahlen ergeben nur fuer bestimmte Positionen einen Befund.
+# Abseits etwa steht bei einem Innenverteidiger durchgaengig auf 0 - das
+# ist keine Information, sondern eine Zeile, die den Blick von den
+# wichtigen ablenkt.
+NUR_GRUPPEN = {"abs90": {"ZM", "OFF", "ST"}}
+
+# Kennzahlen, die zwar als Quote gerechnet werden, aber nicht als Prozent
+# zu lesen sind.
+OHNE_PROZENT = {"bv100"}
+
+# Mengenangaben ohne eigene Wertung. Ein Torwart mit 1,5 Paraden je 90
+# Minuten ist nicht schlechter als einer mit 4,0 - seine Abwehr laesst
+# weniger zu. Dasselbe gilt fuer Gegentore (ueberwiegend ein
+# Mannschaftswert) und fuer Ballkontakte, die vor allem die Rolle im
+# Aufbau beschreiben. Diese Zeilen bekommen deshalb keine Farbe nach Gut
+# und Schlecht, sondern werden als das gezeigt, was sie sind: ein Rang.
+OHNE_WERTUNG = {"par90", "geg90", "kon90", "gef90"}
+
+# Welche Bloecke eine Position ueberhaupt bekommt - und in welcher
+# Reihenfolge. Ein Torwart mit "Tore / 90: 0,00" waere kein Befund,
+# sondern Fuellmaterial; ein Innenverteidiger braucht die Zweikaempfe
+# zuerst, ein Stuermer den Abschluss.
+#
+# Die Auswahl entscheidet zugleich ueber die Vergleichsgruppe: was nicht
+# gezeigt wird, wird auch nicht gespeichert - und kann so kein Percentil
+# aus einer Gruppe erzeugen, in der die Kennzahl nichts bedeutet.
+BLOECKE_JE_GRUPPE = {
+    "TW":  ["torwart", "pass"],
+    "IV":  ["zweikampf", "defensiv", "pass", "ball", "abschluss", "disziplin"],
+    "AV":  ["zweikampf", "defensiv", "pass", "kreativ", "ball", "disziplin"],
+    "ZM":  ["pass", "kreativ", "zweikampf", "defensiv", "ball", "abschluss",
+            "disziplin"],
+    "OFF": ["kreativ", "abschluss", "ball", "zweikampf", "pass", "defensiv",
+            "disziplin"],
+    "ST":  ["abschluss", "kreativ", "zweikampf", "ball", "pass", "defensiv",
+            "disziplin"],
+}
+
+# Mindest-Grundgesamtheit je Quote
+MIN_BASIS = {"schq": 10, "schtq": 10, "pq": 100, "lq": 20, "fq": 10,
+             "zq": MIN_DUELLE, "bq": 25, "kq": 15, "drq": 10,
+             "zu0q": 5, "rausq": 5, "bv100": 100}
+
+
+def _quote(treffer, gesamt, mindest):
+    """Prozentwert, aber nur mit ausreichender Grundgesamtheit."""
+    if not gesamt or gesamt < mindest:
+        return None
+    return round(100.0 * treffer / gesamt, 1)
+
+
+def metrikwerte(sofa: dict, gruppe: str) -> dict:
+    """Fertige Kennzahlen eines Spielers aus den Sofascore-Rohsummen.
+
+    Quoten werden, wo beides vorliegt, aus Treffer und Versuch neu
+    gerechnet statt die gelieferte Quote zu uebernehmen. Nicht aus
+    Misstrauen - nachgerechnet stimmen sie auf die zweite Stelle - sondern
+    weil eine Null dann eine Null bleibt: der gelieferte Prozentwert 0
+    laesst sich nicht von "nie versucht" unterscheiden, ein Stuermer mit
+    vierzig Schuessen ohne Tor hat aber sehr wohl eine Abschlussquote.
+    """
+    minuten = sofa.get("min") or 0
+    if minuten < 1:
+        return {}
+    p90 = minuten / 90.0
+    g = lambda k: float(sofa.get(k) or 0)                       # noqa: E731
+
+    # Grundgesamtheiten, soweit sie sich zurueckrechnen lassen.
+    zg, zq = g("zg"), sofa.get("zq")
+    bg, bq = g("bg"), sofa.get("bq")
+    dr, drq = g("dr"), sofa.get("drq")
+    fa, fq = g("fa"), sofa.get("fq")
+    kg, kv = g("kg"), g("kv")
+
+    w = {
+        "tore90":   g("tore") / p90,
+        "sch90":    g("sch") / p90,
+        "gcv90":    g("gcv") / p90,
+        "vorl90":   g("vorl") / p90,
+        "skp90":    g("skp") / p90,
+        "gck90":    g("gck") / p90,
+        "fa90":     fa / p90,
+        "pa90":     g("pa") / p90,
+        "pd90":     g("pd") / p90,
+        "la90":     g("la") / p90,
+        "zg90":     zg / p90,
+        "kg90":     kg / p90,
+        "tkl90":    g("tkl") / p90,
+        "int90":    g("int") / p90,
+        "klr90":    g("klr") / p90,
+        "blk90":    g("blk") / p90,
+        "bg390":    g("bg3") / p90,
+        "ausg90":   g("ausg") / p90,
+        "ftor":     g("ftor"),
+        "dr90":     dr / p90,
+        "kon90":    g("kon") / p90,
+        "fo90":     g("fo") / p90,
+        "gef90":    g("gef") / p90,
+        "abs90":    g("abs") / p90,
+        # Quoten aus Treffer und Versuch
+        "schq":     _quote(g("tore"), g("sch"), MIN_BASIS["schq"]),
+        "schtq":    _quote(g("scht"), g("sch"), MIN_BASIS["schtq"]),
+        "pq":       _quote(g("pa"), g("pg"), MIN_BASIS["pq"]),
+        "lq":       _quote(g("la"), g("lb"), MIN_BASIS["lq"]),
+        "kq":       _quote(kg, kg + kv, MIN_BASIS["kq"]),
+        "bv100":    _quote(g("bv"), g("kon"), MIN_BASIS["bv100"]),
+        # Quoten, deren Grundgesamtheit die Quelle nicht fuehrt: sie
+        # ergibt sich aus Treffer und Prozentwert.
+        "zq":       _quote(zg, round(zg * 100 / zq) if zq else 0, MIN_BASIS["zq"]),
+        "bq":       _quote(bg, round(bg * 100 / bq) if bq else 0, MIN_BASIS["bq"]),
+        "drq":      _quote(dr, round(dr * 100 / drq) if drq else 0, MIN_BASIS["drq"]),
+        "fq":       _quote(fa, round(fa * 100 / fq) if fq else 0, MIN_BASIS["fq"]),
+    }
+    # xG fuehrt Sofascore nicht in allen Ligen (3. Liga, LaLiga 2,
+    # Ligue 2). Fehlt der Wert, bleibt das Feld leer statt 0 zu zeigen.
+    if sofa.get("xg") is not None:
+        w["xg90"] = g("xg") / p90
+        w["ueber_xg"] = g("tore") - g("xg")
+    if sofa.get("xa") is not None:
+        w["xa90"] = g("xa") / p90
+
+    if gruppe == "TW":
+        w.update({
+            "par90":  g("par") / p90,
+            "vth":    float(sofa["vth"]) if sofa.get("vth") is not None else None,
+            "vth90":  (float(sofa["vth"]) / p90) if sofa.get("vth") is not None else None,
+            "geg90":  g("geg") / p90,
+            "hoch90": g("hoch") / p90,
+            "phalt":  g("pgehalten"),
+            "zu0q":   _quote(g("zu0"), g("sp"), MIN_BASIS["zu0q"]),
+            "rausq":  _quote(g("rausok"), g("raus"), MIN_BASIS["rausq"]),
+        })
+
+    bloecke = set(BLOECKE_JE_GRUPPE.get(gruppe, BLOECKE_JE_GRUPPE["ZM"]))
+    out = {}
+    for s, _name, bereich, _art, _hoch, nk in METRIKEN:
+        if bereich not in bloecke:
+            continue
+        if s in NUR_GRUPPEN and gruppe not in NUR_GRUPPEN[s]:
+            continue
+        v = w.get(s)
+        if v is None:
+            continue
+        # Ganze Zahlen auch als solche schreiben: "4" statt "4.0" - das
+        # spart in 8700 Datensaetzen nicht nur Platz, es liest sich auch
+        # richtig ("Fehler zum Gegentor: 4").
+        out[s] = int(round(float(v))) if nk == 0 else round(float(v), nk)
+    return out
+
+
+
+# ---------------------------------------------------------------------
 # Liganiveau: UEFA-Koeffizient und Marktwert gemischt
 #
 # Der Marktwert allein verzerrte systematisch. La Liga und Serie A haben
@@ -288,12 +534,25 @@ HERKUNFT = {
         "name": "Sofascore",
         "url": "https://www.sofascore.com",
         "art": "erhoben",
-        "felder": ["Zweikampfquote", "Bodenzweikämpfe", "Kopfballduelle",
-                   "Tacklings", "Interceptions"],
-        "hinweis": "Saison 2025/26 wie die Noten. Nur erste und zweite Ligen "
-                   "sowie 3. Liga; für Regional- und Oberligen führt Sofascore "
-                   "keine Spielerstatistik. Die Zweikampfquote geht bei Abwehr "
-                   "und Mittelfeld in die Liga-Note ein (ab 40 Zweikämpfen).",
+        "felder": ["Zweikämpfe (gesamt, Boden, Kopfball)", "Tacklings",
+                   "Interceptions", "Klärungen", "geblockte Schüsse",
+                   "ausgespielt worden", "Passquote",
+                   "Pässe ins letzte Drittel", "lange Bälle", "Flanken",
+                   "Schlüsselpässe", "Großchancen", "xG", "xA", "Schüsse",
+                   "Abschlussquote", "Dribblings", "Ballkontakte",
+                   "Ballverluste", "Paraden", "verhinderte Tore",
+                   "Zu-Null-Spiele", "Herauslaufen", "Fouls"],
+        "hinweis": "Saison 2025/26 wie die Noten, 16 Ligen (alle ersten und "
+                   "zweiten Ligen sowie die 3. Liga). Für Regional- und "
+                   "Oberligen führt Sofascore keine Spielerstatistik; xG und "
+                   "xA fehlen zusätzlich in 3. Liga, LaLiga 2 und Ligue 2. "
+                   "In die Liga-Note geht davon NUR die Zweikampfquote ein "
+                   "(Abwehr und Mittelfeld, ab 40 Zweikämpfen) – alles Übrige "
+                   "steht als Kennzahlenblock in der Spielerakte. Die "
+                   "Sofascore-eigene Spielnote (6,0–10,0) wird bewusst nicht "
+                   "verwendet: ihre Rechenvorschrift ist nicht offengelegt. "
+                   "Die Zählwerte dagegen sind gegen FotMob (Opta) "
+                   "nachgerechnet – siehe „Gegenprobe“.",
     },
     "understat": {
         "name": "Understat",
@@ -319,11 +578,15 @@ HERKUNFT = {
         "name": "Nicht verfügbar",
         "url": None,
         "art": "fehlt",
-        "felder": ["Zweikämpfe unterhalb der 3. Liga", "Klärungen",
-                   "Passquote", "Laufleistung", "Charakter", "Gewicht"],
+        "felder": ["alle Einzelwerte unterhalb der 3. Liga",
+                   "xG/xA in 3. Liga, LaLiga 2 und Ligue 2",
+                   "Laufleistung", "progressive Läufe", "Charakter",
+                   "Gewicht"],
         "hinweis": "Laufdaten führen nur kostenpflichtige Anbieter; FBref "
-                   "und kicker sperren automatisierte Abrufe. Zweikämpfe "
-                   "liefert Sofascore bis zur 3. Liga, darunter nicht.",
+                   "und kicker sperren automatisierte Abrufe. Für Regional- "
+                   "und Oberligen gibt es gar keine Spielerstatistik – dort "
+                   "beruhen die Noten allein auf Einsätzen, Toren, Vorlagen "
+                   "und Mannschaftswerten von Transfermarkt.",
     },
 }
 
@@ -557,6 +820,9 @@ def main() -> int:
                 # Schreiben entfernt.
                 "_nc": s["verein"], "_nl": s["liga"], "_nli": s["liga_id"],
                 "_ns": stufe_note,
+                # Rohsummen von Sofascore. Wandern nicht in players.json,
+                # sondern in data/metriken.json - siehe METRIKEN.
+                "_sofa": s.get("sofa"),
                 "age": alter,
                 # Absicherung: durch die frueher spaltenbasierte Erkennung
                 # steckte in "fuss" teils die Koerpergroesse. Nur echte
@@ -663,7 +929,7 @@ def main() -> int:
             # den meisten Minuten ist oft die Zweitvertretung, gefuehrt
             # wird der Vertrag aber beim Profikader.
             for w in eintraege[1:]:
-                for feld in ("auslauf", "vgeprueft", "bild", "duelle"):
+                for feld in ("auslauf", "vgeprueft", "bild", "duelle", "_sofa"):
                     if feld not in haupt and feld in w:
                         haupt[feld] = w[feld]
         zusammengefasst.append(haupt)
@@ -829,6 +1095,17 @@ def main() -> int:
         # Niveau der Liga, in der die Note ERSPIELT wurde - daran rechnet
         # eingeordneteNote() im Frontend eine Note auf ein Zielniveau um.
         p["niveau"] = niveau_je_liga.get(p["_nli"], 50)
+    # Kennzahlenblöcke der Akte. Eigene Datei, weil sie nur beim Öffnen
+    # eines Profils gebraucht werden - siehe METRIKEN.
+    metriken: dict[str, dict] = {}
+    for p in spieler_out:
+        sofa = p.pop("_sofa", None)
+        if not sofa:
+            continue
+        w = metrikwerte(sofa, GRUPPE.get(p["pos"], "ZM"))
+        if w:
+            metriken[str(p["id"])] = w
+
     for p in spieler_out:
         for k in ("_nc", "_nl", "_nli", "_ns"):
             p.pop(k, None)
@@ -869,6 +1146,10 @@ def main() -> int:
             "bild_basis": roh.get("bild_basis"),
             "kennzahlen": KENNZAHL_NAMEN,
             "herkunft": HERKUNFT,
+            # Nachrechnung der Sofascore-Werte gegen FotMob (Opta), siehe
+            # scripts/gegenprobe.py. Steht in der Datenherkunft und macht
+            # aus der Zusage "die Zaehlwerte stimmen" eine Auskunft.
+            "gegenprobe": roh.get("gegenprobe"),
             "bereiche": BEREICH_NAME,
             "profile": {
                 g: [{"i": KENNZAHL_INDEX[a], "g": gew,
@@ -879,6 +1160,26 @@ def main() -> int:
             "positionsgruppe": GRUPPE,
             "ligen": ligen_liste,
             "players": spieler_out,
+        }, fh, ensure_ascii=False, separators=(",", ":"))
+
+    with open(ZIEL_METRIK, "w", encoding="utf-8") as fh:
+        json.dump({
+            "stand": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "saison": roh.get("saison"),
+            "quelle": "sofascore",
+            "hinweis": ("Zählwerte von Sofascore, Saison wie die Noten. "
+                        "Gehen NICHT in die Note ein. Percentile rechnet "
+                        "das Frontend je Liga der Note und Positionsgruppe, "
+                        "nur aus Spielern ab " + str(MIN_MINUTEN) + " Minuten."),
+            "bereiche": [{"id": i, "name": n} for i, n in METRIK_BEREICHE],
+            "bloecke": BLOECKE_JE_GRUPPE,
+            "felder": [{"k": k, "n": n, "b": b,
+                        "art": "zahl" if k in OHNE_PROZENT else art,
+                        "hoch": 1 if hoch else 0, "nk": nk,
+                        **({"neutral": 1} if k in OHNE_WERTUNG else {})}
+                       for k, n, b, art, hoch, nk in METRIKEN],
+            "mindestens": MIN_BASIS,
+            "werte": metriken,
         }, fh, ensure_ascii=False, separators=(",", ":"))
 
     fest = sum(1 for p in spieler_out if p["belastbar"])

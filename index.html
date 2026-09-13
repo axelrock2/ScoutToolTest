@@ -160,6 +160,13 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
   text-transform:uppercase;border:1px solid;border-radius:5px;padding:2px 7px}
 .quelle-felder{font-size:12px;color:var(--ink-2);line-height:1.65}
 .quelle-hinweis{font-size:12px;color:var(--ink-3);line-height:1.6;margin-top:6px;font-style:italic}
+/* Tabelle der Gegenprobe. Schmal gehalten - sie steht in jeder Akte und
+   soll dort nicht mehr Platz einnehmen als die Quellen daneben. */
+.gp-tab{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px}
+.gp-tab th{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink-3);text-transform:uppercase;letter-spacing:1.2px;text-align:left;font-weight:600;padding:0 8px 7px 0;border-bottom:1px solid var(--line)}
+.gp-tab td{padding:6px 8px 6px 0;color:var(--ink-2);border-bottom:1px solid rgba(31,59,46,0.5)}
+.gp-tab tr:last-child td{border-bottom:none}
+.gp-tab .gp-z{font-family:'JetBrains Mono',monospace;text-align:right;color:var(--ink)}
 .quellen{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:12px 0 4px}
 .quellen-lbl{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3);text-transform:uppercase;letter-spacing:1.4px}
 .quellen a{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2);text-decoration:none;border:1px solid var(--line);border-radius:8px;padding:5px 11px;transition:all 0.15s;max-width:260px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
@@ -364,6 +371,22 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 .param-team{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--amber);border:1px solid rgba(245,166,35,0.4);border-radius:4px;padding:1px 4px;letter-spacing:0.5px}
 .param-wert span{color:var(--ink-3)}
 .bar.top{background:var(--lime)}
+/* Kennzahlenbloecke der Akte (Sofascore). Zwei Spalten, damit die Themen
+   nebeneinander lesbar sind wie in den Auswertungen der grossen Werkzeuge;
+   in jeder Zeile steht der ROHWERT neben dem Percentil - ein Percentil
+   allein sagt nicht, ob 90 aus 2,1 Tacklings oder aus 0,4 entsteht. */
+.mk-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.mk-blk{background:var(--pitch-2);border:1px solid var(--line);border-radius:12px;padding:15px 17px}
+.mk-blk-t{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--lime);text-transform:uppercase;letter-spacing:1.6px;margin-bottom:13px}
+.mk-row{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+.mk-name{font-size:12px;color:var(--ink-2);flex:1;min-width:0}
+.mk-roh{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink);width:68px;text-align:right;flex-shrink:0}
+.mk-bahn{display:block;width:70px;height:8px;background:var(--pitch);border-radius:4px;overflow:hidden;border:1px solid var(--line);position:relative;flex-shrink:0}
+.mk-bahn:after{content:'';position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--ink-3);opacity:0.5;z-index:2}
+.mk-fuell{display:block;height:100%;border-radius:4px;position:relative;z-index:1}
+.mk-pct{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3);width:24px;text-align:right;flex-shrink:0}
+.mk-pct b{color:var(--ink);font-weight:700}
+@media(max-width:900px){.mk-grid{grid-template-columns:1fr}}
 .bar.mid{background:var(--blue)}
 .bar.low{background:var(--amber)}
 .pct{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--ink);width:34px;text-align:right;flex-shrink:0;font-weight:500}
@@ -939,7 +962,13 @@ async function loadScoutData(){
     dataSaisonAktuell=d.saison_aktuell||null;
     OHNE_NOTE=d.ohne_note_spieler||[];
     window.BEREICHE=d.bereiche||{};
+    /* Fuer die Kennzahlenbloecke: sie bilden ihre Vergleichsgruppe selbst,
+       nach denselben Regeln wie die Note (Liga der Note, Positionsgruppe,
+       Mindestspielzeit). */
+    window.POSGRUPPE=posGruppe;
+    window.MIN_MINUTEN=d.mindestminuten||450;
     window.HERKUNFT=d.herkunft||{};
+    window.GEGENPROBE=d.gegenprobe||null;
     zeigeHerkunft();
     showDataStand(d);
     fuelleLigaFilter();
@@ -2727,7 +2756,47 @@ function herkunftAbschnitt(){
     '<div class="param-erklaerung">Jede Angabe im Werkzeug lässt sich einer '+
     'Quelle zuordnen. <strong>Erhoben</strong> heißt: so von der Quelle '+
     'übernommen. <strong>Berechnet</strong> heißt: von diesem Werkzeug aus '+
-    'erhobenen Werten abgeleitet.</div>'+zeilen+'</div>';
+    'erhobenen Werten abgeleitet.</div>'+zeilen+gegenprobeBlock()+'</div>';
+}
+
+/* Nachrechnung der Sofascore-Zaehlwerte gegen FotMob (Datenbasis Opta).
+   Sofascore steht als Quelle in der Kritik - allerdings wegen seiner
+   eigenen Spielnote, die hier nicht verwendet wird. Ob die ZAEHLWERTE
+   stimmen, laesst sich pruefen statt behaupten: scripts/gegenprobe.py
+   vergleicht dieselben Spieler derselben Saison bei beiden Anbietern.
+   Das Ergebnis steht hier, damit es nachlesbar ist. */
+function gegenprobeBlock(){
+  const g=window.GEGENPROBE;
+  if(!g||!g.kennzahlen||!g.kennzahlen.length)return '';
+  const zahl=(v,n)=>v===null||v===undefined?'—'
+    :v.toLocaleString('de-DE',{minimumFractionDigits:n,maximumFractionDigits:n});
+  const zeilen=g.kennzahlen.map(function(k){
+    const einig=k.gleich_anteil;
+    const farbe=einig>=95?'var(--lime)':einig>=85?'var(--blue)':'var(--amber)';
+    return '<tr><td>'+k.kennzahl+'</td>'
+      +'<td class="gp-z">'+k.n.toLocaleString('de-DE')+'</td>'
+      +'<td class="gp-z">'+zahl(k.r,4)+'</td>'
+      +'<td class="gp-z">'+zahl(k.abweichung_prozent,2)+'&nbsp;%</td>'
+      +'<td class="gp-z" style="color:'+farbe+'">'+zahl(einig,1)+'&nbsp;%</td></tr>';
+  }).join('');
+  return '<div class="quelle-block">'+
+    '<div class="quelle-kopf"><span class="quelle-art" style="color:var(--lime);'
+    +'border-color:var(--lime)55">nachgerechnet</span> Gegenprobe gegen '+g.gegen+'</div>'+
+    '<div class="quelle-hinweis">Dieselben Spieler, dieselbe Saison '+(g.saison||'')
+    +', beide Anbieter nebeneinander — geprüft in '+(g.ligen||[]).join(', ')
+    +' an <strong>'+(g.paare||0).toLocaleString('de-DE')+'</strong> Wertepaaren '
+    +'(nur Spieler ab '+(g.mindestminuten||450)+' Minuten, sonst verzerren '
+    +'Kurzeinsätze jeden Wert je 90 Minuten). <em>r</em> ist die Korrelation, '
+    +'1,0000 heißt vollständige Übereinstimmung. Die letzte Spalte zählt, bei '
+    +'wie vielen Spielern beide Anbieter im Rahmen der Rundung dasselbe sagen — '
+    +'FotMob rundet Werte je 90 Minuten auf eine Stelle, wir nicht. '
+    +'Stand: '+(g.stand||'')+'.</div>'+
+    '<table class="gp-tab"><thead><tr><th>Kennzahl</th><th class="gp-z">Spieler</th>'
+    +'<th class="gp-z">r</th><th class="gp-z">Ø-Abw.</th><th class="gp-z">einig</th>'
+    +'</tr></thead><tbody>'+zeilen+'</tbody></table>'+
+    '<div class="quelle-hinweis" style="margin-top:10px">Nicht verwendet wird die '
+    +'Sofascore-eigene Spielnote (6,0–10,0): ihre Rechenvorschrift legt der '
+    +'Anbieter nicht offen. Übernommen sind ausschließlich Zählwerte.</div></div>';
 }
 
 /* Kurzhinweis auf der Startseite - die ausfuehrliche Aufstellung steht in
@@ -2836,6 +2905,141 @@ function zweikampfAbschnitt(p){
     +'<div class="param-erklaerung" style="margin-top:12px">'+d.n+' Zweikämpfe in '
       +d.m.toLocaleString('de-DE')+' Minuten · '+p90(d.t)+' Tacklings und '+p90(d.i)
       +' Interceptions je 90 Min. Quelle: Sofascore, '+liga+'. '+zkNotenText(p,d)+'</div></div>';
+}
+
+/* ---------- Kennzahlenblöcke der Akte (Sofascore) -------------------------
+   Rund dreissig Zaehlwerte je Spieler, nach Themen geordnet und auf 90
+   Minuten gerechnet. Zu jedem steht der ROHWERT neben dem Percentil: ein
+   Percentil allein verbirgt, worauf es beruht - 90 aus 2,1 Tacklings je
+   90 Minuten ist etwas anderes als 90 aus 0,4.
+
+   Zwei Entscheidungen, die dahinterstehen:
+
+   1. Eigene Datei, nachgeladen. data/metriken.json ist rund 3 MB und wird
+      nur gebraucht, wenn jemand eine Akte oeffnet. Beim Seitenaufruf
+      bleibt es deshalb bei data/players.json.
+   2. Die Percentile rechnet das Frontend, nicht das Skript. Es kennt die
+      Vergleichsgruppe ohnehin (alle Spieler derselben Liga und
+      Positionsgruppe mit belastbarer Spielzeit), und so steht jede Zahl
+      nur einmal in der Datei statt zweimal.
+
+   Diese Werte gehen NICHT in die Note ein. Das waere eine neue
+   Bewertungsgrundlage und ist eine Entscheidung des Nutzers. */
+const METRIK_URL='data/metriken.json';
+let METRIK=null;                  // Inhalt von metriken.json
+let metrikLauf=null;              // laufender Abruf, damit nicht doppelt geholt wird
+const METRIK_VERTEILUNG={};       // "ligaId|gruppe" -> {schluessel:[sortierte Werte]}
+
+function metrikenLaden(){
+  if(METRIK)return Promise.resolve(METRIK);
+  if(metrikLauf)return metrikLauf;
+  metrikLauf=fetch(METRIK_URL+'?v='+Date.now())
+    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})
+    .then(function(d){METRIK=d;return d})
+    .catch(function(e){
+      /* Kein Fehlerzustand fuer den Nutzer: fehlt die Datei, fehlt der
+         Block. Alles andere in der Akte bleibt unberuehrt. */
+      console.warn('data/metriken.json nicht geladen:',e);
+      return null;
+    });
+  return metrikLauf;
+}
+
+/* Vergleichsgruppe: dieselbe wie bei der Note - Liga, in der die Note
+   erspielt wurde, plus Positionsgruppe, nur Spieler ab Mindestspielzeit.
+   Einmal gebildet, bleibt sie stehen; beim Durchsehen einer Merkliste
+   wird sonst je Profil neu ueber alle Spieler gelaufen. */
+function metrikVerteilung(ligaId,gruppe){
+  const k=ligaId+'|'+gruppe;
+  if(METRIK_VERTEILUNG[k])return METRIK_VERTEILUNG[k];
+  const raus={},pg=window.POSGRUPPE||{},w=(METRIK&&METRIK.werte)||{};
+  PLAYERS.forEach(function(q){
+    if((q.note_liga_id||q.liga_id)!==ligaId)return;
+    if((pg[q.pos]||'ZM')!==gruppe)return;
+    if(!q.belastbar)return;
+    const v=w[q.id];
+    if(!v)return;
+    for(const s in v){(raus[s]||(raus[s]=[])).push(v[s])}
+  });
+  for(const s in raus)raus[s].sort(function(a,b){return a-b});
+  METRIK_VERTEILUNG[k]=raus;
+  return raus;
+}
+
+/* Anteil der Vergleichsgruppe, der schlechter ist - dieselbe Formel wie
+   percentil() in compute_grades.py, damit Note und Block dasselbe meinen.
+   Unter fuenf Vergleichswerten gibt es kein Percentil, sondern null. */
+function metrikPercentil(wert,sortiert,hoch){
+  if(!sortiert||sortiert.length<5)return null;
+  let schlechter=0,gleich=0;
+  for(let i=0;i<sortiert.length;i++){
+    const a=sortiert[i];
+    if(a===wert)gleich++;
+    else if(hoch?(a<wert):(a>wert))schlechter++;
+  }
+  return Math.max(0,Math.min(100,Math.round(100*(schlechter+0.5*gleich)/sortiert.length)));
+}
+
+function metrikWertText(f,v){
+  const s=v.toLocaleString('de-DE',{minimumFractionDigits:f.nk,maximumFractionDigits:f.nk});
+  if(f.art==='quote')return s+'&nbsp;%';
+  if(f.k==='ueber_xg'&&v>0)return '+'+s;
+  return s;
+}
+
+function metrikAbschnitt(p){
+  if(!METRIK||!METRIK.werte)return '';
+  const v=METRIK.werte[p.id];
+  if(!v)return '';
+  const gruppe=(window.POSGRUPPE||{})[p.pos]||'ZM';
+  const ligaId=p.note_liga_id||p.liga_id, liga=p.note_liga||p.liga;
+  const vert=metrikVerteilung(ligaId,gruppe);
+  const bnamen={};(METRIK.bereiche||[]).forEach(function(b){bnamen[b.id]=b.name});
+  const jeBereich={};
+  (METRIK.felder||[]).forEach(function(f){(jeBereich[f.b]||(jeBereich[f.b]=[])).push(f)});
+  const folge=(METRIK.bloecke||{})[gruppe]||(METRIK.bereiche||[]).map(function(b){return b.id});
+
+  let gruppengroesse=0;
+  const bloecke=folge.map(function(bid){
+    const felder=(jeBereich[bid]||[]).filter(function(f){return v[f.k]!==undefined});
+    if(!felder.length)return '';
+    const zeilen=felder.map(function(f){
+      const wert=v[f.k];
+      const pct=metrikPercentil(wert,vert[f.k],!!f.hoch);
+      if(vert[f.k])gruppengroesse=Math.max(gruppengroesse,vert[f.k].length);
+      /* Mengenangaben ohne eigene Wertung (Paraden, Gegentore,
+         Ballkontakte) bekommen keine Farbe nach Gut und Schlecht - der
+         Balken zeigt dort nur den Rang. */
+      const farbe=pct===null?'var(--ink-3)'
+        :f.neutral?'var(--ink-3)'
+        :pct>=70?'var(--lime)':pct<40?'var(--amber)':'var(--blue)';
+      return '<div class="mk-row"><span class="mk-name">'+f.n+'</span>'
+        +'<span class="mk-roh">'+metrikWertText(f,wert)+'</span>'
+        +'<span class="mk-bahn"><span class="mk-fuell" style="width:'
+        +(pct===null?0:pct)+'%;background:'+farbe+'"></span></span>'
+        +'<span class="mk-pct">'+(pct===null?'–':'<b>'+pct+'</b>')+'</span></div>';
+    }).join('');
+    return '<div class="mk-blk"><div class="mk-blk-t">'+(bnamen[bid]||bid)+'</div>'+zeilen+'</div>';
+  }).filter(Boolean).join('');
+  if(!bloecke)return '';
+
+  const basis=gruppengroesse>=5
+    ? 'Der Balken zeigt das Percentil innerhalb von <strong>'+gruppengroesse
+      +'</strong> Spielern der Positionsgruppe '+gruppe+' in der '+liga
+      +' mit mindestens '+(window.MIN_MINUTEN||450)+' Minuten; die Linie in '
+      +'der Mitte ist der Ligadurchschnitt.'
+    : 'Für einen Percentilvergleich sind zu wenige Spieler dieser Position '
+      +'in der '+liga+' erfasst — es stehen nur die Rohwerte.';
+  return '<div class="sec"><div class="sec-title">Kennzahlen · Saison '
+    +(METRIK.saison||dataSaison||'')+'</div>'
+    +'<div class="param-erklaerung">Zählwerte von Sofascore, auf 90 Minuten '
+    +'gerechnet. Links der Rohwert, rechts das Percentil. '+basis+' '
+    +'Graue Balken sind reine Mengenangaben ohne Wertung — 1,5 Paraden je 90 '
+    +'Minuten heißen nicht, dass ein Torwart schlechter hält, sondern dass '
+    +'seine Abwehr weniger zulässt. '
+    +'<strong>Diese Werte gehen nicht in die Note ein</strong> — sie sind '
+    +'zusätzliche Information, keine Bewertung.</div>'
+    +'<div class="mk-grid">'+bloecke+'</div></div>';
 }
 
 /* ---------- Kaderansicht --------------------------------------------------
@@ -3422,6 +3626,9 @@ function renderProfile(p,hasV,vN){
   '<div class="sec"><div class="sec-title">Stammdaten</div><div class="sd-grid"><div class="sd"><div class="sd-lbl">Alter</div><div class="sd-val">'+p.age+' J.</div></div><div class="sd"><div class="sd-lbl">Fuß</div><div class="sd-val">'+p.foot+'</div></div><div class="sd"><div class="sd-lbl">Größe</div><div class="sd-val">'+p.height+'</div></div><div class="sd"><div class="sd-lbl">Vertrag bis</div><div class="sd-val">'+vertragText(p)+'</div></div><div class="sd"><div class="sd-lbl">Rückennummer</div><div class="sd-val">'+(p.number?'#'+p.number:'k. A.')+'</div></div></div></div>'+
   vertragsAbschnitt(p)+
   zweikampfAbschnitt(p)+
+  /* Wird nachgereicht, sobald data/metriken.json geladen ist - siehe
+     metrikenLaden() am Ende von renderProfile(). */
+  '<div id="metrik-block"></div>'+
   (function(){
     /* Was bedeutet dieser Spieler fuer den gerade betrachteten Verein?
        In der Akte zaehlt auch ein dort gewaehlter Verein, nicht nur einer
@@ -3448,6 +3655,10 @@ function renderProfile(p,hasV,vN){
        Spieler dieser Ligen anders bewertet als die uebrigen 28. */
     const x=p.xg;
     if(!x)return '';
+    /* Torhueter und Spieler ohne jede Offensivaktion haben dort lauter
+       Nullen stehen. Ein Block aus sechs Nullen ist kein Befund - seit
+       die Kennzahlenbloecke darueber stehen, faellt er nur noch auf. */
+    if(!x.xG&&!x.xA&&!x.schuesse90&&!x.schluesselpaesse90)return '';
     /* Deutsche Schreibweise: Komma statt Punkt, hoechstens zwei Stellen. */
     const zahl=v=>String(typeof v==='number'?Math.round(v*100)/100:v).replace('.',',');
     const z=(label,wert,zusatz)=>'<div class="sd"><div class="sd-lbl">'+label
@@ -3561,6 +3772,14 @@ function renderProfile(p,hasV,vN){
   '<div class="sec"><div class="sec-title">Scout-Fazit</div><div class="fazit">'+fazitFuer(p)+'</div></div>'+
   herkunftAbschnitt();
   go('profil');
+  /* Kennzahlenblöcke nachreichen. Beim ersten Profil dauert das einen
+     Augenblick (rund 3 MB), danach liegt die Datei im Speicher. Der
+     Vergleich mit activePlayer verhindert, dass ein spaet eintreffender
+     Abruf in eine inzwischen andere Akte schreibt. */
+  metrikenLaden().then(function(){
+    const ziel=document.getElementById('metrik-block');
+    if(ziel&&activePlayer===p)ziel.innerHTML=metrikAbschnitt(p);
+  });
 }
 function openModal(){
   const hasV=(fromPage==='vereinsmatching'&&vmVerein)||fromPage==='kaderresult';

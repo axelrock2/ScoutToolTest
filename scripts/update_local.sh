@@ -11,6 +11,7 @@
 #   ./scripts/update_local.sh buli,buli2   # nur diese Ligen
 #   PUSH=0 ./scripts/update_local.sh       # ohne Push, nur lokal
 #   VERTRAEGE=0 ./scripts/update_local.sh  # ohne den Vertragsende-Lauf
+#   GEGENPROBE=0 ./scripts/update_local.sh # ohne die FotMob-Gegenprobe
 #
 set -euo pipefail
 
@@ -51,12 +52,21 @@ echo "== xG-Werte (Understat, nur Topligen) =="
 "$PY" scripts/understat.py || echo "  xG uebersprungen - Bestand bleibt gueltig"
 
 echo
-echo "== Zweikampfwerte (Sofascore, bis zur 3. Liga) =="
+echo "== Spielerstatistik (Sofascore, bis zur 3. Liga) =="
 if [ -n "$LIGEN" ]; then
-  "$PY" scripts/zweikaempfe.py --ligen "$LIGEN" \
-    || echo "  Zweikaempfe uebersprungen - Bestand bleibt gueltig"
+  "$PY" scripts/sofascore.py --ligen "$LIGEN" \
+    || echo "  Sofascore uebersprungen - Bestand bleibt gueltig"
 else
-  "$PY" scripts/zweikaempfe.py || echo "  Zweikaempfe uebersprungen - Bestand bleibt gueltig"
+  "$PY" scripts/sofascore.py || echo "  Sofascore uebersprungen - Bestand bleibt gueltig"
+fi
+
+# Gegenprobe gegen FotMob (Opta). Kostet rund zwanzig Abrufe und sagt,
+# ob die Sofascore-Zaehlwerte mit einem zweiten Anbieter uebereinstimmen.
+# Das Ergebnis steht danach in der Datenherkunft auf der Seite.
+if [ "${GEGENPROBE:-1}" = "1" ]; then
+  echo
+  echo "== Gegenprobe (FotMob/Opta gegen Sofascore) =="
+  "$PY" scripts/gegenprobe.py || echo "  Gegenprobe uebersprungen - alter Stand bleibt"
 fi
 
 # Auslaufende Vertraege. Ein Abruf je Verein und Sommer, also rund 1200
