@@ -1015,10 +1015,12 @@ def main() -> int:
             else:
                 underval = None
 
-            # Bei einer Leihe steht KEIN Vertragsende im Datensatz mehr
-            # (build_players raeumt es weg) - die Ampel bleibt damit von
-            # selbst grau, statt ein Leihende rot zu faerben.
-            ampel, monate = vertrags_ampel(s.get("vertrag_bis"))
+            # Bei einer Leihe zaehlt der Vertrag beim STAMMVEREIN
+            # (scripts/leihvertraege.py). Ist er nicht bekannt, bleibt die
+            # Ampel grau - ein Leihende rot zu faerben waere falsch.
+            ampel, monate = vertrags_ampel(
+                s.get("vertrag_bis")
+                or (s.get("leihe") or {}).get("stammvertrag_bis"))
 
             # Wo spielt er HEUTE, und wo wurde die Note erspielt?
             # Angezeigt, gefiltert und zu Kadern gezaehlt wird der heutige
@@ -1073,7 +1075,11 @@ def main() -> int:
                 **({"leihe_von": s["leihe"]["von"],
                     "leihe_bis": s["leihe"]["bis"],
                     **({"leihe_von_id": s["leihe"]["von_id"]}
-                       if s["leihe"].get("von_id") else {})}
+                       if s["leihe"].get("von_id") else {}),
+                    # Vertrag beim Stammverein - erst er sagt, ob der
+                    # Spieler wirklich frei wird.
+                    **({"stammvertrag_bis": s["leihe"]["stammvertrag_bis"]}
+                       if s["leihe"].get("stammvertrag_bis") else {})}
                    if s.get("leihe") else {}),
                 "mv": mw_text(s.get("marktwert_eur")),
                 "mv_eur": s.get("marktwert_eur"),
@@ -1250,7 +1256,9 @@ def main() -> int:
             **({"cm": s["groesse_cm"]} if s.get("groesse_cm") else {}),
             **({"foot": s["fuss"]} if s.get("fuss") in ("rechts", "links", "beidfüßig") else {}),
             **({"contract_until": s["vertrag_bis"]} if s.get("vertrag_bis") else {}),
-            **({"leihe_von": s["leihe"]["von"], "leihe_bis": s["leihe"]["bis"]}
+            **({"leihe_von": s["leihe"]["von"], "leihe_bis": s["leihe"]["bis"],
+                **({"stammvertrag_bis": s["leihe"]["stammvertrag_bis"]}
+                   if s["leihe"].get("stammvertrag_bis") else {})}
                if s.get("leihe") else {}),
             **({"mv": mw_text(s["marktwert_eur"]), "mv_eur": s["marktwert_eur"]}
                if s.get("marktwert_eur") else {}),

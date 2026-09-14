@@ -631,8 +631,20 @@ def main() -> int:
                 # ausgeliehen ist, darf den Vermerk nicht behalten. Ein
                 # stehengebliebenes "Leihe bis 2026" haette ihn dauerhaft
                 # aus der Auslaeufer-Suche herausgehalten.
-                if h["profil"].get("leihe"):
-                    sp["leihe"] = h["profil"]["leihe"]
+                neu_leihe = h["profil"].get("leihe")
+                if neu_leihe:
+                    # Den Vertrag beim Stammverein (scripts/leihvertraege.py,
+                    # ein Abruf je Spieler) behalten, solange es DIESELBE
+                    # Leihe ist: gleicher Stammverein, gleiches Leihende.
+                    # Aendert sich eins davon, ist die Angabe veraltet und
+                    # wird beim naechsten Lauf neu geholt.
+                    alt = sp.get("leihe") or {}
+                    if (alt.get("von_id"), alt.get("bis")) == \
+                            (neu_leihe.get("von_id"), neu_leihe.get("bis")):
+                        for k in ("stammvertrag_bis", "stammvertrag_geprueft"):
+                            if k in alt:
+                                neu_leihe[k] = alt[k]
+                    sp["leihe"] = neu_leihe
                     sp.pop("vertrag_bis", None)
                 else:
                     sp.pop("leihe", None)

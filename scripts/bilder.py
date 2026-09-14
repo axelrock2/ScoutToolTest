@@ -86,6 +86,8 @@ def main() -> int:
                     help="hoechstens so viele Vereine (zum Testen)")
     ap.add_argument("--erneuern", action="store_true",
                     help="auch Vereine erneut abrufen, die schon Bilder haben")
+    ap.add_argument("--probe", action="store_true",
+                    help="nur zaehlen, wie viele Vereine offen sind")
     args = ap.parse_args()
 
     if not os.path.exists(BESTAND):
@@ -119,20 +121,38 @@ def main() -> int:
                 continue
             vereine.setdefault(sp["verein_id"], (sp["verein"], sp["liga_id"]))
 
-    if not args.erneuern:
-        # Ein Verein gilt als erledigt, sobald irgendein Spieler, den er
-        # heute fuehrt, ein Bild traegt. Genauer ginge es nur mit einem
-        # eigenen Vermerk - fuer Bilder waere das uebertrieben: fehlt eines,
-        # stehen dort Initialen, kein falscher Wert.
-        fertig = {((sp.get("aktuell") or {}).get("verein_id") or sp["verein_id"])
-                  for sp in bestand["spieler"] if sp.get("bild")}
-        vereine = {v: d for v, d in vereine.items() if v not in fertig}
+    # Fotoquote je heutigem Verein. Sie entscheidet zweierlei: welche
+    # Vereine ohne --erneuern noch abgerufen werden - und in welcher
+    # Reihenfolge. Die schwaechsten zuerst: bricht ein Lauf ab (Zeitbudget,
+    # HTTP 405), traf es sonst immer dieselben Ligen am Ende der Liste. So
+    # blieben die Oberligen bei 16 % stehen, obwohl Transfermarkt etwa fuer
+    # Holstein Kiel II 23 von 24 Portraits fuehrt.
+    je: dict[str, list[int]] = {}
+    for sp in bestand["spieler"]:
+        vid = (sp.get("aktuell") or {}).get("verein_id")
+        if vid:
+            t = je.setdefault(vid, [0, 0])
+            t[0] += 1
+            t[1] += bool(sp.get("bild"))
+    quote = {vid: (b / n if n else 0.0) for vid, (n, b) in je.items()}
+    geprueft = bestand.setdefault("bilder_geprueft", {})
 
-    offen = sorted(vereine.items(), key=lambda x: x[1][1])
+    if not args.erneuern:
+        # Erledigt ist ein Verein, wenn ihn ein frueherer Lauf schon
+        # vollstaendig gesehen hat - dann fehlen die Bilder an der Quelle,
+        # nicht bei uns (Heider SV: 16 von 24 ohne Portrait) -, oder wenn
+        # ohnehin fast alle seine Spieler eins haben. Vorher galt ein Verein
+        # als erledigt, sobald EIN Spieler ein Bild trug.
+        vereine = {v: d for v, d in vereine.items()
+                   if v not in geprueft and quote.get(v, 0.0) < 0.8}
+
+    offen = sorted(vereine.items(), key=lambda x: (quote.get(x[0], 0.0), x[1][1]))
     if args.max_vereine:
         offen = offen[:args.max_vereine]
 
     print(f"{len(offen)} Vereine abzurufen.", file=sys.stderr)
+    if args.probe:
+        return 0
 
     start = time.time()
     gefunden: dict[str, str] = {}       # spieler_id -> "<stempel>.<endung>"
@@ -144,6 +164,7 @@ def main() -> int:
             break
         try:
             gefunden.update(portraits(vid))
+            geprueft[vid] = date.today().isoformat()
             vereine_ok += 1
             if vereine_ok % 50 == 0:
                 print(f"  {vereine_ok} Vereine, {len(gefunden)} Bilder ...",

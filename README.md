@@ -232,6 +232,30 @@ Grenzen:
 | Platzhalter | Wo Transfermarkt kein Foto hat, liefert es `default.jpg`. Der wird verworfen — eine graue Silhouette sagt weniger als die Initialen. |
 | Hotlinking | Die Bilder liegen weiter bei Transfermarkt und werden beim Öffnen einer Akte von dort geladen, nicht hier gespeichert. Wird der Verweis eines Tages gesperrt, greift der Rückfall. |
 
+### Warum die Oberligen so wenige Fotos hatten
+
+Die Fotoquote lag in den Oberligen bei 16 bis 57 %, in den übrigen Ligen
+deutlich höher. Nachgezählt an zwei Vereinen der schwächsten Liga:
+
+| Verein | Spieler | Portraits bei Transfermarkt |
+|---|---:|---:|
+| Holstein Kiel II | 24 | 23 |
+| Heider SV | 24 | 8 (16 Platzhalter) |
+
+Bei Heider fehlen die Bilder an der Quelle. Bei Holstein Kiel II fehlten
+sie **bei uns** — zwei Ursachen im Sammler:
+
+* Die Vereine wurden in fester Reihenfolge abgerufen. Brach ein Lauf ab
+  (Zeitbudget, HTTP 405), traf es jedes Mal dieselben Ligen am Ende der
+  Liste.
+* Ohne `--erneuern` galt ein Verein als erledigt, sobald **ein** Spieler
+  ein Bild trug.
+
+Seitdem ruft `bilder.py` die Vereine mit der **niedrigsten Fotoquote
+zuerst** ab und vermerkt jeden vollständig gesehenen Verein
+(`bilder_geprueft`). Ohne `--erneuern` bleiben nur Vereine offen, die noch
+nie vollständig gesehen wurden und unter 80 % liegen — beim Umstellen 318.
+
 ## Kaderansicht
 
 Im Vereins-Matching öffnet **„Kader ansehen"** den Kader des gewählten
@@ -737,8 +761,47 @@ Seitdem:
   Ausläufer-Suche herausgehalten, nachdem er fest verpflichtet wurde.
 * In der Akte, der Kaderansicht und den Stammdaten steht bei ihm „Leihe
   bis …" statt „Vertrag bis …", dazu der Stammverein.
-* In der Ausläufer-Suche landet er im Abschnitt **Leihende** — und damit
-  in keinem der drei Abschnitte, die echte Vertragsenden zeigen.
+* In der Ausläufer-Suche erscheint er **nicht mehr** — siehe unten.
+
+### Bei Leihspielern zählt der Vertrag beim Stammverein
+
+Ein erster Schritt sortierte Leihspieler in einen eigenen Abschnitt
+„Leihende". Das reichte nicht: Halinsky stand dann zwar nicht mehr unter
+den Vertragsenden, aber weiterhin in der Trefferliste zum 31.12.2026.
+Gefragt sind aber **nur Spieler, deren Vertrag ausläuft**.
+
+Maßgeblich ist deshalb der Vertrag beim Stammverein. Er steht nur auf der
+Profilseite (`Vertrag dort bis: 30.06.2030`) und wird dort je Leihspieler
+abgerufen:
+
+```bash
+python3 scripts/leihvertraege.py
+```
+
+Die Regel sitzt an **einer** Stelle, `vertragsEnde()`: bei einer Leihe
+liefert sie den Vertrag beim Stammverein — oder gar kein Datum. Weil
+Treffer, Trefferzahlen im Auswahlfeld, Stichtage und Sortierung alle über
+diese Funktion gehen, gilt die Regel überall zugleich.
+
+| Fall | in der Suche |
+|---|---|
+| Leihe endet, Vertrag beim Stammverein läuft weiter (Halinsky) | **nicht angezeigt** |
+| Leihe endet, Vertrag beim Stammverein endet im selben Zeitraum | Abschnitt *Leihspieler mit auslaufendem Vertrag* |
+| Vertrag beim Stammverein nicht erfasst | nicht angezeigt |
+
+Wer die Leihenden trotzdem sehen will, schaltet **„Leihenden zusätzlich
+zeigen"** ein (Vorgabe: aus). Sie stehen dann in einem eigenen Abschnitt
+*Leihende — kein Vertragsende*.
+
+**Transfermarkt sperrt Profilseiten schneller** als Kader- und
+Vertragsseiten. Beim ersten Lauf kamen nach rund zwanzig Abrufen nur noch
+Antworten mit 403, der Lauf wurde abgebrochen, bevor er die Sperre
+verlängern konnte. Seitdem pausiert das Skript zwischen den Abrufen,
+bricht nach vier Fehlern in Folge ab und speichert, was es bis dahin hat —
+auch bei einem Abbruch von außen. Den Rest holt der nächste Lauf; wer
+schon geprüft ist, wird übersprungen, solange sich seine Leihe nicht
+ändert. `update_local.sh` führt den Schritt mit (`LEIHVERTRAEGE=0`
+schaltet ihn ab).
 
 ### Gesucht wird in Zeitfenstern, nicht in Jahreszahlen
 
