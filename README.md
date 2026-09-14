@@ -810,6 +810,33 @@ Das ist kein Lesefehler, sondern der Stand bei Transfermarkt. Die Akte
 unterscheidet deshalb, ob beim Stammverein kein Vertragsende geführt wird
 oder ob der Spieler schlicht noch nicht abgefragt wurde.
 
+**Der erste vollständige Lauf, 14.09.2026.** Mit Pause und Sperren-Erkennung
+kam das Skript auf 66 frische Profilseiten, dann vier Fehler in Folge —
+Abbruch, gespeichert. Ergebnis:
+
+| | Leihspieler |
+|---|---:|
+| im heutigen Kader | 1.073 |
+| abgefragt | 108 (10 %) |
+| davon mit Vertragsende beim Stammverein | 88 |
+| davon ohne Datum bei Transfermarkt (`-`) | 20 |
+| noch nicht abgefragt | 965 |
+
+Halinsky steht jetzt mit **Vertrag bei Slavia Prag bis 30.06.2030** im
+Bestand — genau die Angabe seines Transfermarkt-Profils. Unter den
+bewerteten Leihspielern mit bekanntem Stammvertrag endet er bei 3 bis zum
+Sommer 2027 (bei 2 davon zugleich mit der Leihe), bei 16 in der Saison
+2027/28, bei 36 später.
+
+**Was das für die Suche heißt:** Solange ein Leihspieler nicht abgefragt
+ist, gibt es für ihn kein Vertragsdatum — und er erscheint nicht unter den
+Ausläufern. Das ist gewollt, denn ein unbekannter Vertrag ist kein
+auslaufender. Es heißt aber auch: echte Ausläufer unter den 965 noch nicht
+abgefragten Leihspielern bleiben unsichtbar, bis ein späterer Lauf sie
+erfasst hat. Bei rund 60 bis 70 Profilseiten je Lauf, bevor Transfermarkt
+sperrt, dauert das mehrere Läufe; `update_local.sh` holt bei jedem Aufruf
+den nächsten Schwung.
+
 ### Gesucht wird in Zeitfenstern, nicht in Jahreszahlen
 
 Ein Scout fragt nicht „endet der Vertrag 2027", sondern „wer ist im Winter

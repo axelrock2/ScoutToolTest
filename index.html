@@ -2312,7 +2312,7 @@ function auslaufBadge(p,imAuslaufModus){
         :lh.geprueft?' Beim Stammverein führt Transfermarkt kein Vertragsende.'
         :' Vertrag beim Stammverein noch nicht abgefragt.')
       +' Kein ablösefreier Wechsel. Quelle: Transfermarkt.">Leihe bis '+(lh.bis?freiAb(lh.bis):'—')
-      +(lh.stamm?' · Vertrag bis '+lh.stamm.slice(0,4):'')+'</span>';
+      +(lh.stamm?' · Vertrag bis '+freiAb(lh.stamm):'')+'</span>';
   }
   if(!a){
     /* Kein Eintrag von der Vertragsende-Seite: das Datum stammt dann aus
@@ -2892,7 +2892,11 @@ function vertragsAbschnitt(p){
       zeilen.push({c:'neu',t:'<strong>Vertrag bis '+dtm(e)+'</strong> laut '+
         'Kaderansicht. Ob eine Verlängerungsoption besteht, führt diese '+
         'Ansicht nicht.'});
-    if(p.vgeprueft)
+    /* Nicht bei Leihspielern: die Vertragsende-Seite gehoert dem
+       AUFNEHMENDEN Verein. Dass dort 2027 und 2028 nichts endet, heisst bei
+       einer Leihe bis 31.12.2026 gerade nicht, dass ein Vertrag
+       "darueber hinaus" laeuft - der Satz widersprach der Zeile davor. */
+    if(p.vgeprueft&&!lh)
       zeilen.push({c:'pos',t:'Kein auslaufender Vertrag in den geprüften '+
         'Sommern ('+String(p.vgeprueft).split(',').join(' und ')+'). Der '+
         'Vertrag läuft darüber hinaus. Quelle: Transfermarkt, Vereinsseite '+
