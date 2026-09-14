@@ -180,11 +180,13 @@ statt sich eine der Ligen willkürlich herauszugreifen.
 
 ## Spielerfotos
 
-In der Spielerakte steht statt der Initialen das Portrait von
-Transfermarkt — **nur dort**, nicht in den Trefferlisten. Der Grund ist
-Rücksicht auf die Quelle: In einer Ergebnisliste wären es fünfzig Bilder je
-Seite von fremden Servern, in der Akte ist es genau eines, und man schaut
-einen Spieler ohnehin einzeln an.
+In der Spielerakte, der Kaderansicht und — seit dem 14.09.2026 — auch in den
+Trefferlisten steht statt der Initialen das Portrait von Transfermarkt.
+Anfangs gab es das Portrait bewusst nur in der Akte, aus Rücksicht auf die
+Quelle: In einer Ergebnisliste wären es viele Bilder von fremden Servern auf
+einmal. Warum die Trefferlisten es heute trotzdem zeigen können, ohne die
+Quelle zu belasten, steht unten unter *Fotos und Wappen auch in den
+Trefferlisten*.
 
 Die Adresse trägt einen Zeitstempel:
 
@@ -271,6 +273,23 @@ Zwei Schwächen im Sammler gab es trotzdem, und sie sind behoben:
 Dazu bricht der Sammler nach vier Fehlern in Folge ab und speichert, was er
 bis dahin hat — wie der Stammvertrags-Sammler.
 
+### Fotos und Wappen auch in den Trefferlisten
+
+Zuerst gab es Portraits nur in der Spielerakte; die Trefferlisten zeigten
+Initialen. Auf Wunsch zeigen jetzt auch die Trefferkarten das Foto und neben
+dem Vereinsnamen das Wappen, beides per Verweis direkt von Transfermarkt.
+
+Die Trefferlisten rendern alle Karten auf einmal — bei „Alle Ausläufer" über
+8.000. Die Last bleibt trotzdem klein: `loading="lazy"` lässt den Browser nur
+Bilder holen, deren Karte in die Nähe des sichtbaren Bereichs kommt. Ein
+Wappen lädt je Verein einmal und kommt danach aus dem Zwischenspeicher.
+
+Wie in der Akte liegt das Foto **über** den Initialen und hat keinen
+Hintergrund. Hängt ein Abruf, bleiben die Initialen sichtbar; scheitert er,
+entfernt sich das Bild. Wo Transfermarkt kein Portrait führt — rund ein
+Drittel der Spieler, vor allem in den Amateurligen —, stehen weiter die
+Initialen.
+
 ## Kaderansicht
 
 Im Vereins-Matching öffnet **„Kader ansehen"** den Kader des gewählten
@@ -285,8 +304,10 @@ Vereins — aufgebaut wie der Kader auf Transfermarkt:
 - Kopf mit Wappen, Kadergröße, Ø-Alter, Gesamt- und Ø-Marktwert
 - alternativ sortiert nach Liga-Note, Marktwert oder Alter
 
-Hier werden **alle Fotos** geladen — in den Trefferlisten bewusst nicht,
-weil dort Dutzende auf einmal von fremden Servern kämen.
+Hier werden **alle Fotos** geladen. Anfangs geschah das bewusst nur hier und
+in der Akte; seit dem 14.09.2026 zeigen auch die Trefferlisten Fotos — so
+verzögert geladen, dass nur die Karten im sichtbaren Bereich Bilder holen
+(siehe *Fotos und Wappen auch in den Trefferlisten*).
 
 Gezeigt wird der **vollständige** heutige Kader, auch Spieler ohne Note:
 Neuzugänge aus nicht erfassten Ligen und Spieler ohne Einsatz in der
@@ -349,7 +370,7 @@ einzigen zusätzlichen Abruf**. Dazugekommen sind:
 
 | Bereich | Kennzahlen |
 |---|---|
-| Passspiel | Passquote, angekommene Pässe, Pässe ins letzte Drittel, lange Bälle, Flanken |
+| Passspiel | Passquote, angekommene Pässe, Pässe im letzten Drittel, lange Bälle, Flanken |
 | Chancen | Schlüsselpässe, herausgespielte und vergebene Großchancen, xA |
 | Abschluss | xG, Schüsse, Schüsse aufs Tor, Abschlussquote, Tore über xG |
 | Defensivaktionen | Klärungen, geblockte Schüsse, ausgespielt worden, Ballgewinne im Angriffsdrittel, Fehler zum Gegentor |
@@ -397,6 +418,38 @@ Zahl nur einmal in der Datei statt zweimal.
 **Ein Teil dieser Werte geht seit dem 13.09.2026 in die Note ein** — nach
 ausdrücklicher Freigabe, siehe *Erweiterter Notensatz*. Welche Zeile
 zählt, steht an der Zeile selbst.
+
+### Erklärfenster
+
+Jede Kennzahl erklärt sich selbst. Wer mit dem Zeiger über eine Zeile fährt
+(oder sie mit der Tabulatortaste ansteuert), bekommt ein Fenster mit:
+
+| Zeile | Inhalt |
+|---|---|
+| Definition | was die Kennzahl misst |
+| Rechnung | je 90 Minuten, Anteil in Prozent mit Mindestbasis, oder Saisonsumme |
+| Lesart | höher oder niedriger besser — oder Mengenangabe ohne Wertung |
+| Vergleich | wie viele Spieler welcher Gruppe und Liga das Percentil bilden |
+| Note | ob die Kennzahl in die Liga-Note eingeht |
+| Quelle | Anbieter und Saison |
+
+Das gilt für die Kennzahlenblöcke, den Direktvergleich, die Notenparameter
+im Stärkenprofil und die Rollenprofile — dort mit den Kennzahlen, aus denen
+die Rolle besteht, ihrem Gewicht und dem Percentil des Spielers.
+
+**Gepflegt wird nur die Definition**, in `compute_grades.py` neben der
+Rechnung. Rechnung, Mindestbasis, Lesart und Notenzugehörigkeit setzt das
+Fenster aus den Angaben zusammen, nach denen ohnehin gerechnet wird. So kann
+eine Erklärung der Rechnung nicht widersprechen. Eine neue Kennzahl ohne
+Definition bricht den Lauf ab, statt ohne Erklärung zu erscheinen.
+
+Auf Touch-Geräten ohne Zeiger steht die Definition über der Verteilung, die
+ein Tippen auf die Zeile öffnet.
+
+Beim Schreiben der Definitionen fiel ein ungenauer Name auf. Sofascore führt
+das Feld als „accurate final third passes"; die Kennzahl hieß „Pässe ins
+letzte Drittel" und heißt jetzt „Pässe im letzten Drittel". Nur die
+Beschriftung ändert sich, nicht der Wert.
 
 ### Rollenprofile, Direktvergleich und Verteilung
 
@@ -1073,7 +1126,7 @@ hat deshalb ihr eigenes Profil mit Gewichten:
 | Torwart | **verhinderte Tore / 90**, Defensive der Mannschaft, Einsatzanteil | **Paradenquote** |
 | Innenverteidigung | Zweikampfquote, Defensive der Mannschaft, Einsatzanteil | **Defensivaktionen / 90**, **Passquote** |
 | Außenverteidigung | — | Zweikampfquote, **Defensivaktionen**, **Schlüsselpässe**, Defensive, Einsatzanteil, Vorlagen |
-| Zentrales Mittelfeld | — | **Passquote**, **Pässe ins letzte Drittel**, **Defensivaktionen**, **Schlüsselpässe**, Zweikampfquote, Teamtore, Scorerpunkte, Vorlagen, Einsatzanteil |
+| Zentrales Mittelfeld | — | **Passquote**, **Pässe im letzten Drittel**, **Defensivaktionen**, **Schlüsselpässe**, Zweikampfquote, Teamtore, Scorerpunkte, Vorlagen, Einsatzanteil |
 | Offensive | Scorerpunkte / 90 | **xG / 90**, **xA / 90**, **Schlüsselpässe**, Teamtore, Vorlagen, Tore / 90 |
 | Sturm | Tore / 90 | **xG / 90**, **Abschlussquote**, Teamtore, Scorerpunkte / 90 |
 
@@ -1119,7 +1172,7 @@ Beispiele aus der Bundesliga:
 |---|---:|---:|---|
 | Janis Blaswich | 34 | 59 | verhinderte 3,8 Tore über Erwartung |
 | Daniel Batz | 40 | 57 | verhinderte 9,1 Tore über Erwartung |
-| Exequiel Palacios | 37 | 53 | 90,7 % Passquote, 25,4 Pässe ins letzte Drittel |
+| Exequiel Palacios | 37 | 53 | 90,7 % Passquote, 25,4 Pässe im letzten Drittel |
 | Frederik Rönnow | 39 | 25 | kassierte 8,8 Tore **mehr** als erwartet |
 | Rani Khedira | 59 | 43 | 66,6 % Passquote, 0,51 Schlüsselpässe / 90 |
 | Nico Schlotterbeck | 79 | 68 | Dortmunds starke Abwehr zählt weniger für ihn |

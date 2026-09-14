@@ -113,6 +113,9 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 .pcard:hover{border-color:var(--line-bright);transform:translateX(4px)}
 .pcard:hover:after{transform:scaleY(1)}
 .av{width:52px;height:52px;border-radius:12px;background:var(--pitch-2);border:1px solid var(--line-bright);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:var(--lime);flex-shrink:0;position:relative}
+.av .av-bild{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top;border-radius:11px;z-index:1}
+.av .num{z-index:2}
+.pcard .meta .ph-wappen{width:15px;height:15px;object-fit:contain;margin-right:5px;vertical-align:-3px}
 .av .num{position:absolute;bottom:-6px;right:-6px;width:20px;height:20px;border-radius:6px;background:var(--lime);color:var(--pitch);font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--panel)}
 .pi h4{font-size:17px;font-weight:700;letter-spacing:-0.2px;margin-bottom:4px}
 .pi .meta{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-2);display:flex;gap:14px;flex-wrap:wrap;text-transform:uppercase;letter-spacing:0.5px}
@@ -386,6 +389,17 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 .mk-fuell{display:block;height:100%;border-radius:4px;position:relative;z-index:1}
 .mk-pct{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3);width:24px;text-align:right;flex-shrink:0}
 .mk-pct b{color:var(--ink);font-weight:700}
+/* Erklaerfenster ueber Kennzahlen (siehe erklZeigen) */
+.erkl-pop{position:fixed;z-index:210;width:320px;max-width:calc(100vw - 24px);background:var(--panel-2);border:1px solid var(--line-bright);border-radius:11px;padding:12px 14px 11px;box-shadow:0 14px 34px rgba(0,0,0,0.5);font-size:12px;line-height:1.55;color:var(--ink-2);pointer-events:none;opacity:0;visibility:hidden;transition:opacity .12s}
+.erkl-pop.offen{opacity:1;visibility:visible}
+.erkl-pop h6{margin:0 0 6px;font-size:13px;line-height:1.3;color:var(--ink);font-weight:700}
+.erkl-pop p{margin:0 0 9px}
+.erkl-pop dl{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;margin:0}
+.erkl-pop dt{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--ink-3);padding-top:2px;white-space:nowrap}
+.erkl-pop dd{margin:0}
+.erkl-pop .erkl-fuss{margin-top:9px;padding-top:7px;border-top:1px solid var(--line);font-size:11px;color:var(--ink-3)}
+[data-erkl]{cursor:help}
+[data-erkl]:focus-visible{outline:1px solid var(--lime);outline-offset:2px;border-radius:5px}
 /* Direktvergleich. Zwei Balken je Zeile, gemeinsamer Massstab, dazu der
    Median der Vergleichsgruppe als senkrechter Strich - ohne ihn sagt ein
    laengerer Balken nur "mehr als der andere". */
@@ -1016,6 +1030,7 @@ async function loadScoutData(){
     window.MIN_MINUTEN=d.mindestminuten||450;
     window.HERKUNFT=d.herkunft||{};
     window.GEGENPROBE=d.gegenprobe||null;
+    window.KENNZAHL_ERKLAERUNG=d.kennzahl_erklaerung||{};
     zeigeHerkunft();
     showDataStand(d);
     fuelleLigaFilter();
@@ -2615,7 +2630,7 @@ function renderPlayers(){
         +'<div class="score-cap"><div class="scl">LN</div><div class="scv">'+p.ln+'</div><div class="scbar" style="width:'+p.ln+'%;background:var(--blue)"></div></div>'
       : '<div class="score-cap primary"><div class="scl">LN</div><div class="scv">'+p.ln+'</div><div class="scbar" style="width:'+p.ln+'%"></div></div>'
         +'<div class="score-cap"><div class="scl">PN</div><div class="scv">'+p.pn+'</div><div class="scbar" style="width:'+p.pn+'%;background:var(--blue)"></div></div>';
-    return '<div class="pcard" onclick="showProfile('+p.id+')"><div class="av">'+p.ini+''+(p.number?'<span class="num">'+p.number+'</span>':'')+'</div><div class="pi"><h4><a href="'+tmUrl(p)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Profil auf transfermarkt.de öffnen" class="tm-link">'+p.name+'<i class="ti ti-external-link"></i></a></h4><div class="meta"><span class="pos-tag">'+p.pos+'</span><span>'+p.club+'</span><span>'+p.liga+'</span><span>'+p.age+' J.</span></div><div class="badges">'+cbadge(p.contract)+'<span class="badge b-blue">'+p.mv+' €</span>'+(p.underval?'<span class="badge b-teal"><i class="ti ti-trending-up" style="font-size:10px"></i> Unterbewertet</span>':'')+auslaufBadge(p,fromPage==='auslaufer')+bewBadge+verlBadge+wegBadge+herkunftBadge+einBadge+duenn+luecken+'</div></div><div class="scores">'+note+'</div></div>';
+    return '<div class="pcard" onclick="showProfile('+p.id+')"><div class="av">'+p.ini+trefferBild(p)+(p.number?'<span class="num">'+p.number+'</span>':'')+'</div><div class="pi"><h4><a href="'+tmUrl(p)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Profil auf transfermarkt.de öffnen" class="tm-link">'+p.name+'<i class="ti ti-external-link"></i></a></h4><div class="meta"><span class="pos-tag">'+p.pos+'</span><span>'+wappenImg(p)+p.club+'</span><span>'+p.liga+'</span><span>'+p.age+' J.</span></div><div class="badges">'+cbadge(p.contract)+'<span class="badge b-blue">'+p.mv+' €</span>'+(p.underval?'<span class="badge b-teal"><i class="ti ti-trending-up" style="font-size:10px"></i> Unterbewertet</span>':'')+auslaufBadge(p,fromPage==='auslaufer')+bewBadge+verlBadge+wegBadge+herkunftBadge+einBadge+duenn+luecken+'</div></div><div class="scores">'+note+'</div></div>';
   });
 
   /* In der Auslaeufer-Suche nach Art des Vertragsendes trennen.
@@ -3259,8 +3274,8 @@ function metrikAbschnitt(p){
       const farbe=pct===null?'var(--ink-3)'
         :f.neutral?'var(--ink-3)'
         :pct>=70?'var(--lime)':pct<40?'var(--amber)':'var(--blue)';
-      return '<div class="mk-row" data-k="'+f.k+'" onclick="schwarmAuf(this,\''+f.k+'\')" '
-        +'title="Verteilung dieser Kennzahl in der Liga zeigen">'
+      return '<div class="mk-row" data-k="'+f.k+'" data-erkl="m:'+f.k+'" tabindex="0" '
+        +'onclick="schwarmAuf(this,\''+f.k+'\')">'
         +'<span class="mk-name">'+f.n+inNote+'</span>'
         +'<span class="mk-roh">'+metrikWertText(f,wert)+'</span>'
         +'<span class="mk-bahn"><span class="mk-fuell" style="width:'
@@ -3295,7 +3310,8 @@ function metrikAbschnitt(p){
         +'. Alle übrigen sind zusätzliche Information.'
       : '<strong>Diese Werte gehen nicht in die Note ein</strong> — sie sind '
         +'zusätzliche Information, keine Bewertung.')
-    +' <strong>Ein Klick auf eine Zeile</strong> zeigt, wie die ganze Liga auf '
+    +' <strong>Mit dem Zeiger über einer Zeile</strong> erklärt ein Fenster die Kennzahl; '
+    +'<strong>ein Klick</strong> zeigt, wie die ganze Liga auf '
     +'dieser Kennzahl verteilt ist — ein Percentil sagt, wie viele schlechter '
     +'sind, nicht wie viel besser.'
     +'</div>'
@@ -3395,7 +3411,10 @@ function schwarmAuf(el,k){
              &&((window.POSGRUPPE||{})[b.pos]||'ZM')===gruppe;
   const wb=passt?((METRIK.werte||{})[b.id]||{})[k]:null;
   const felder={}; (METRIK.felder||[]).forEach(f=>{felder[f.k]=f});
+  /* Die Definition steht auch hier: auf Touch-Geraeten ohne Zeiger gibt es
+     kein Erklaerfenster, das Tippen oeffnet aber diese Verteilung. */
   box.innerHTML='<div class="mk-schwarm-t">'+((felder[k]||{}).n||k)+'</div>'
+    +((felder[k]||{}).e?'<div class="mk-hinweis" style="margin:0 0 8px">'+felder[k].e+'</div>':'')
     +schwarmSVG(k,ligaId,gruppe,w[k],wb,passt?b.name.split(' ').pop():null);
   el.classList.add('mk-offen');
   box.scrollIntoView({block:'nearest'});
@@ -3519,7 +3538,7 @@ function rollenAbschnitt(p){
     const luecke=x.dabei<x.gesamt
       ? ' <span class="rl-luecke" title="Für die übrigen liegen keine Werte vor">'
         +x.dabei+'/'+x.gesamt+'</span>' : '';
-    return '<div class="rl-row'+(i===0?' rl-top':'')+'">'+
+    return '<div class="rl-row'+(i===0?' rl-top':'')+'" data-erkl="r:'+i+'" tabindex="0">'+
       '<span class="rl-name">'+x.name+luecke+'<i>'+x.beschreibung+'</i></span>'+
       '<span class="mk-bahn" style="width:110px"><span class="mk-fuell" style="width:'
       +x.wert+'%;background:'+farbe+'"></span></span>'+
@@ -3687,7 +3706,7 @@ function vergleichAbschnitt(p){
           +(besser===i?(i?'var(--blue)':'var(--lime)'):'var(--ink-3)')+'"></span></span>';
         const wert=(v,pct)=>'<span class="vgl-wert">'+metrikWertText(f,v)
           +'<i>'+(pct===null?'–':'P'+pct)+'</i></span>';
-        return '<div class="vgl-row"><span class="vgl-name">'+f.n+'</span>'
+        return '<div class="vgl-row" data-erkl="v:'+f.k+'" tabindex="0"><span class="vgl-name">'+f.n+'</span>'
           +wert(va,pa)+bahn(va,0)+bahn(vb,1)+wert(vb,pb)+'</div>';
       }).join('');
       return '<div class="vgl-blk"><div class="mk-blk-t">'+(bnamen[bid]||bid)+'</div>'+zeilen+'</div>';
@@ -3708,6 +3727,154 @@ function vergleichAbschnitt(p){
     +'Schnitt liegen. <i>P</i> ist das Percentil in der jeweils eigenen Liga.</div>'+
     tabelle+suche+'</div>';
 }
+
+/* ---------- Erklaerfenster -----------------------------------------------
+   Jede Kennzahl erklaert sich beim Ueberfahren selbst: was sie misst, wie
+   sie gerechnet ist, wie sie zu lesen ist, womit verglichen wird und ob sie
+   in die Note eingeht.
+
+   Gepflegt wird nur die Definition, in compute_grades.py neben der Rechnung.
+   Alles andere setzt dieses Fenster aus den Angaben zusammen, nach denen
+   ohnehin gerechnet wird (Rechenart, Mindestbasis, Richtung, Vergleichs-
+   gruppe, Zugehoerigkeit zur Note). So kann eine Erklaerung der Rechnung
+   nicht widersprechen.
+
+   EIN Element fuer die ganze Seite, am body fixiert: in den Bloecken waere
+   es von overflow:hidden abgeschnitten - dieselbe Falle, an der schon das
+   Fenster der Merkliste haengen blieb. */
+function erklPop(){
+  let el=document.getElementById('erkl-pop');
+  if(!el){
+    el=document.createElement('div');
+    el.id='erkl-pop';el.className='erkl-pop';el.setAttribute('role','tooltip');
+    document.body.appendChild(el);
+  }
+  return el;
+}
+function erklZeile(t,w){return w?'<dt>'+t+'</dt><dd>'+w+'</dd>':'';}
+
+/* Blockkennzahl (m: in der Akte, v: im Direktvergleich) */
+function erklMetrik(k,mitKlick){
+  if(!METRIK)return '';
+  const f=(METRIK.felder||[]).find(x=>x.k===k);
+  if(!f)return '';
+  const p=activePlayer;
+  const gruppe=p?((window.POSGRUPPE||{})[p.pos]||'ZM'):null;
+  const ligaId=p?(p.note_liga_id||p.liga_id):null, liga=p?(p.note_liga||p.liga):'';
+  const min=(METRIK.mindestens||{})[k];
+  const rechnung=f.art==='p90'?'Saisonsumme, auf 90 Minuten gerechnet'
+    :f.art==='summe'?'Saisonsumme'
+    :f.k==='bv100'?'Ballverluste je 100 Ballkontakte'+(min?', erst ab '+min+' Kontakten':'')
+    :'Anteil in Prozent'+(min?', erst ab '+min+' Versuchen':'');
+  const lesart=f.neutral?'Mengenangabe ohne Wertung — der Balken ist grau'
+    :(f.hoch?'Höher ist besser':'Niedriger ist besser');
+  let vergleich='';
+  if(p){
+    const v=metrikVerteilung(ligaId,gruppe)[k];
+    vergleich=(v&&v.length>=5)
+      ?'Percentil unter '+v.length+' Spielern der Gruppe '+gruppe+' in der '+liga
+        +', nur ab '+(window.MIN_MINUTEN||450)+' Minuten'
+      :'Zu wenige Vergleichsspieler für ein Percentil';
+    if(!mitKlick)vergleich+='. Der zweite Spieler wird in seiner eigenen Liga verglichen';
+  }
+  const inNote=!!p&&((METRIK.in_note||{})[gruppe]||[]).indexOf(k)>=0;
+  return '<h6>'+f.n+'</h6>'+(f.e?'<p>'+f.e+'</p>':'')
+    +'<dl>'+erklZeile('Rechnung',rechnung)+erklZeile('Lesart',lesart)
+    +erklZeile('Vergleich',vergleich)
+    +(p?erklZeile('Note',inNote?'Geht in die Liga-Note ein':'Geht nicht in die Note ein'):'')
+    +erklZeile('Quelle','Sofascore, Saison '+(METRIK.saison||dataSaison||''))+'</dl>'
+    +(mitKlick?'<div class="erkl-fuss">Ein Klick zeigt, wie die ganze Liga verteilt ist.</div>':'');
+}
+
+/* Notenparameter im Staerkenprofil */
+function erklParam(i){
+  const p=activePlayer;
+  const pm=p&&p.params?p.params[i]:null;
+  if(!pm)return '';
+  const text=(window.KENNZAHL_ERKLAERUNG||{})[pm.n]||'';
+  const gew=pm.g||1;
+  return '<h6>'+pm.n+'</h6>'+(text?'<p>'+text+'</p>':'')
+    +'<dl>'+erklZeile('Wert','übertrifft '+pm.p+' % der '+p.pos+' in der '+(p.note_liga||p.liga)
+      +' — 50 wäre der Ligadurchschnitt')
+    +erklZeile('Gewicht','zählt '+gew+'-fach in die Liga-Note')
+    +(pm.team?erklZeile('Achtung','Mannschaftswert, kein individuell gemessener Wert'):'')
+    +'</dl>';
+}
+
+/* Rolle: aus welchen Kennzahlen sie besteht, mit Gewicht und Percentil */
+function erklRolle(i){
+  const p=activePlayer;
+  if(!p||!METRIK)return '';
+  const r=rollenFuer(p)[i];
+  if(!r)return '';
+  const gruppe=(window.POSGRUPPE||{})[p.pos]||'ZM';
+  const def=(ROLLEN[gruppe]||[]).find(x=>x.n===r.name);
+  if(!def)return '';
+  const felder={};(METRIK.felder||[]).forEach(f=>{felder[f.k]=f});
+  const pct={};r.traeger.forEach(t=>{pct[t.n]=t.p});
+  const zeilen=def.k.map(function(paar){
+    const f=felder[paar[0]];
+    if(!f)return '';
+    return '<dt>×'+paar[1]+'</dt><dd>'+f.n
+      +(pct[f.n]!==undefined?' — Percentil '+pct[f.n]:' — kein Wert')+'</dd>';
+  }).join('');
+  return '<h6>'+r.name+'</h6><p>'+def.b.charAt(0).toUpperCase()+def.b.slice(1)
+    +'. Die Übereinstimmung ist der gewichtete Mittelwert seiner Percentile in diesen Kennzahlen.</p>'
+    +'<dl>'+zeilen+'</dl>'
+    +'<div class="erkl-fuss">Beschreibt sein Zahlenbild, nicht, wie ein Trainer ihn einsetzt.</div>';
+}
+
+let erklAktiv=null;
+function erklZeigen(el){
+  if(el===erklAktiv)return;
+  const spec=el.getAttribute('data-erkl')||'';
+  const art=spec.charAt(0), wert=spec.slice(2);
+  let html='';
+  try{
+    if(art==='m')html=erklMetrik(wert,true);
+    else if(art==='v')html=erklMetrik(wert,false);
+    else if(art==='k')html=erklParam(+wert);
+    else if(art==='r')html=erklRolle(+wert);
+  }catch(e){html='';}
+  const pop=erklPop();
+  if(!html){erklWeg();return;}
+  erklAktiv=el;
+  pop.innerHTML=html;
+  /* Breite und Hoehe des Fensters: im Vorschaubrowser meldet innerWidth
+     zeitweise 0 - dann gilt die Dokumentbreite. */
+  const vw=window.innerWidth||document.documentElement.clientWidth||800;
+  const vh=window.innerHeight||document.documentElement.clientHeight||600;
+  const breite=Math.min(320,vw-24);
+  const r=el.getBoundingClientRect();
+  pop.style.width=breite+'px';
+  pop.style.left=Math.max(12,Math.min(r.left,vw-breite-12))+'px';
+  pop.style.top='0px';
+  pop.classList.add('offen');
+  const h=pop.offsetHeight;
+  /* Unter die Zeile; reicht der Platz nicht, darueber. */
+  pop.style.top=((r.bottom+8+h<=vh)?r.bottom+8:Math.max(12,r.top-8-h))+'px';
+}
+function erklWeg(){
+  erklAktiv=null;
+  const el=document.getElementById('erkl-pop');
+  if(el)el.classList.remove('offen');
+}
+document.addEventListener('mouseover',function(e){
+  const el=e.target.closest&&e.target.closest('[data-erkl]');
+  if(el)erklZeigen(el);
+});
+document.addEventListener('mouseout',function(e){
+  const el=e.target.closest&&e.target.closest('[data-erkl]');
+  if(!el||(e.relatedTarget&&el.contains(e.relatedTarget)))return;
+  erklWeg();
+});
+document.addEventListener('focusin',function(e){
+  const el=e.target.closest&&e.target.closest('[data-erkl]');
+  if(el)erklZeigen(el);
+});
+document.addEventListener('focusout',erklWeg);
+window.addEventListener('scroll',erklWeg,{passive:true});
+window.addEventListener('resize',erklWeg);
 
 /* ---------- Kaderansicht --------------------------------------------------
    Aufgebaut wie der Kader auf Transfermarkt: Positionsgruppen Torwart,
@@ -3889,6 +4056,18 @@ function bildUrl(p){
    Adresse, gesperrter Verweis -, entfernt sich das Element selbst und die
    Initialen darunter kommen zum Vorschein. Deshalb bleiben sie im Markup
    stehen, statt ersetzt zu werden. */
+/* Foto in der Trefferkarte. Zuerst gab es Bilder nur in der Akte - auf
+   Wunsch jetzt auch in den Listen. Die Last bleibt klein: loading="lazy"
+   laesst den Browser nur Bilder holen, deren Karte in die Naehe des
+   sichtbaren Bereichs kommt, auch wenn 8.000 Karten im Dokument stehen.
+   Wie in der Akte liegt das Bild UEBER den Initialen und hat keinen
+   Hintergrund: haengt ein Abruf, bleiben die Initialen sichtbar. */
+function trefferBild(p){
+  const u=bildUrl(p);
+  return u?'<img class="av-bild" src="'+u+'" alt="" loading="lazy" '
+    +'referrerpolicy="no-referrer-when-downgrade" onerror="this.remove()">':'';
+}
+
 function phAvatar(p){
   const u=bildUrl(p);
   return '<div class="ph-av">'+p.ini+
@@ -4269,12 +4448,10 @@ function renderProfile(p,hasV,vN){
      gehoert sichtbar gemacht, sonst wirkt die Note wie ein schlichter
      Mittelwert. Mannschaftswerte werden zusaetzlich gekennzeichnet - sie
      beschreiben das Team, nicht den einzelnen Spieler. */
-  const bars=p.params.map(pm=>{
+  const bars=p.params.map((pm,i)=>{
     const gew=pm.g||1;
     const istTeam=!!pm.team;
-    return '<div class="param-row" title="'+pm.n+': übertrifft '+pm.p+' % aller '+p.pos
-    +' in der '+p.liga+'. 50 wäre genau Ligadurchschnitt. Zählt '+gew+'-fach'
-    +(istTeam?'. Achtung: Mannschaftswert, kein individuell gemessener Wert.':'.')+'">'
+    return '<div class="param-row" data-erkl="k:'+i+'" tabindex="0">'
     +'<div class="param-name">'+pm.n
     +(istTeam?' <span class="param-team">Team</span>':'')
     +(gew>1?' <span class="param-gew">×'+gew+'</span>':'')+'</div>'

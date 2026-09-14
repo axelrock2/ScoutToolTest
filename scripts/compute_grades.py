@@ -187,7 +187,7 @@ KENNZAHLEN = {
             ("Disziplin (Karten inv.)", "karten_pro90", False, 1)],
 
     "ZM":  [("Passquote", "passquote", True, 2),
-            ("Pässe ins letzte Drittel / 90", "letztes_drittel90", True, 2),
+            ("Pässe im letzten Drittel / 90", "letztes_drittel90", True, 2),
             ("Defensivaktionen / 90", "defensivaktionen90", True, 2),
             ("Schlüsselpässe / 90", "schluesselpaesse90", True, 2),
             ("Ballverluste je 100 Kontakte", "ballverluste100", False, 1),
@@ -243,6 +243,37 @@ if os.environ.get("SCOUT_ALTE_NOTE"):
 KENNZAHL_NAMEN = sorted({anzeige for felder in KENNZAHLEN.values()
                          for anzeige, _, _, _ in felder})
 KENNZAHL_INDEX = {name: i for i, name in enumerate(KENNZAHL_NAMEN)}
+
+# Definitionen der Notenparameter fuer das Erklaerfenster im Staerkenprofil.
+# Die Quelle steht jeweils dabei: Tore und Vorlagen zaehlt die Note nach
+# Transfermarkt, die Einzelwerte nach Sofascore.
+KENNZAHL_ERKLAERUNG = {
+    "Tore / 90": "Tore je 90 Minuten in Ligaspielen (Transfermarkt, ohne Pokal und Europapokal).",
+    "Vorlagen / 90": "Vorlagen je 90 Minuten in Ligaspielen (Transfermarkt).",
+    "Scorerpunkte / 90": "Tore plus Vorlagen je 90 Minuten in Ligaspielen (Transfermarkt).",
+    "Anteil an Teamtoren": "Anteil seiner Tore und Vorlagen an allen Ligatoren seiner Mannschaft (Transfermarkt). Zehn Scorerpunkte wiegen in einem Team mit 30 Toren mehr als in einem mit 90.",
+    "Einsatzanteil der Saison": "Seine Ligaeinsätze im Verhältnis zu den Saisonspielen der Mannschaft (Transfermarkt). Misst Verfügbarkeit und das Vertrauen des Trainers, nicht Spielstärke.",
+    "Minuten je Einsatz": "Durchschnittliche Spielzeit pro Einsatz (Transfermarkt) — trennt Stammspieler von Einwechselspielern.",
+    "Defensive der Mannschaft": "Gegentore seiner Mannschaft je Ligaspiel, aus der Tabelle (Transfermarkt). Ein Mannschaftswert: Wer in einer starken Abwehr spielt, profitiert davon, ohne dass sein eigener Anteil messbar wäre. Weniger ist besser.",
+    "Disziplin (Karten inv.)": "Karten je 90 Minuten (Transfermarkt): Gelb zählt 1, Gelb-Rot 2, Rot 3. Weniger ist besser.",
+    "Torgefahr bei Standards": "Tore je 90 Minuten (Transfermarkt). Bei Innenverteidigern fallen sie fast nur nach Standards — gezählt werden aber alle Tore.",
+    "Zweikampfquote": "Gewonnene Zweikämpfe am Boden und in der Luft in Prozent aller seiner Zweikämpfe (Sofascore). Zählt erst ab 40 Zweikämpfen.",
+    "Defensivaktionen / 90": "Tacklings, Interceptions, Klärungen und geblockte Schüsse zusammen, je 90 Minuten (Sofascore). Zusammengefasst, damit die Note nicht an einer einzelnen Zählweise hängt.",
+    "Passquote": "Angekommene Pässe in Prozent aller Pässe (Sofascore), ab 100 Pässen. Belohnt auch den sicheren Querpass — zusammen mit den Pässen im letzten Drittel lesen.",
+    "Ballverluste je 100 Kontakte": "Wie oft er den Ball verliert, bezogen auf 100 Ballkontakte (Sofascore), ab 100 Kontakten. Weniger ist besser.",
+    "Schlüsselpässe / 90": "Pässe, die direkt zu einem Torschuss eines Mitspielers führen, je 90 Minuten (Sofascore).",
+    "Ausgespielt worden / 90": "Wie oft ihn ein Gegenspieler im Dribbling überwunden hat, je 90 Minuten (Sofascore). Weniger ist besser.",
+    "Pässe im letzten Drittel / 90": "Angekommene Pässe im letzten Drittel des Gegners, je 90 Minuten (Sofascore). Zeigt, wie viel Spiel nach vorn über ihn läuft.",
+    "Verhinderte Tore / 90": "Erwartete Gegentore aus den Schüssen auf sein Tor minus die tatsächlichen Gegentore, je 90 Minuten (Sofascore). Über null hält er mehr, als die Schüsse erwarten ließen.",
+    "Paradenquote": "Anteil der Schüsse aufs Tor, die er hält: Paraden durch Paraden plus Gegentore (Sofascore), ab 20 Schüssen aufs Tor.",
+    "xG / 90": "Erwartete Tore je 90 Minuten: die aufsummierte Torwahrscheinlichkeit seiner Abschlüsse (Sofascore, Elfmeter eingeschlossen). Misst die Qualität der Chancen, nicht nur ihre Zahl.",
+    "xA / 90": "Erwartete Vorlagen je 90 Minuten (Sofascore): wie wahrscheinlich seine Pässe zu einem Tor führen — unabhängig davon, ob der Mitspieler trifft.",
+    "Großchancen kreiert / 90": "Pässe, die eine Großchance vorbereiten — eine Situation, in der man ein Tor erwarten würde —, je 90 Minuten (Sofascore).",
+    "Dribbelquote": "Gewonnene Dribblings in Prozent aller Dribbelversuche (Sofascore), ab 10 Versuchen.",
+    "Abschlussquote": "Tore je Schuss in Prozent (Sofascore), ab 10 Schüssen. Schwankt stark — mit xG zusammen lesen.",
+}
+assert set(KENNZAHL_NAMEN) <= set(KENNZAHL_ERKLAERUNG), \
+    sorted(set(KENNZAHL_NAMEN) - set(KENNZAHL_ERKLAERUNG))
 
 
 # Niveau-Skala. Der Median-Marktwert einer Liga ist ein brauchbarer Mass-
@@ -370,7 +401,7 @@ METRIKEN = [
 
     ("pa90",      "Pässe angekommen / 90",         "pass",      "p90",   True,  1),
     ("pq",        "Passquote",                     "pass",      "quote", True,  1),
-    ("pd90",      "Pässe ins letzte Drittel / 90", "pass",      "p90",   True,  2),
+    ("pd90",      "Pässe im letzten Drittel / 90", "pass",      "p90",   True,  2),
     ("la90",      "Lange Bälle angekommen / 90",   "pass",      "p90",   True,  2),
     ("lq",        "Quote lange Bälle",             "pass",      "quote", True,  1),
 
@@ -412,6 +443,63 @@ METRIKEN = [
 # ist keine Information, sondern eine Zeile, die den Blick von den
 # wichtigen ablenkt.
 NUR_GRUPPEN = {"abs90": {"ZM", "OFF", "ST"}}
+
+# Was eine Kennzahl misst - fuer das Erklaerfenster in der Akte. Gepflegt
+# wird NUR die Definition, und zwar hier, neben der Rechnung. Rechenart,
+# Mindestbasis, Lesart und ob die Kennzahl in die Note eingeht, setzt das
+# Frontend aus den Angaben zusammen, nach denen ohnehin gerechnet wird - so
+# kann eine Erklaerung der Rechnung nicht widersprechen.
+METRIK_ERKLAERUNG = {
+    "tore90": "Tore je 90 Minuten in Ligaspielen, gezählt nach Sofascore; Elfmeter eingeschlossen.",
+    "xg90": "Erwartete Tore: die aufsummierte Torwahrscheinlichkeit seiner Abschlüsse, je 90 Minuten. Misst die Qualität der Chancen, nicht nur ihre Zahl; Elfmeter eingeschlossen.",
+    "ueber_xg": "Tore minus erwartete Tore in der Saison. Über null trifft er besser, als seine Chancen erwarten ließen — über eine einzelne Saison allerdings stark vom Zufall geprägt.",
+    "sch90": "Alle Abschlüsse je 90 Minuten, auch geblockte und verfehlte.",
+    "schtq": "Anteil seiner Schüsse, die aufs Tor gehen.",
+    "schq": "Tore je Schuss. Schwankt stark — am besten zusammen mit xG lesen.",
+    "gcv90": "Vergebene Großchancen je 90 Minuten. Eine Großchance ist eine Situation, in der man ein Tor erwarten würde, meist frei vor dem Tor.",
+    "vorl90": "Vorlagen je 90 Minuten in Ligaspielen, gezählt nach Sofascore.",
+    "xa90": "Erwartete Vorlagen: wie wahrscheinlich seine Pässe zu einem Tor führen, je 90 Minuten — unabhängig davon, ob der Mitspieler trifft.",
+    "skp90": "Pässe, die direkt zu einem Torschuss eines Mitspielers führen, je 90 Minuten.",
+    "gck90": "Pässe, die eine Großchance vorbereiten, je 90 Minuten.",
+    "fa90": "Flanken, die einen Mitspieler erreichen, je 90 Minuten.",
+    "fq": "Anteil seiner Flanken, die einen Mitspieler erreichen.",
+    "pa90": "Angekommene Pässe je 90 Minuten — eine Menge: sie beschreibt, wie viel Spiel über ihn läuft.",
+    "pq": "Anteil seiner Pässe, die ankommen. Belohnt auch den sicheren Querpass — zusammen mit den Pässen im letzten Drittel lesen.",
+    "pd90": "Angekommene Pässe im letzten Drittel des Gegners, je 90 Minuten (bei Sofascore „accurate final third passes“). Zeigt, wie viel Spiel nach vorn über ihn läuft.",
+    "la90": "Angekommene lange Bälle je 90 Minuten.",
+    "lq": "Anteil seiner langen Bälle, die ankommen.",
+    "zq": "Gewonnene Zweikämpfe am Boden und in der Luft, im Verhältnis zu allen seinen Zweikämpfen.",
+    "zg90": "Gewonnene Zweikämpfe je 90 Minuten.",
+    "bq": "Anteil der gewonnenen Zweikämpfe am Boden.",
+    "kq": "Anteil der gewonnenen Kopfballduelle.",
+    "kg90": "Gewonnene Kopfballduelle je 90 Minuten.",
+    "tkl90": "Tacklings je 90 Minuten: Balleroberung im direkten Duell am Boden.",
+    "int90": "Abgefangene gegnerische Pässe je 90 Minuten.",
+    "klr90": "Klärungen je 90 Minuten: den Ball aus der Gefahrenzone befördert. Steigt, wenn die eigene Mannschaft viel verteidigen muss.",
+    "blk90": "Geblockte gegnerische Schüsse je 90 Minuten.",
+    "bg390": "Ballgewinne im Angriffsdrittel je 90 Minuten — ein Maß für Pressing weit vorn.",
+    "ausg90": "Wie oft ihn ein Gegenspieler im Dribbling überwunden hat, je 90 Minuten.",
+    "ftor": "Fehler, die unmittelbar zu einem Gegentor führten, über die ganze Saison.",
+    "dr90": "Gewonnene Dribblings je 90 Minuten.",
+    "drq": "Anteil seiner Dribblings, die gelingen.",
+    "kon90": "Ballkontakte je 90 Minuten. Beschreibt die Rolle — wie sehr das Spiel über ihn läuft —, nicht die Qualität.",
+    "bv100": "Wie oft er den Ball verliert, etwa durch Fehlpässe oder verlorene Dribblings — bezogen auf 100 Ballkontakte.",
+    "par90": "Paraden je 90 Minuten. Hängt vor allem davon ab, wie viele Schüsse seine Abwehr zulässt.",
+    "vth": "Erwartete Gegentore aus den Schüssen auf sein Tor minus die tatsächlichen Gegentore, über die Saison. Über null hält er mehr, als die Schüsse erwarten ließen — die aussagekräftigste Torwartkennzahl.",
+    "vth90": "Verhinderte Tore wie oben, auf 90 Minuten gerechnet.",
+    "geg90": "Gegentore je 90 Minuten, in denen er spielte. Überwiegend ein Mannschaftswert.",
+    "zu0q": "Anteil seiner Einsätze ohne Gegentor — ebenfalls überwiegend ein Mannschaftswert.",
+    "hoch90": "Gefangene Flanken und hohe Bälle je 90 Minuten.",
+    "rausq": "Anteil seiner Herauslaufaktionen, die gelingen.",
+    "phalt": "Gehaltene Elfmeter in der Saison.",
+    "fo90": "Begangene Fouls je 90 Minuten.",
+    "gef90": "Wie oft er gefoult wurde, je 90 Minuten — zeigt, wie oft Gegner ihn nur regelwidrig stoppen können.",
+    "abs90": "Abseitsstellungen je 90 Minuten.",
+}
+# Eine neue Kennzahl ohne Definition bricht den Lauf ab, statt ohne
+# Erklaerung ausgeliefert zu werden.
+assert set(METRIK_ERKLAERUNG) == {k for k, *_ in METRIKEN}, \
+    sorted(set(METRIK_ERKLAERUNG) ^ {k for k, *_ in METRIKEN})
 
 # Kennzahlen, die zwar als Quote gerechnet werden, aber nicht als Prozent
 # zu lesen sind.
@@ -1403,6 +1491,8 @@ def main() -> int:
             "mindestminuten": MIN_MINUTEN,
             "bild_basis": roh.get("bild_basis"),
             "kennzahlen": KENNZAHL_NAMEN,
+            # Definitionen fuer das Erklaerfenster im Staerkenprofil
+            "kennzahl_erklaerung": {n: KENNZAHL_ERKLAERUNG[n] for n in KENNZAHL_NAMEN},
             "herkunft": HERKUNFT,
             # Nachrechnung der Sofascore-Werte gegen FotMob (Opta), siehe
             # scripts/gegenprobe.py. Steht in der Datenherkunft und macht
@@ -1444,6 +1534,7 @@ def main() -> int:
             "felder": [{"k": k, "n": n, "b": b,
                         "art": "zahl" if k in OHNE_PROZENT else art,
                         "hoch": 1 if hoch else 0, "nk": nk,
+                        "e": METRIK_ERKLAERUNG[k],
                         **({"neutral": 1} if k in OHNE_WERTUNG else {})}
                        for k, n, b, art, hoch, nk in METRIKEN],
             "mindestens": MIN_BASIS,
