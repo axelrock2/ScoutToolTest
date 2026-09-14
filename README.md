@@ -807,8 +807,10 @@ diese Funktion gehen, gilt die Regel überall zugleich.
 | Vertrag beim Stammverein nicht erfasst | nicht angezeigt |
 
 Wer die Leihenden trotzdem sehen will, schaltet **„Leihenden zusätzlich
-zeigen"** ein (Vorgabe: aus). Sie stehen dann in einem eigenen Abschnitt
-*Leihende — kein Vertragsende*.
+zeigen"** ein (Vorgabe: aus). Sie stehen dann in zwei eigenen Abschnitten:
+*Leihende — Vertrag läuft weiter* und *Leihende — Vertrag beim Stammverein
+unbekannt*. Getrennt, weil das eine eine Auskunft ist und das andere eine
+offene Frage.
 
 **Transfermarkt sperrt Profilseiten schneller** als Kader- und
 Vertragsseiten. Beim ersten Lauf kamen nach rund zwanzig Abrufen nur noch
@@ -904,6 +906,19 @@ bei **13 bis zum Sommer 2027** — bei 11 davon zugleich mit der Leihe —, bei
 253 in der Saison 2027/28 und bei 287 später. Die 13 sind die echten
 Ausläufer, die vorher unsichtbar waren: vor dem Umstieg war ihr
 Stammvertrag schlicht noch nicht abgefragt.
+
+**Abschluss.** Die 2 Leihspieler, die auf der Seite ihres Vereins fehlten,
+kamen über ihre Profilseite dazu: Gustavo Mancha (Rio Ave, von Olympiakos,
+Vertrag dort bis 30.06.2029) und Jaroud Kanze (FC Pipinsried, von Wacker
+Burghausen, bis 30.06.2027 — endet mit der Leihe). Damit sind **alle 844
+Leihspieler abgefragt**: 724 mit Vertragsende beim Stammverein, 120 ohne;
+842 Werte stammen von der Vereinsseite, 2 von der Profilseite.
+
+Die 120 ohne Datum sind eine **Lücke der Quelle**, nicht des Sammlers. In
+einer Stichprobe von 8 zeigt auch die Profilseite jedes Mal `Vertrag dort
+bis: -`. In der Suche erscheinen diese Spieler deshalb nicht als Ausläufer;
+mit „Leihenden zusätzlich zeigen" stehen sie im eigenen Abschnitt *Vertrag
+beim Stammverein unbekannt*.
 
 ### Gesucht wird in Zeitfenstern, nicht in Jahreszahlen
 
@@ -1095,7 +1110,9 @@ Mannschaft hat — nachgemessen in der Bundesliga: Korrelation −0,21 bei
 Innenverteidigern, −0,11 im Mittelfeld. Messbar, aber schwach; Kimmichs
 3,2 Aktionen je 90 sind nicht Bayerns Ballbesitz geschuldet, Goretzka
 kommt beim selben Verein auf 5,0. Eine Ballbesitz-Korrektur (Padj.) wäre
-eine Verfeinerung, keine Reparatur.
+eine Verfeinerung, keine Reparatur. Auf Rückfrage entschieden am 14.09.2026:
+**nicht umgesetzt** — zu wenig Wirkung für eine zusätzliche Rechenschicht,
+für die der Ballbesitz je Mannschaft erst erhoben werden müsste.
 
 **In der Akte ist jede Zeile gekennzeichnet**, die in die Note eingeht —
 mit einem kleinen Zeichen *Note* neben dem Namen. Was die Note aus

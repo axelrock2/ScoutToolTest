@@ -2642,11 +2642,22 @@ const AUSLAUF_GRUPPEN=[
      +'diesem Zeitraum. Nach der Leihe wäre er ablösefrei, sofern dort keine '
      +'Option gezogen wird; ob eine besteht, ist hier nicht erfasst.',
    passt:p=>istLeihe(p)&&datumImZeitraum(p.stammvertrag_bis,auslaufAktiv)},
-  {id:'leihe', name:'Leihende — kein Vertragsende',
-   erklaerung:'Nur die Leihe endet; der Vertrag beim Stammverein läuft darüber '
-     +'hinaus oder ist nicht erfasst. Ein Wechsel kostet Ablöse. Sichtbar, '
-     +'weil „Leihenden zusätzlich zeigen“ eingeschaltet ist.',
-   passt:p=>istLeihe(p)&&!datumImZeitraum(p.stammvertrag_bis,auslaufAktiv)},
+  /* Zwei Abschnitte statt einem: "laeuft weiter" ist eine Auskunft, "unbekannt"
+     eine offene Frage. Bei 120 Leihspielern fuehrt Transfermarkt beim
+     Stammverein kein Datum - auf Vereins- UND Profilseite (Stichprobe 8 von
+     8). Wer mit einem ablösefreien Wechsel planen will, muss dort nachfragen;
+     das soll nicht zwischen den Spielern mit gesichertem Vertrag untergehen. */
+  {id:'leihe', name:'Leihende — Vertrag läuft weiter',
+   erklaerung:'Nur die Leihe endet; beim Stammverein steht der Spieler über '
+     +'diesen Zeitraum hinaus unter Vertrag. Ein Wechsel kostet Ablöse. '
+     +'Sichtbar, weil „Leihenden zusätzlich zeigen“ eingeschaltet ist.',
+   passt:p=>istLeihe(p)&&!!p.stammvertrag_bis&&!datumImZeitraum(p.stammvertrag_bis,auslaufAktiv)},
+  {id:'leihe_unbekannt', name:'Leihende — Vertrag beim Stammverein unbekannt',
+   erklaerung:'Beim Stammverein ist kein Vertragsende bekannt: Transfermarkt '
+     +'führt keins, oder der Spieler wurde noch nicht abgefragt. Ob er nach der '
+     +'Leihe frei wird, lässt sich deshalb nicht sagen — vor jeder Planung mit '
+     +'einem ablösefreien Wechsel nachfragen.',
+   passt:p=>istLeihe(p)&&!p.stammvertrag_bis},
   {id:'rest', name:'Vertragsende ohne Angabe zur Option',
    erklaerung:'Datum aus der Kaderansicht; ob eine Option besteht, führt '
      +'sie nicht. Die Vertragsende-Seite deckt erst spätere Sommer ab.',
