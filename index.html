@@ -1978,7 +1978,9 @@ function leiheInfo(p){
           bis:p.leihe_bis||(p.auslauf?p.auslauf.bis:null),
           /* Vertrag beim Stammverein - von der Profilseite
              (scripts/leihvertraege.py). Erst er sagt, ob er frei wird. */
-          stamm:p.stammvertrag_bis||null};
+          stamm:p.stammvertrag_bis||null,
+          /* Abgefragt, aber ohne Datum bei Transfermarkt ("Vertrag dort bis: -") */
+          geprueft:!!p.stammvertrag_geprueft};
 }
 
 function fuelleAuslaufPanel(){
@@ -2306,7 +2308,9 @@ function auslaufBadge(p,imAuslaufModus){
         +freiAb(lh.stamm)+'</span>';
     return '<span class="badge" style="border-color:rgba(77,166,255,0.4);color:var(--blue)" '
       +'title="Leihe endet'+(lh.bis?' am '+dtm(lh.bis):'')+(lh.von?' — ausgeliehen von '+lh.von:'')
-      +'.'+(lh.stamm?' Vertrag beim Stammverein bis '+dtm(lh.stamm)+'.':' Vertrag beim Stammverein nicht erfasst.')
+      +'.'+(lh.stamm?' Vertrag beim Stammverein bis '+dtm(lh.stamm)+'.'
+        :lh.geprueft?' Beim Stammverein führt Transfermarkt kein Vertragsende.'
+        :' Vertrag beim Stammverein noch nicht abgefragt.')
       +' Kein ablösefreier Wechsel. Quelle: Transfermarkt.">Leihe bis '+(lh.bis?freiAb(lh.bis):'—')
       +(lh.stamm?' · Vertrag bis '+lh.stamm.slice(0,4):'')+'</span>';
   }
@@ -2808,7 +2812,9 @@ function fazitFuer(p){
       ?((!lh.bis||lh.stamm<=lh.bis)
         ?'Auch sein Vertrag beim Stammverein endet dann ('+dtm(lh.stamm)+') — danach wäre er ablösefrei.'
         :'Beim Stammverein steht er bis '+dtm(lh.stamm)+' unter Vertrag — ein Wechsel kostet Ablöse.')
-      :'Wie lange sein Vertrag beim Stammverein läuft, ist nicht erfasst.'));
+      :(lh.geprueft
+        ?'Ein Vertragsende beim Stammverein führt Transfermarkt nicht.'
+        :'Wie lange sein Vertrag beim Stammverein läuft, ist noch nicht abgefragt.')));
   else if(p.contract_until||a){
     const bis=p.contract_until||a.bis;
     r.push('Vertrag bis '+dtm(bis)+(m!==null?' ('+Math.max(m,0)+' Monate)':'')
@@ -2876,7 +2882,9 @@ function vertragsAbschnitt(p){
             :' — nach der Leihe kehrt er dorthin zurück; ein Wechsel kostet Ablöse.')
           +' Quelle: Transfermarkt, Profilseite.'});
       }else{
-        zeilen.push({c:'neu',t:'Wie lange sein Vertrag beim Stammverein läuft, ist nicht erfasst.'});
+        zeilen.push({c:'neu',t:lh.geprueft
+          ?'Beim Stammverein führt Transfermarkt kein Vertragsende („Vertrag dort bis: –“). Ob er nach der Leihe frei wird, lässt sich deshalb nicht sagen.'
+          :'Wie lange sein Vertrag beim Stammverein läuft, ist noch nicht abgefragt.'});
       }
     }
     /* Datum aus der Kaderansicht: belastbar, aber ohne Angabe zur Option. */
@@ -4095,14 +4103,14 @@ function vertragText(p){
   const lh=leiheInfo(p);
   if(lh)
     return '<span style="color:var(--amber)">Leihe bis '
-      +(lh.bis?new Date(lh.bis).toLocaleDateString('de-DE'):'k. A.')+'</span>'
+      +(lh.bis?dtm(lh.bis):'k. A.')+'</span>'
       +(lh.stamm?' <span style="font-size:11px;color:var(--ink-3)">· Stammverein bis '
-        +new Date(lh.stamm).toLocaleDateString('de-DE')+'</span>':'');
+        +dtm(lh.stamm)+'</span>':'');
   /* Bei einem geprueften Auslaeufer steht das Datum aus der Vereinsseite
      "Vertragsende" - dort ist es gesichert, in der Kaderansicht fehlt es
      haeufig. */
   if(!p.contract_until&&p.auslauf&&!p.auslauf.leihe)
-    return new Date(p.auslauf.bis).toLocaleDateString('de-DE');
+    return dtm(p.auslauf.bis);
   if(!p.contract_until)return 'k. A.';
   const m=restmonate(p);
   const txt=new Date(p.contract_until).toLocaleDateString('de-DE',

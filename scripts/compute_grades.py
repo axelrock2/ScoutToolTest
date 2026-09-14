@@ -1079,7 +1079,12 @@ def main() -> int:
                     # Vertrag beim Stammverein - erst er sagt, ob der
                     # Spieler wirklich frei wird.
                     **({"stammvertrag_bis": s["leihe"]["stammvertrag_bis"]}
-                       if s["leihe"].get("stammvertrag_bis") else {})}
+                       if s["leihe"].get("stammvertrag_bis") else {}),
+                    # Abgefragt, aber Transfermarkt fuehrt kein Datum
+                    # ("Vertrag dort bis: -") ist eine andere Auskunft als
+                    # "noch nicht abgefragt" - beides muss unterscheidbar sein.
+                    **({"stammvertrag_geprueft": 1}
+                       if s["leihe"].get("stammvertrag_geprueft") else {})}
                    if s.get("leihe") else {}),
                 "mv": mw_text(s.get("marktwert_eur")),
                 "mv_eur": s.get("marktwert_eur"),
@@ -1258,7 +1263,9 @@ def main() -> int:
             **({"contract_until": s["vertrag_bis"]} if s.get("vertrag_bis") else {}),
             **({"leihe_von": s["leihe"]["von"], "leihe_bis": s["leihe"]["bis"],
                 **({"stammvertrag_bis": s["leihe"]["stammvertrag_bis"]}
-                   if s["leihe"].get("stammvertrag_bis") else {})}
+                   if s["leihe"].get("stammvertrag_bis") else {}),
+                **({"stammvertrag_geprueft": 1}
+                   if s["leihe"].get("stammvertrag_geprueft") else {})}
                if s.get("leihe") else {}),
             **({"mv": mw_text(s["marktwert_eur"]), "mv_eur": s["marktwert_eur"]}
                if s.get("marktwert_eur") else {}),

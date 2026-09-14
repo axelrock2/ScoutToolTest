@@ -803,6 +803,13 @@ schon geprüft ist, wird übersprungen, solange sich seine Leihe nicht
 ändert. `update_local.sh` führt den Schritt mit (`LEIHVERTRAEGE=0`
 schaltet ihn ab).
 
+**„Nicht abgefragt" und „kein Datum" sind zwei Auskünfte.** Manche
+Profilseiten führen die Zeile, aber ohne Wert — `Vertrag dort bis: -`,
+etwa bei Andrés Ferrari (ausgeliehen von St. Truiden, mit Kaufoption).
+Das ist kein Lesefehler, sondern der Stand bei Transfermarkt. Die Akte
+unterscheidet deshalb, ob beim Stammverein kein Vertragsende geführt wird
+oder ob der Spieler schlicht noch nicht abgefragt wurde.
+
 ### Gesucht wird in Zeitfenstern, nicht in Jahreszahlen
 
 Ein Scout fragt nicht „endet der Vertrag 2027", sondern „wer ist im Winter
