@@ -1084,7 +1084,11 @@ def main() -> int:
                     # ("Vertrag dort bis: -") ist eine andere Auskunft als
                     # "noch nicht abgefragt" - beides muss unterscheidbar sein.
                     **({"stammvertrag_geprueft": 1}
-                       if s["leihe"].get("stammvertrag_geprueft") else {})}
+                       if s["leihe"].get("stammvertrag_geprueft") else {}),
+                    # Woher die Angabe stammt: Leihspieler-Seite des Vereins
+                    # oder Profilseite des Spielers - fuer die Datenherkunft.
+                    **({"stammvertrag_quelle": s["leihe"]["stammvertrag_quelle"]}
+                       if s["leihe"].get("stammvertrag_quelle") else {})}
                    if s.get("leihe") else {}),
                 "mv": mw_text(s.get("marktwert_eur")),
                 "mv_eur": s.get("marktwert_eur"),
@@ -1265,7 +1269,9 @@ def main() -> int:
                 **({"stammvertrag_bis": s["leihe"]["stammvertrag_bis"]}
                    if s["leihe"].get("stammvertrag_bis") else {}),
                 **({"stammvertrag_geprueft": 1}
-                   if s["leihe"].get("stammvertrag_geprueft") else {})}
+                   if s["leihe"].get("stammvertrag_geprueft") else {}),
+                **({"stammvertrag_quelle": s["leihe"]["stammvertrag_quelle"]}
+                   if s["leihe"].get("stammvertrag_quelle") else {})}
                if s.get("leihe") else {}),
             **({"mv": mw_text(s["marktwert_eur"]), "mv_eur": s["marktwert_eur"]}
                if s.get("marktwert_eur") else {}),

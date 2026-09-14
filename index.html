@@ -2304,7 +2304,8 @@ function auslaufBadge(p,imAuslaufModus){
       return '<span class="badge" style="border-color:rgba(91,211,122,0.45);color:var(--green)" '
         +'title="Ausgeliehen'+(lh.von?' von '+lh.von:'')+(lh.bis?', Leihe bis '+dtm(lh.bis):'')
         +'; Vertrag beim Stammverein bis '+dtm(lh.stamm)+'. Danach ablösefrei, sofern dort '
-        +'keine Option gezogen wird. Quelle: Transfermarkt, Profilseite.">Leihe · Vertrag endet '
+        +'keine Option gezogen wird. Quelle: Transfermarkt, '+(p.stammvertrag_quelle==='leihspieler-seite'
+          ?'Leihspieler-Seite des Vereins':'Profilseite')+'.">Leihe · Vertrag endet '
         +freiAb(lh.stamm)+'</span>';
     return '<span class="badge" style="border-color:rgba(77,166,255,0.4);color:var(--blue)" '
       +'title="Leihe endet'+(lh.bis?' am '+dtm(lh.bis):'')+(lh.von?' — ausgeliehen von '+lh.von:'')
@@ -2880,7 +2881,8 @@ function vertragsAbschnitt(p){
           +(zugleich
             ?' — endet mit der Leihe. Danach wäre er ablösefrei, sofern dort keine Option gezogen wird.'
             :' — nach der Leihe kehrt er dorthin zurück; ein Wechsel kostet Ablöse.')
-          +' Quelle: Transfermarkt, Profilseite.'});
+          +' Quelle: Transfermarkt, '+(p.stammvertrag_quelle==='leihspieler-seite'
+            ?'Leihspieler-Seite des Vereins':'Profilseite')+'.'});
       }else{
         zeilen.push({c:'neu',t:lh.geprueft
           ?'Beim Stammverein führt Transfermarkt kein Vertragsende („Vertrag dort bis: –“). Ob er nach der Leihe frei wird, lässt sich deshalb nicht sagen.'

@@ -70,15 +70,17 @@ if [ "${GEGENPROBE:-1}" = "1" ]; then
   "$PY" scripts/gegenprobe.py || echo "  Gegenprobe uebersprungen - alter Stand bleibt"
 fi
 
-# Vertrag beim Stammverein fuer Leihspieler - ein Abruf je Leihspieler.
-# Erst er sagt, ob ein Leihspieler wirklich frei wird. Transfermarkt sperrt
-# Profilseiten schneller als Kaderseiten; das Skript pausiert deshalb
-# zwischen den Abrufen, bricht nach mehreren Fehlern in Folge ab und
-# speichert, was es hat. Den Rest holt der naechste Lauf.
+# Vertrag beim Stammverein fuer Leihspieler - ein Abruf je AUFNEHMENDEM
+# Verein (Leihspieler-Seite, rund 290), nicht je Spieler. Erst dieses Datum
+# sagt, ob ein Leihspieler wirklich frei wird. --erneuern, weil sich
+# Vertraege beim Stammverein auch waehrend einer Leihe aendern und bei rund
+# 290 Abrufen ein voller Abgleich tragbar ist. Das Skript pausiert zwischen
+# den Abrufen, bricht nach mehreren Fehlern in Folge ab und speichert, was
+# es hat.
 if [ "${LEIHVERTRAEGE:-1}" = "1" ]; then
   echo
   echo "== Vertraege beim Stammverein (Leihspieler) =="
-  "$PY" scripts/leihvertraege.py || echo "  Leihvertraege uebersprungen - Bestand bleibt gueltig"
+  "$PY" scripts/leihvertraege.py --erneuern || echo "  Leihvertraege uebersprungen - Bestand bleibt gueltig"
 fi
 
 # Auslaufende Vertraege. Ein Abruf je Verein und Sommer, also rund 1200

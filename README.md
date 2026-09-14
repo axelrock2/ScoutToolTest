@@ -884,6 +884,27 @@ Hat ein Spieler schon einen Wert von der Profilseite, vergleicht das Skript
 beide und benennt jede Abweichung. Die Akte nennt die Quelle des jeweiligen
 Werts. Der Profilseiten-Weg bleibt als `--profil` erhalten.
 
+**Der Lauf über die Vereinsseiten, 14.09.2026.** 289 Seiten, keine einzige
+Antwort mit 403, keine Sperre:
+
+| | Leihspieler |
+|---|---:|
+| im heutigen Kader | 844 |
+| erfasst | **842** |
+| davon mit Vertragsende beim Stammverein | 722 |
+| davon ohne Datum bei Transfermarkt (`-`) | 120 |
+| auf der Seite ihres Vereins nicht geführt | 2 |
+
+Die eingebaute Gegenprobe lief über alle 100 Spieler, die schon einen Wert
+von der Profilseite hatten: **100 gleich, 0 abweichend**. Auch das Leihende
+stimmte in jedem Fall mit der Kaderansicht überein.
+
+Unter den 636 bewerteten Leihspielern endet der Vertrag beim Stammverein
+bei **13 bis zum Sommer 2027** — bei 11 davon zugleich mit der Leihe —, bei
+253 in der Saison 2027/28 und bei 287 später. Die 13 sind die echten
+Ausläufer, die vorher unsichtbar waren: vor dem Umstieg war ihr
+Stammvertrag schlicht noch nicht abgefragt.
+
 ### Gesucht wird in Zeitfenstern, nicht in Jahreszahlen
 
 Ein Scout fragt nicht „endet der Vertrag 2027", sondern „wer ist im Winter
