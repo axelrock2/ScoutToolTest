@@ -44,6 +44,7 @@ import gzip
 import json
 import os
 import re
+import signal
 import sys
 import time
 from datetime import date, datetime, timezone
@@ -154,25 +155,41 @@ def main() -> int:
     if args.probe:
         return 0
 
+    # Wie in leihvertraege.py: eine Serie von Fehlern heisst Sperre. Dann
+    # aufhoeren, statt sie mit weiteren Abrufen zu verlaengern - und das
+    # bis dahin Geholte speichern, auch bei einem Abbruch von aussen.
+    def _stopp(*_):
+        raise KeyboardInterrupt
+    signal.signal(signal.SIGTERM, _stopp)
+
     start = time.time()
     gefunden: dict[str, str] = {}       # spieler_id -> "<stempel>.<endung>"
-    vereine_ok = fehler = 0
-    for vid, (name, _liga) in offen:
-        if BUDGET_MIN and (time.time() - start) / 60 > BUDGET_MIN:
-            print(f"  Zeitbudget von {BUDGET_MIN:.0f} min erreicht.",
-                  file=sys.stderr)
-            break
-        try:
-            gefunden.update(portraits(vid))
-            geprueft[vid] = date.today().isoformat()
-            vereine_ok += 1
-            if vereine_ok % 50 == 0:
-                print(f"  {vereine_ok} Vereine, {len(gefunden)} Bilder ...",
+    vereine_ok = fehler = in_folge = 0
+    try:
+        for vid, (name, _liga) in offen:
+            if BUDGET_MIN and (time.time() - start) / 60 > BUDGET_MIN:
+                print(f"  Zeitbudget von {BUDGET_MIN:.0f} min erreicht.",
                       file=sys.stderr)
-        except Exception as exc:
-            fehler += 1
-            if fehler <= 8:
-                print(f"  [!] {name}: {str(exc)[:70]}", file=sys.stderr)
+                break
+            try:
+                gefunden.update(portraits(vid))
+                geprueft[vid] = date.today().isoformat()
+                vereine_ok += 1
+                in_folge = 0
+                if vereine_ok % 50 == 0:
+                    print(f"  {vereine_ok} Vereine, {len(gefunden)} Bilder ...",
+                          file=sys.stderr)
+            except Exception as exc:
+                fehler += 1
+                in_folge += 1
+                if fehler <= 8:
+                    print(f"  [!] {name}: {str(exc)[:70]}", file=sys.stderr)
+                if in_folge >= 4:
+                    print("  4 Fehler in Folge - Transfermarkt sperrt offenbar. "
+                          "Abbruch, Bisheriges wird gespeichert.", file=sys.stderr)
+                    break
+    except KeyboardInterrupt:
+        print("  Abgebrochen - Bisheriges wird gespeichert.", file=sys.stderr)
 
     if not gefunden:
         print("Nichts geholt - Bestand bleibt unangetastet.", file=sys.stderr)
