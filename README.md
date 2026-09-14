@@ -232,29 +232,43 @@ Grenzen:
 | Platzhalter | Wo Transfermarkt kein Foto hat, liefert es `default.jpg`. Der wird verworfen — eine graue Silhouette sagt weniger als die Initialen. |
 | Hotlinking | Die Bilder liegen weiter bei Transfermarkt und werden beim Öffnen einer Akte von dort geladen, nicht hier gespeichert. Wird der Verweis eines Tages gesperrt, greift der Rückfall. |
 
-### Warum die Oberligen so wenige Fotos hatten
+### Warum die Oberligen so wenige Fotos haben
 
-Die Fotoquote lag in den Oberligen bei 16 bis 57 %, in den übrigen Ligen
-deutlich höher. Nachgezählt an zwei Vereinen der schwächsten Liga:
+Die Fotoquote liegt in den Oberligen bei 16 bis 58 %, in den übrigen Ligen
+deutlich höher. Die naheliegende Vermutung — der Sammler hat dort Lücken —
+stimmt nur zu einem kleinen Teil. Nachgezählt am 14.09.2026:
 
-| Verein | Spieler | Portraits bei Transfermarkt |
-|---|---:|---:|
-| Holstein Kiel II | 24 | 23 |
-| Heider SV | 24 | 8 (16 Platzhalter) |
+| Verein | Kaderspieler im Bestand | Foto vorher | Foto jetzt | Portraits bei Transfermarkt |
+|---|---:|---:|---:|---:|
+| Holstein Kiel II | 25 | 17 | 23 | 23 |
+| Heider SV | 24 | 8 | 8 | 8 |
 
-Bei Heider fehlen die Bilder an der Quelle. Bei Holstein Kiel II fehlten
-sie **bei uns** — zwei Ursachen im Sammler:
+Bei Holstein Kiel II fehlten bei uns 6 Fotos; inzwischen sind alle da. Bei
+Heider SV fehlte nichts — Transfermarkt führt für 16 der 24 Spieler kein
+Portrait.
+
+Über alle 318 Vereine mit niedriger Quote dasselbe Bild. Der Sammler fand
+3.638 Portraits: **3.345 waren schon vorhanden**, 291 kamen neu dazu, 2
+gehören Spielern, die nicht im Bestand stehen. Die Gesamtquote stieg von
+68 auf 69 %. **Die Lücke liegt ganz überwiegend an der Quelle** — für die
+meisten Amateurspieler gibt es bei Transfermarkt kein Foto.
+
+Eine erste Fassung dieses Abschnitts behauptete das Gegenteil. Sie hatte die
+23 Portraits von Holstein Kiel II mit der Quote der ganzen Liga verglichen,
+statt die Fotos genau dieses Vereins in unseren Daten nachzuzählen.
+
+Zwei Schwächen im Sammler gab es trotzdem, und sie sind behoben:
 
 * Die Vereine wurden in fester Reihenfolge abgerufen. Brach ein Lauf ab
   (Zeitbudget, HTTP 405), traf es jedes Mal dieselben Ligen am Ende der
-  Liste.
+  Liste. Jetzt kommen die Vereine mit der **niedrigsten Fotoquote zuerst**.
 * Ohne `--erneuern` galt ein Verein als erledigt, sobald **ein** Spieler
-  ein Bild trug.
+  ein Bild trug. Jetzt wird jeder vollständig gesehene Verein vermerkt
+  (`bilder_geprueft`); offen bleiben nur Vereine, die noch nie vollständig
+  gesehen wurden und unter 80 % liegen.
 
-Seitdem ruft `bilder.py` die Vereine mit der **niedrigsten Fotoquote
-zuerst** ab und vermerkt jeden vollständig gesehenen Verein
-(`bilder_geprueft`). Ohne `--erneuern` bleiben nur Vereine offen, die noch
-nie vollständig gesehen wurden und unter 80 % liegen — beim Umstellen 318.
+Dazu bricht der Sammler nach vier Fehlern in Folge ab und speichert, was er
+bis dahin hat — wie der Stammvertrags-Sammler.
 
 ## Kaderansicht
 
