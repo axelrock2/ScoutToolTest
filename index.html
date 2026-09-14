@@ -1945,7 +1945,30 @@ function auslaufFenster(){
      contract_until   Kaderansicht - deckt auch Enden ab, die jene Seite
                       nicht fuehrt (sie beginnt erst beim naechsten Sommer) */
 function vertragsEnde(p){
-  return (p.auslauf&&p.auslauf.bis)||p.contract_until||null;
+  return (p.auslauf&&p.auslauf.bis)||p.contract_until||p.leihe_bis||null;
+}
+
+/* Ist er AUSGELIEHEN? Zwei Quellen sagen es:
+     auslauf.leihe   gruen hinterlegte Zeile der Vertragsende-Seite
+     leihe_bis       Vermerk "Leihspieler von: …" in der Kaderansicht
+
+   Die zweite kam spaeter dazu, und zwar wegen eines echten Fehlers: in
+   der Kaderansicht steht bei einem Leihspieler unter "Vertrag bis" das
+   LEIHENDE. Denis Halinsky stand damit unter den Vertragsausläufern zum
+   31.12.2026, obwohl sein Vertrag bei Slavia Prag bis 2030 läuft. Ein
+   Leihende ist kein Vertragsende: der Stammverein muss zustimmen, und
+   eine Ablöse kann fällig werden. */
+function istLeihe(p){
+  return !!(p.leihe_bis||(p.auslauf&&p.auslauf.leihe));
+}
+
+/* Wovon und bis wann - soweit bekannt. Die Vertragsende-Seite nennt den
+   Stammverein nicht, die Kaderansicht schon. */
+function leiheInfo(p){
+  if(!istLeihe(p))return null;
+  return {von:p.leihe_von||null,
+          von_id:p.leihe_von_id||null,
+          bis:p.leihe_bis||(p.auslauf?p.auslauf.bis:null)};
 }
 
 function fuelleAuslaufPanel(){
@@ -2022,7 +2045,8 @@ function zeigeFensterErklaerung(){
      Kaderspieler der abgefragten Vereine - auch die, deren Vertrag noch
      lange laeuft und die hier folglich gar kein Datum haben. */
   const geprueft=PLAYERS.filter(p=>p.vgeprueft).length;
-  const mitDatum=PLAYERS.filter(p=>vertragsEnde(p)&&!p.weg).length;
+  const mitDatum=PLAYERS.filter(p=>vertragsEnde(p)&&!p.weg&&!istLeihe(p)).length;
+  const leihen=PLAYERS.filter(p=>vertragsEnde(p)&&!p.weg&&istLeihe(p)).length;
   q.innerHTML=(f?'<strong>'+f.name+':</strong> '+f.erklaerung+'<br>':'')
     +'Quellen: Vereinsseite „Vertragsende“ von Transfermarkt — nur sie führt '
     +'Verlängerungsoption und Leihe, und erst ab Sommer '
@@ -2032,7 +2056,9 @@ function zeigeFensterErklaerung(){
     +'liegt für '+mitDatum.toLocaleString('de-DE')+' von ihnen vor — bei den '
     +'übrigen läuft der Vertrag über das Suchfenster hinaus. '
     +'Wer seinen Verein verlassen hat, erscheint hier nicht: sein Vertrag '
-    +'steht heute beim neuen Verein.';
+    +'steht heute beim neuen Verein. Dazu '+leihen.toLocaleString('de-DE')
+    +' Leihspieler in einem eigenen Abschnitt — bei ihnen endet die Leihe, '
+    +'nicht der Vertrag.';
 }
 
 /* Faellt der Spieler in dieses Fenster? Abgelaufenes zaehlt nicht mehr,
@@ -2144,7 +2170,7 @@ function passtOhneFenster(p,f,posListe){
      fast immer bei Leihspielern und sagt nichts ueber die Laufzeit -
      wer sie mit ausfilterte, verloere Treffer ohne Grund. */
   if(f.ohneOption&&a&&a.option&&optionArt(a.option)==='verlaengerung')return false;
-  if(f.ohneLeihe&&a&&a.leihe)return false;
+  if(f.ohneLeihe&&istLeihe(p))return false;
   if(posListe&&!posListe.includes(p.pos))return false;
   if(f.ligen.length&&!f.ligen.includes(p.liga_id))return false;
   if(!isNaN(f.ageVon)&&p.age<f.ageVon)return false;
@@ -2222,6 +2248,18 @@ function optionArt(text){
 
 function auslaufBadge(p,imAuslaufModus){
   const a=p.auslauf;
+  /* Leihe aus der Kaderansicht (ohne Eintrag der Vertragsende-Seite). Frueher
+     fiel sie in den Zweig darunter und hiess "Vertrag bis ... · Option
+     unbekannt" - genau die falsche Aussage, die Denis Halinsky zum
+     Auslaeufer machte. */
+  if(!a&&istLeihe(p)){
+    const lh=leiheInfo(p);
+    if(!lh.bis)return '';
+    return '<span class="badge" style="border-color:rgba(77,166,255,0.4);color:var(--blue)" '
+      +'title="Leihe endet am '+dtm(lh.bis)+(lh.von?' — ausgeliehen von '+lh.von:'')
+      +'. Der Vertrag beim Stammverein läuft weiter; das ist kein ablösefreier '
+      +'Wechsel. Quelle: Transfermarkt, Kaderansicht.">Leihe bis '+freiAb(lh.bis)+'</span>';
+  }
   if(!a){
     /* Kein Eintrag von der Vertragsende-Seite: das Datum stammt dann aus
        der Kaderansicht, die keine Option und keine Leihe fuehrt. Nur in
@@ -2537,21 +2575,21 @@ const AUSLAUF_GRUPPEN=[
   {id:'frei', name:'Ablösefrei',
    erklaerung:'Vertrag endet, keine Verlängerungsoption eingetragen — ein '
      +'Wechsel wäre ohne Ablöse möglich.',
-   passt:p=>p.auslauf&&!p.auslauf.leihe
+   passt:p=>p.auslauf&&!istLeihe(p)
      &&!(p.auslauf.option&&optionArt(p.auslauf.option)==='verlaengerung')},
   {id:'option', name:'Mit Verlängerungsoption',
    erklaerung:'Der Verein kann verlängern. Zieht er die Option, wird der '
      +'Spieler zu diesem Termin nicht frei.',
-   passt:p=>p.auslauf&&!p.auslauf.leihe
+   passt:p=>p.auslauf&&!istLeihe(p)
      &&p.auslauf.option&&optionArt(p.auslauf.option)==='verlaengerung'},
   {id:'leihe', name:'Leihende',
    erklaerung:'Nur die Leihe endet; der Vertrag beim Stammverein läuft '
      +'weiter. Ein Wechsel kostet Ablöse — kein Vertragsausläufer.',
-   passt:p=>p.auslauf&&p.auslauf.leihe},
+   passt:p=>istLeihe(p)},
   {id:'rest', name:'Vertragsende ohne Angabe zur Option',
    erklaerung:'Datum aus der Kaderansicht; ob eine Option besteht, führt '
      +'sie nicht. Die Vertragsende-Seite deckt erst spätere Sommer ab.',
-   passt:p=>!p.auslauf},
+   passt:p=>!p.auslauf&&!istLeihe(p)},
 ];
 
 function auslaufGruppiert(treffer,karten){
@@ -2707,7 +2745,10 @@ function fazitFuer(p){
   }
   const m=restmonate(p);
   const a=p.auslauf;
-  if(a&&a.leihe)r.push('Er ist ausgeliehen; die Leihe endet am '+dtm(a.bis)+'.');
+  const lh=leiheInfo(p);
+  if(lh)r.push('Er ist ausgeliehen'+(lh.von?' von '+lh.von:'')
+    +(lh.bis?'; die Leihe endet am '+dtm(lh.bis):'')
+    +'. Sein Vertrag beim Stammverein läuft weiter — ein Wechsel kostet Ablöse.');
   else if(p.contract_until||a){
     const bis=p.contract_until||a.bis;
     r.push('Vertrag bis '+dtm(bis)+(m!==null?' ('+Math.max(m,0)+' Monate)':'')
@@ -2755,8 +2796,19 @@ function tmUrl(p){
 function vertragsAbschnitt(p){
   const a=p.auslauf;
   if(!a){
-    const e=vertragsEnde(p);
+    const lh=leiheInfo(p);
+    const e=lh?null:vertragsEnde(p);
     const zeilen=[];
+    /* Ausgeliehen: das Datum der Kaderansicht ist das Leihende. Es als
+       Vertragsende auszugeben, hiesse ihn zum Auslaeufer zu erklaeren,
+       obwohl sein Vertrag beim Stammverein weiterlaeuft. */
+    if(lh)
+      zeilen.push({c:'neu',t:'<strong>Ausgeliehen'
+        +(lh.von?' von '+lh.von:'')+'</strong>'
+        +(lh.bis?', die Leihe endet am '+dtm(lh.bis):'')+'. Das ist kein '
+        +'Vertragsende: beim Stammverein läuft der Vertrag weiter, und ein '
+        +'Wechsel wäre eine Ablöse mit diesem Verein, kein freier Transfer. '
+        +'Wie lange sein Vertrag dort läuft, führt die Kaderansicht nicht.'});
     /* Datum aus der Kaderansicht: belastbar, aber ohne Angabe zur Option. */
     if(e)
       zeilen.push({c:'neu',t:'<strong>Vertrag bis '+dtm(e)+'</strong> laut '+
@@ -3588,7 +3640,8 @@ function kaderZeilen(verein){
     const cm=parseInt(p.height,10);
     return {id:p.id,name:p.name,ini:p.ini,pos:p.pos,number:p.number,age:p.age,
       cm:isNaN(cm)?null:cm,foot:p.foot&&p.foot!=='k. A.'?p.foot:null,
-      contract_until:p.contract_until||(p.auslauf&&!p.auslauf.leihe?p.auslauf.bis:null),
+      contract_until:istLeihe(p)?null:(p.contract_until||(p.auslauf?p.auslauf.bis:null)),
+      leihe_bis:istLeihe(p)?(p.leihe_bis||(p.auslauf?p.auslauf.bis:null)):null,
       mv:p.mv_eur?p.mv:null,mv_eur:p.mv_eur||0,ln:p.ln,bild:p.bild,bewertet:true,
       herkunft:p.note_liga_id&&p.note_liga_id!==p.liga_id?p.note_liga:null,
       belastbar:p.belastbar!==false};
@@ -3596,6 +3649,7 @@ function kaderZeilen(verein){
   OHNE_NOTE.filter(x=>x.club===verein).forEach(x=>{
     zeilen.push({id:x.id,name:x.name,ini:ini(x.name),pos:x.pos,number:x.number,age:x.age,
       cm:x.cm||null,foot:x.foot||null,contract_until:x.contract_until||null,
+      leihe_bis:x.leihe_bis||null,
       mv:x.mv||null,mv_eur:x.mv_eur||0,ln:null,bild:x.bild,bewertet:false,grund:x.grund});
   });
   return zeilen;
@@ -3666,7 +3720,11 @@ function renderKader(){
       +'<td>'+(z.age||'—')+'</td>'
       +'<td>'+(z.cm?(z.cm/100).toLocaleString('de-DE',{minimumFractionDigits:2})+' m':'—')+'</td>'
       +'<td>'+(z.foot||'—')+'</td>'
-      +'<td>'+(z.contract_until?dtm(z.contract_until):'—')+'</td>'
+      /* Bei einer Leihe steht dort das Leihende - als solches benannt,
+         sonst laese es sich als Vertragsende. */
+      +'<td>'+(z.contract_until?dtm(z.contract_until)
+        :z.leihe_bis?'<span style="color:var(--amber)" title="Leihende, nicht '
+          +'Vertragsende">Leihe bis '+dtm(z.leihe_bis)+'</span>':'—')+'</td>'
       +'<td class="r">'+(z.mv?z.mv+' €':'—')+'</td>'
       +'<td class="r">'+note+'</td></tr>';
   };
@@ -3959,6 +4017,12 @@ document.addEventListener('click',function(e){
 /* Vertragsende mit Restlaufzeit. Gewicht fuehrt die Quelle nicht, deshalb
    steht an dessen Stelle diese fuer Scouting weit nuetzlichere Angabe. */
 function vertragText(p){
+  /* Ausgeliehen: das bekannte Datum ist das Leihende, nicht sein
+     Vertragsende - also auch so benennen. */
+  const lh=leiheInfo(p);
+  if(lh)
+    return '<span style="color:var(--amber)">Leihe bis '
+      +(lh.bis?new Date(lh.bis).toLocaleDateString('de-DE'):'k. A.')+'</span>';
   /* Bei einem geprueften Auslaeufer steht das Datum aus der Vereinsseite
      "Vertragsende" - dort ist es gesichert, in der Kaderansicht fehlt es
      haeufig. */

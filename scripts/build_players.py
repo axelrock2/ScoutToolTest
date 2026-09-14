@@ -155,6 +155,38 @@ def _spieler_name(row) -> str:
 FUSS_WERTE = {"rechts", "links", "beidfüßig", "beidfuessig"}
 
 
+# "Leihspieler von: SK Slavia Prag; Rückkehr: 31.12.2026" - so steht es im
+# title der Wappen-Verlinkung in der Kaderzeile.
+_LEIHE = re.compile(r"Leihspieler von:\s*(.+?);\s*R[üu]ckkehr:\s*(\d{2}\.\d{2}\.\d{4})")
+_VEREIN_IN_LINK = re.compile(r"/verein/(\d+)")
+
+
+def _leihe_aus_zeile(row) -> dict | None:
+    """{'von', 'von_id', 'bis'} wenn der Spieler AUSGELIEHEN ist, sonst None.
+
+    Warum das sein muss: in der Kaderansicht steht bei einem Leihspieler
+    unter "Vertrag bis" das LEIHENDE, nicht sein Vertragsende. Denis
+    Halinsky stand damit unter den Vertragsauslaeufern zum 31.12.2026,
+    obwohl sein Vertrag bei Slavia Prag bis 2030 laeuft. Ein Leihende ist
+    kein Vertragsende - der Stammverein muss zustimmen, eine Abloese kann
+    faellig werden.
+
+    Streng abzugrenzen von "Rückkehr nach Leihe von: …". Das kennzeichnet
+    einen Spieler, der von einer Leihe ZURUECK ist und ganz normal unter
+    Vertrag steht; sein Vertragsende in der Zeile stimmt.
+    """
+    for a in row.css("a"):
+        titel = str(a.attrib.get("title") or "")
+        m = _LEIHE.search(titel)
+        if not m:
+            continue
+        link = _VEREIN_IN_LINK.search(str(a.attrib.get("href") or ""))
+        return {"von": m.group(1).strip(),
+                "von_id": link.group(1) if link else None,
+                "bis": _datum(m.group(2))}
+    return None
+
+
 def _felder_aus_zeile(c: list[str]) -> dict:
     """Groesse, Fuss, Vertrag und Marktwert am Inhalt erkennen.
 
@@ -285,6 +317,14 @@ def heutiger_kader(verein_id: str) -> tuple[str, dict[str, dict]]:
         if not pid:
             continue
         c = [cell_text(td) for td in tds]
+        felder = _felder_aus_zeile(c)
+        # Bei einem Leihspieler steht in der Spalte "Vertrag bis" das
+        # LEIHENDE. Es als Vertragsende zu fuehren hiesse, ihn als
+        # Auslaeufer auszuweisen, obwohl sein Vertrag beim Stammverein
+        # weiterlaeuft - genau das war bei Denis Halinsky der Fall.
+        leihe = _leihe_aus_zeile(row)
+        if leihe:
+            felder["vertrag_bis"] = None
         out[pid] = {
             "id": pid,
             "name": _spieler_name(row),
@@ -292,7 +332,8 @@ def heutiger_kader(verein_id: str) -> tuple[str, dict[str, dict]]:
             "position": _pos(c[4]),
             "position_lang": c[4],
             "alter": _alter(c[5]),
-            **_felder_aus_zeile(c),
+            "leihe": leihe,
+            **felder,
         }
     return name, out
 
@@ -318,6 +359,11 @@ def kader(verein_id: str, slug: str, saison: int) -> tuple[str, dict[str, dict]]
         # aktuelle - mit festen Indizes landete die Koerpergroesse im Feld
         # "Fuss", die Groesse blieb leer und der Vertrag fehlte ganz.
         felder = _felder_aus_zeile(c)
+        # Auch hier: bei einer Leihe ist das Datum das Leihende, nicht
+        # das Vertragsende (siehe _leihe_aus_zeile).
+        leihe = _leihe_aus_zeile(row)
+        if leihe:
+            felder["vertrag_bis"] = None
         out[pid] = {
             "id": pid,
             "name": _spieler_name(row),
@@ -325,6 +371,7 @@ def kader(verein_id: str, slug: str, saison: int) -> tuple[str, dict[str, dict]]
             "position": _pos(c[4]),
             "position_lang": c[4],
             "alter": _alter(c[5]),
+            "leihe": leihe,
             **felder,
         }
     return name, out
@@ -580,6 +627,15 @@ def main() -> int:
                 for k in HEUTE_FELDER:
                     if h["profil"].get(k) is not None:
                         sp[k] = h["profil"][k]
+                # Ausdruecklich setzen ODER entfernen: wer nicht mehr
+                # ausgeliehen ist, darf den Vermerk nicht behalten. Ein
+                # stehengebliebenes "Leihe bis 2026" haette ihn dauerhaft
+                # aus der Auslaeufer-Suche herausgehalten.
+                if h["profil"].get("leihe"):
+                    sp["leihe"] = h["profil"]["leihe"]
+                    sp.pop("vertrag_bis", None)
+                else:
+                    sp.pop("leihe", None)
                 sp.pop("nicht_mehr_im_kader", None)
                 sp.pop("verein_ausserhalb", None)
                 gefunden += 1

@@ -1015,6 +1015,9 @@ def main() -> int:
             else:
                 underval = None
 
+            # Bei einer Leihe steht KEIN Vertragsende im Datensatz mehr
+            # (build_players raeumt es weg) - die Ampel bleibt damit von
+            # selbst grau, statt ein Leihende rot zu faerben.
             ampel, monate = vertrags_ampel(s.get("vertrag_bis"))
 
             # Wo spielt er HEUTE, und wo wurde die Note erspielt?
@@ -1064,6 +1067,14 @@ def main() -> int:
                 "number": s.get("rueckennummer") or 0,
                 "contract": ampel,
                 "contract_until": s.get("vertrag_bis"),
+                # Ausgeliehen: der Vertrag laeuft beim Stammverein weiter,
+                # hier endet nur die Leihe. Ohne diese Unterscheidung stand
+                # ein Leihende unter den Vertragsauslaeufern.
+                **({"leihe_von": s["leihe"]["von"],
+                    "leihe_bis": s["leihe"]["bis"],
+                    **({"leihe_von_id": s["leihe"]["von_id"]}
+                       if s["leihe"].get("von_id") else {})}
+                   if s.get("leihe") else {}),
                 "mv": mw_text(s.get("marktwert_eur")),
                 "mv_eur": s.get("marktwert_eur"),
                 "ln": ln,
@@ -1239,6 +1250,8 @@ def main() -> int:
             **({"cm": s["groesse_cm"]} if s.get("groesse_cm") else {}),
             **({"foot": s["fuss"]} if s.get("fuss") in ("rechts", "links", "beidfüßig") else {}),
             **({"contract_until": s["vertrag_bis"]} if s.get("vertrag_bis") else {}),
+            **({"leihe_von": s["leihe"]["von"], "leihe_bis": s["leihe"]["bis"]}
+               if s.get("leihe") else {}),
             **({"mv": mw_text(s["marktwert_eur"]), "mv_eur": s["marktwert_eur"]}
                if s.get("marktwert_eur") else {}),
             **({"bild": s["bild"]} if s.get("bild") else {}),

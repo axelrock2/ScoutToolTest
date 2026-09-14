@@ -695,6 +695,51 @@ unbekannt*, wenn das Datum nur aus der Kaderansicht stammt. Leihen sind
 standardmäßig ausgeblendet, ein Schalter blendet zusätzlich alle Spieler
 mit Verlängerungsoption aus.
 
+### Ein Leihende ist kein Vertragsende
+
+Aufgefallen an **Denis Halinsky** (FK Pardubice): das Werkzeug führte ihn
+unter den Ausläufern zum 31.12.2026. Sein Transfermarkt-Profil sagt aber:
+
+```
+Vertrag bis:        31.12.2026
+Ausgeliehen von:    SK Slavia Prag
+Vertrag dort bis:   30.06.2030
+```
+
+Der Vertrag läuft also noch dreieinhalb Jahre — was am 31.12. endet, ist
+die **Leihe**. Ursache: in der Kaderansicht steht in der Spalte „Vertrag
+bis" bei einem Leihspieler das Leihende, ohne dass die Spalte anders hieße.
+
+Die Vereinsseite „Vertragsende" kennzeichnet Leihen seit jeher (grün
+hinterlegte Zeile), und dieser Weg war korrekt. Halinsky kam gar nicht
+über sie — sein Leihende liegt vor dem ersten abgefragten Sommer, sein
+Datum stammte aus der Kaderansicht, und die hatte keine Kennzeichnung.
+
+**Der Marker war die ganze Zeit da**, nur ungenutzt: in der Kaderzeile
+trägt die Wappen-Verlinkung ein `title`-Attribut.
+
+```html
+<a title="Leihspieler von: SK Slavia Prag; Rückkehr: 31.12.2026" …>
+```
+
+Streng davon zu trennen ist `title="Rückkehr nach Leihe von: …"` — das
+kennzeichnet einen Spieler, der von einer Leihe **zurück** ist und ganz
+normal unter Vertrag steht; sein Datum in der Zeile stimmt. Beide Formen
+stehen in derselben Spalte, ein bloßes Suchen nach „Leihe" hätte die
+Hälfte falsch einsortiert.
+
+Seitdem:
+
+* Wird eine Leihe erkannt, wird `vertrag_bis` **gar nicht erst gesetzt** —
+  das Datum gehört der Leihe, nicht dem Vertrag.
+* Der Vermerk wird bei jedem Kaderlauf neu gesetzt **oder entfernt**. Ein
+  stehengebliebenes „Leihe bis 2026" hätte einen Spieler dauerhaft aus der
+  Ausläufer-Suche herausgehalten, nachdem er fest verpflichtet wurde.
+* In der Akte, der Kaderansicht und den Stammdaten steht bei ihm „Leihe
+  bis …" statt „Vertrag bis …", dazu der Stammverein.
+* In der Ausläufer-Suche landet er im Abschnitt **Leihende** — und damit
+  in keinem der drei Abschnitte, die echte Vertragsenden zeigen.
+
 ### Gesucht wird in Zeitfenstern, nicht in Jahreszahlen
 
 Ein Scout fragt nicht „endet der Vertrag 2027", sondern „wer ist im Winter
