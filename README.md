@@ -234,13 +234,13 @@ Grenzen:
 
 ### Warum die Oberligen so wenige Fotos haben
 
-Die Fotoquote liegt in den Oberligen bei 16 bis 58 %, in den übrigen Ligen
+Die Fotoquote liegt in den Oberligen bei 15 bis 58 %, in den übrigen Ligen
 deutlich höher. Die naheliegende Vermutung — der Sammler hat dort Lücken —
 stimmt nur zu einem kleinen Teil. Nachgezählt am 14.09.2026:
 
 | Verein | Kaderspieler im Bestand | Foto vorher | Foto jetzt | Portraits bei Transfermarkt |
 |---|---:|---:|---:|---:|
-| Holstein Kiel II | 25 | 17 | 23 | 23 |
+| Holstein Kiel II | 24 | 17 | 23 | 23 |
 | Heider SV | 24 | 8 | 8 | 8 |
 
 Bei Holstein Kiel II fehlten bei uns 6 Fotos; inzwischen sind alle da. Bei
@@ -248,9 +248,10 @@ Heider SV fehlte nichts — Transfermarkt führt für 16 der 24 Spieler kein
 Portrait.
 
 Über alle 318 Vereine mit niedriger Quote dasselbe Bild. Der Sammler fand
-3.638 Portraits: **3.345 waren schon vorhanden**, 291 kamen neu dazu, 2
-gehören Spielern, die nicht im Bestand stehen. Die Gesamtquote stieg von
-68 auf 69 %. **Die Lücke liegt ganz überwiegend an der Quelle** — für die
+3.638 Portraits: **3.345 waren schon vorhanden**, 291 kamen neu dazu (289
+Spieler bekamen erstmals ein Foto, 2 ein neues), 2 gehören Spielern, die
+nicht im Bestand stehen. Die Quote stieg von 66,0 auf 67,7 % der 17.170
+Spieler in heutigen Kadern. **Die Lücke liegt ganz überwiegend an der Quelle** — für die
 meisten Amateurspieler gibt es bei Transfermarkt kein Foto.
 
 Eine erste Fassung dieses Abschnitts behauptete das Gegenteil. Sie hatte die
@@ -784,9 +785,11 @@ Ein erster Schritt sortierte Leihspieler in einen eigenen Abschnitt
 den Vertragsenden, aber weiterhin in der Trefferliste zum 31.12.2026.
 Gefragt sind aber **nur Spieler, deren Vertrag ausläuft**.
 
-Maßgeblich ist deshalb der Vertrag beim Stammverein. Er steht nur auf der
-Profilseite (`Vertrag dort bis: 30.06.2030`) und wird dort je Leihspieler
-abgerufen:
+Maßgeblich ist deshalb der Vertrag beim Stammverein. Transfermarkt führt ihn
+an zwei Stellen: auf der Profilseite des Spielers (`Vertrag dort bis:
+30.06.2030`) und auf der **Leihspieler-Seite des aufnehmenden Vereins**,
+Tabelle „Leihklub", Spalten *Vertrag bis* und *Leihende*. Das Skript liest
+die Vereinsseite (Begründung unten):
 
 ```bash
 python3 scripts/leihvertraege.py
@@ -830,11 +833,16 @@ Abbruch, gespeichert. Ergebnis:
 
 | | Leihspieler |
 |---|---:|
-| im heutigen Kader | 1.073 |
-| abgefragt | 108 (10 %) |
-| davon mit Vertragsende beim Stammverein | 88 |
-| davon ohne Datum bei Transfermarkt (`-`) | 20 |
-| noch nicht abgefragt | 965 |
+| im heutigen Kader | 844 |
+| abgefragt | 100 (12 %) |
+| davon mit Vertragsende beim Stammverein | 82 |
+| davon ohne Datum bei Transfermarkt (`-`) | 18 |
+| noch nicht abgefragt | 744 |
+
+Eine erste Fassung dieser Tabelle nannte 1.073 Leihspieler. Gezählt waren
+Datensätze, nicht Spieler: wer in der Notensaison für zwei Mannschaften
+spielte, steht zweimal im Bestand. Seitdem zählen Sammler und Prüfung je
+Spieler.
 
 Halinsky steht jetzt mit **Vertrag bei Slavia Prag bis 30.06.2030** im
 Bestand — genau die Angabe seines Transfermarkt-Profils. Unter den
@@ -845,11 +853,36 @@ Sommer 2027 (bei 2 davon zugleich mit der Leihe), bei 16 in der Saison
 **Was das für die Suche heißt:** Solange ein Leihspieler nicht abgefragt
 ist, gibt es für ihn kein Vertragsdatum — und er erscheint nicht unter den
 Ausläufern. Das ist gewollt, denn ein unbekannter Vertrag ist kein
-auslaufender. Es heißt aber auch: echte Ausläufer unter den 965 noch nicht
-abgefragten Leihspielern bleiben unsichtbar, bis ein späterer Lauf sie
-erfasst hat. Bei rund 60 bis 70 Profilseiten je Lauf, bevor Transfermarkt
-sperrt, dauert das mehrere Läufe; `update_local.sh` holt bei jedem Aufruf
-den nächsten Schwung.
+auslaufender. Es heißt aber auch: echte Ausläufer unter noch nicht abgefragten
+Leihspielern bleiben unsichtbar, bis sie erfasst sind. Über die
+Profilseiten hätte das bei rund 60 bis 70 Abrufen je Lauf viele Läufe
+gedauert — deshalb der Umstieg.
+
+**Umstieg auf die Vereinsseite.** Die Profilseite kostet einen Abruf je
+Spieler. Die Leihspieler-Seite des aufnehmenden Vereins führt dieselbe
+Angabe für alle seine Leihspieler auf einmal: Die 844 Leihspieler
+verteilen sich auf **290 aufnehmende Vereine** — 290 Abrufe statt 844, auf
+einer Seitenart, die am selben Tag 665 Abrufe ohne Sperre vertrug. Den
+aufnehmenden Verein kennen wir bei jedem Leihspieler, er liegt immer in
+unseren Ligen.
+
+Gegengeprüft, bevor das der Standard wurde:
+
+| Spieler | gelesen auf | Vertrag bis | laut Profilseite |
+|---|---|---|---|
+| Denis Halinsky | FK Pardubice, Tabelle „Leihklub" | 30.06.2030 | 30.06.2030 |
+| Dominik Sarapata | FC Kopenhagen, Tabelle „Leihe an" | 30.06.2029 | 30.06.2029 |
+
+Gelesen wird **spaltengenau**: die letzten beiden zentrierten Zellen einer
+Zeile sind *Vertrag bis* und *Leihende*, „-" heißt unbekannt. Bei Pardubice
+fehlte in zwei von vier Zeilen eines der beiden Daten — wer nur die Daten
+einer Zeile der Reihe nach nimmt, vertauscht dann Vertragsende und
+Leihende. Steht ein Leihspieler auf der Seite seines Vereins gar nicht,
+bleibt er ungeprüft, statt als „kein Datum" zu gelten.
+
+Hat ein Spieler schon einen Wert von der Profilseite, vergleicht das Skript
+beide und benennt jede Abweichung. Die Akte nennt die Quelle des jeweiligen
+Werts. Der Profilseiten-Weg bleibt als `--profil` erhalten.
 
 ### Gesucht wird in Zeitfenstern, nicht in Jahreszahlen
 
