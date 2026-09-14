@@ -664,16 +664,18 @@ HERKUNFT = {
                    "(ohne Pokal und Europapokal).",
     },
     "transfermarkt_vertrag": {
-        "name": "Transfermarkt · Vertragsende",
-        "url": "https://www.transfermarkt.de",
-        "art": "erhoben",
-        "felder": ["Auslaufender Vertrag", "Vertragsoption", "Leihe"],
-        "hinweis": "Eigene Vereinsseite je Sommer. Nur sie führt die "
-                   "Vertragsoption und markiert Leihspieler - die "
-                   "Kaderansicht tut beides nicht. Geprüft werden die "
-                   "beiden kommenden Sommer; wo nichts steht, läuft der "
-                   "Vertrag länger oder der Verein wurde noch nicht "
-                   "geprüft (auf der Trefferkarte unterschieden).",
+        "name": 'Transfermarkt · Vertragsende',
+        "url": 'https://www.transfermarkt.de',
+        "art": 'erhoben',
+        "felder": ['Auslaufender Vertrag', 'Vertragsoption', 'Leihe'],
+        "hinweis": 'Eigene Vereinsseite je Sommer. Nur sie führt die Vertragsoption. Leihspieler hebt sie grün hervor. Geprüft werden die beiden kommenden Sommer; wo nichts steht, läuft der Vertrag länger oder der Verein wurde noch nicht geprüft (auf der Trefferkarte unterschieden).',
+    },
+    "transfermarkt_leihe": {
+        "name": 'Transfermarkt · Leihspieler',
+        "url": 'https://www.transfermarkt.de',
+        "art": 'erhoben',
+        "felder": ['Leihe (Stammverein, Leihende)', 'Vertragsende beim Stammverein'],
+        "hinweis": 'Leihspieler erkennt der Kaderlauf am Vermerk „Leihspieler von: …“ in der Kaderansicht – dort steht als Datum das Leihende, nicht das Vertragsende. Den Vertrag beim Stammverein liest das Werkzeug von der Leihspieler-Seite des aufnehmenden Vereins (Tabelle „Leihklub“), in Einzelfällen von der Profilseite; die Akte nennt die Quelle je Wert. Gegengeprüft am 14.09.2026: 100 von 100 Werten auf beiden Seiten gleich. Für einen Teil der Leihspieler führt Transfermarkt kein Datum. In der Ausläufer-Suche zählt bei Leihspielern allein dieser Vertrag.',
     },
     "transfermarkt_bild": {
         "name": "Transfermarkt · Spielerfoto",
@@ -738,18 +740,11 @@ HERKUNFT = {
                    "je Liga und Position.",
     },
     "fehlt": {
-        "name": "Nicht verfügbar",
+        "name": 'Nicht verfügbar',
         "url": None,
-        "art": "fehlt",
-        "felder": ["alle Einzelwerte unterhalb der 3. Liga",
-                   "xG/xA in 3. Liga, LaLiga 2 und Ligue 2",
-                   "Laufleistung", "progressive Läufe", "Charakter",
-                   "Gewicht"],
-        "hinweis": "Laufdaten führen nur kostenpflichtige Anbieter; FBref "
-                   "und kicker sperren automatisierte Abrufe. Für Regional- "
-                   "und Oberligen gibt es gar keine Spielerstatistik – dort "
-                   "beruhen die Noten allein auf Einsätzen, Toren, Vorlagen "
-                   "und Mannschaftswerten von Transfermarkt.",
+        "art": 'fehlt',
+        "felder": ['alle Einzelwerte unterhalb der 3. Liga', 'xG/xA in 3. Liga, LaLiga 2 und Ligue 2', 'Laufleistung', 'progressive Läufe', 'Charakter', 'Gewicht', 'Vertragsende beim Stammverein, wo Transfermarkt keins führt'],
+        "hinweis": 'Laufdaten führen nur kostenpflichtige Anbieter; FBref und kicker sperren automatisierte Abrufe. Für Regional- und Oberligen gibt es gar keine Spielerstatistik – dort beruhen die Noten allein auf Einsätzen, Toren, Vorlagen und Mannschaftswerten von Transfermarkt.',
     },
 }
 

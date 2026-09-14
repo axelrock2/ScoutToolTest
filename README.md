@@ -920,6 +920,27 @@ bis: -`. In der Suche erscheinen diese Spieler deshalb nicht als Ausläufer;
 mit „Leihenden zusätzlich zeigen" stehen sie im eigenen Abschnitt *Vertrag
 beim Stammverein unbekannt*.
 
+**Überall gleich behandelt.** Die Regel galt anfangs nur in der
+Ausläufer-Suche. Ein Durchgang über alle Stellen, die Vertragsdaten
+verwenden, fand drei weitere:
+
+| Stelle | vorher | jetzt |
+|---|---|---|
+| Hinweise in der Akte | „Vertrag läuft in X Monaten ab" kannte nur den aufnehmenden Verein — bei Kanze gelbe Ampel, aber kein Hinweis | Hinweis auf den Vertrag beim Stammverein |
+| Kopfzeile der Akte | keine Kennzeichnung der Leihe | Kennzeichen „Leihe bis … · Vertrag bis …" |
+| Bericht zum Herunterladen | Leihe nicht erwähnt | Stammverein, Leihende und Vertrag beim Stammverein |
+| Bericht, unbekannter Vertrag | „Stabil (> 12 Monate)", grün — für **jeden** Spieler ohne Vertragsdatum | „Unbekannt", neutral |
+
+Die letzte Zeile war ein älterer Fehler, der mit Leihen nichts zu tun hatte
+und erst bei diesem Durchgang auffiel. Die Filter der Spielersuche
+arbeiten mit der Vertragsampel; die richtet sich bei Leihen schon nach dem
+Stammvertrag und brauchte keine Änderung.
+
+In der **Datenherkunft** jeder Akte steht die Leihspieler-Seite jetzt als
+eigene Quelle. Richtiggestellt ist dort auch eine überholte Aussage: Die
+Kaderansicht kennzeichne keine Leihspieler — genau an diesem Vermerk
+erkennt der Kaderlauf sie inzwischen.
+
 ### Gesucht wird in Zeitfenstern, nicht in Jahreszahlen
 
 Ein Scout fragt nicht „endet der Vertrag 2027", sondern „wer ist im Winter
