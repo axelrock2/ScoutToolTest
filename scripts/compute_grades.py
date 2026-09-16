@@ -1181,6 +1181,16 @@ def main() -> int:
                 "underval_index": underval,
                 "minuten": kw["minuten"],
                 "einsaetze": kw["einsaetze"],
+                # Leistungsdaten wie im Transfermarkt-Profil, als schlichte
+                # Zaehlung: Tore, Vorlagen, Karten und die Ligaspiele der
+                # Mannschaft ("moegliche Spiele"). Einsaetze und Minuten
+                # stehen darueber. Kurze Schluessel wie bei "duelle", weil
+                # sie in jedem der rund 17 000 Datensaetze stehen.
+                "ld": {"t": s["leistung"]["tore"], "v": s["leistung"]["vorlagen"],
+                       "g": s["leistung"]["gelbe"], "gr": s["leistung"]["gelbrot"],
+                       "r": s["leistung"]["rot"],
+                       **({"ms": s["team"]["spiele"]}
+                          if (s.get("team") or {}).get("spiele") else {})},
                 "belastbar": kw["belastbar"],
                 # Steht nach dem Transferschluss nicht mehr im Kader seines
                 # Vereins - fuer Scouting eine Information, kein Fehler.
@@ -1262,6 +1272,9 @@ def main() -> int:
             haupt["auch_in"] = [{
                 "liga": w["_nl"], "club": w["_nc"], "stufe": w["_ns"],
                 "minuten": w["minuten"], "einsaetze": w["einsaetze"],
+                # Leistungsdaten auch fuer die weitere Mannschaft - die Akte
+                # zeigt sie wie Transfermarkt als eigene Zeile.
+                "ld": w["ld"],
             } for w in eintraege[1:]]
             # Vertragsangaben aus jedem Eintrag uebernehmen: der Kader mit
             # den meisten Minuten ist oft die Zweitvertretung, gefuehrt

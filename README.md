@@ -1115,6 +1115,37 @@ Auskunft. Spieler, die ihren Verein verlassen haben, bekommen den Vermerk
 bewusst nicht: sie stehen auf der Vereinsseite gar nicht mehr, ihr Fehlen
 sagt also nichts über ihren Vertrag.
 
+## Leistungsdaten wie bei Transfermarkt
+
+Direkt unter den Stammdaten steht in jeder Akte die schlichte Zählung, wie
+sie das Transfermarkt-Profil zeigt — ohne Percentil, ohne Farbe:
+
+| Wettbewerb | Spiele | Mögliche Spiele | Tore | Vorlagen | Gelb | Gelb-Rot | Rot | Minuten |
+|---|---|---|---|---|---|---|---|---|
+| Bundesliga · FC Bayern München | 31 | 34 | 36 | 5 | 1 | 0 | 0 | 2.382' |
+
+- **Saison und Liga sind die der Note** (2025/26). Wer seither den Verein
+  gewechselt hat, steht mit dem Verein von damals da.
+- **Nur Ligaspiele.** Transfermarkt zählt im Profil auch Pokal und
+  Europapokal mit, dort kann die Summe höher sein. Das steht unter der
+  Tabelle, damit ein Nachschlagen nicht nach einem Fehler aussieht.
+- **„Mögliche Spiele“** sind die Ligaspiele der Mannschaft laut
+  Abschlusstabelle. Wer während der Saison kam oder ging, war nicht für
+  alle spielberechtigt.
+- **Zwei Mannschaften in einer Saison** — etwa Zweitvertretung und
+  Profikader, bei 1.263 Spielern — stehen wie bei Transfermarkt als eigene
+  Zeilen, dazu die Summe. Die Zeile, auf der die Note beruht, ist markiert.
+- Jeder Spaltenkopf erklärt sich im Fenster: Definition, Umfang, Quelle.
+
+**Nichts neu abgerufen.** Die Zahlen lagen seit dem Kaderlauf in
+`data/players_raw.json.gz`; `compute_grades.py` gab davon bisher nur
+Einsätze und Minuten weiter, jetzt auch Tore, Vorlagen, Karten und die
+Spiele der Mannschaft (Feld `ld`, bei weiteren Mannschaften unter
+`auch_in`). Geprüft: Alle 17.721 Spieler stimmen mit den Rohdaten überein,
+und außer dem neuen Feld ist `players.json` unverändert — Noten,
+Kennzahlen, Datenstand. Die Datei wächst um 856 KB, komprimiert übertragen
+sind es rund 110 KB mehr.
+
 ## Verletzungshistorie
 
 Aus Transfermarkt, kostenlos: Art, Zeitraum, Ausfalltage und verpasste
