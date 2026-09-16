@@ -484,7 +484,8 @@ senkrechte Strich in den Balken ist der **Median der Vergleichsgruppe** —
 ohne ihn sagt ein längerer Balken nur „mehr als der andere", nicht „viel
 für diese Position". Verschiedene Ligen oder Positionsgruppen werden
 benannt statt verschwiegen: die Rohwerte sind unmittelbar vergleichbar,
-die Percentile nicht.
+die Percentile nicht. Diese Tabelle ist seit dem 16.09.2026 die zweite
+Ansicht; zuerst stehen die Diagramme (siehe *Detaillierte Darstellung*).
 
 **Verteilung (Beeswarm).** Ein Klick auf eine Kennzahlzeile zeigt die
 ganze Liga als Punktwolke, ein Punkt je Spieler, mit dem Betrachteten in
@@ -498,6 +499,60 @@ Percentilwert verbirgt, wie dicht es dort zugeht.
 **Radar.** Der Ring bei 50 ist als Ligaschnitt gekennzeichnet (bei
 Percentilen ist 50 per Definition der Schnitt) und trägt bei einem
 Direktvergleich die zweite Kurve.
+
+### Detaillierte Darstellung und Diagramm-Vergleich
+
+Dieselben Zahlen in einer zweiten Darstellung, nach dem Vorbild der
+Auswertungen großer Scouting-Werkzeuge: Percentil-Balken je Themenblock und
+Polardiagramme, in denen jedes Kreisstück eine Kennzahl ist. **Nichts davon
+ist eine neue Bewertung.** Die Länge ist immer das Percentil oder die
+Teilnote, die auch in der Übersicht steht.
+
+**Für einen einzelnen Spieler nur auf Klick.** Die Abschnitte *Kennzahlen*,
+*Woraus die Note entsteht* und *Stärkenprofil* tragen im Kopf den Umschalter
+„Übersicht | Detailliert". Voreingestellt ist die Übersicht. Ein Klick
+schaltet alle drei zugleich um — es ist eine Darstellungsweise, kein
+Schalter je Kasten — und bleibt beim Durchsehen weiterer Akten stehen, bis
+man zurückschaltet.
+
+| Abschnitt | Übersicht | Detailliert |
+|---|---|---|
+| Kennzahlen | Zeile mit Rohwert, kleinem Balken, Percentil | Percentil-Balken je Themenblock, Zahl im Balken, Rohwert unter dem Namen, Achse 0 bis 100 |
+| Woraus die Note entsteht | Balken je Bereich | Kreis, ein Stück je Bereich der Liga-Note |
+| Stärkenprofil | Radar und Balken | Kreis statt Radar, daneben die Balken |
+
+**Im Direktvergleich sind die Diagramme die erste Ansicht**, die Tabelle ist
+einen Klick entfernt („Diagramme | Tabelle"). Zuerst die Bereiche der
+Liga-Note, der erste Spieler als Fläche und der zweite gestrichelt umrissen;
+dann je Themenblock ein Kreis mit beiden Spielern übereinander — vorn der
+kürzere Teil, dahinter ragt der längere hinaus. In den Kästchen steht der
+Rohwert. Das Erklärfenster über einem Kreisstück nennt beide Werte mit ihrem
+Percentil in der jeweils eigenen Liga.
+
+**Farbstufen.** Grün, Oliv und Rot wie in den Vorlagen, aber mit den
+Schwellen des Stärkenprofils: ab 70, 40 bis 69, unter 40. Die Vorlagen
+färben erst ab 80 grün; das wäre eine andere Einstufung und ist nicht
+übernommen. Graue Balken bleiben Mengenangaben ohne Wertung. In den
+Vergleichskreisen fehlen sie ganz, weil ein Kreisstück ein Besser oder
+Schlechter behauptet, das es dort nicht gibt — die Tabelle führt sie weiter.
+Ein Themenblock mit weniger als drei wertbaren Kennzahlen bekommt keinen
+Kreis und wird darunter genannt.
+
+**Geprüft, bevor es live ging:**
+
+- **Die Übersicht ist unverändert.** Für neun Akten — mit und ohne
+  Vergleich, mit und ohne Einzelkennzahlen, von Kane und Kobel über die
+  2. und 3. Liga bis zu einer Note aus der Regionalliga West, dazu La Liga
+  gegen die belgische Liga — ist das Ergebnis zeichengleich mit dem Stand
+  davor, abgesehen vom Umschalter selbst.
+- **Nichts überdeckt sich.** Je 1.153 Kreise aus zufälligen Spielerpaaren
+  am Desktop und auf Handybreite: kein Kästchen auf einem anderen, keines
+  auf einem Namen, kein Name auf einem anderen. Dafür werden lange Wörter an
+  der Wortfuge getrennt („Defensiv-aktionen"), sich berührende Kästchen um
+  das kleinstmögliche Stück auseinandergeschoben, und ein Name, der nicht
+  passt, wird stufenweise kleiner, nie unter 72 %.
+- Auf dem Handy zeichnet die Seite die Kreise mit größerer Schrift; im
+  verkleinerten Kreis wäre die Desktop-Schrift nicht lesbar.
 
 ### Gegenprobe gegen FotMob (Opta)
 

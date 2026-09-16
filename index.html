@@ -448,6 +448,55 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 @media(max-width:760px){.vgl-name{min-width:0}.vgl-bahn{width:40px}.vgl-wert{width:74px}}
 .mk-note{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--lime);border:1px solid rgba(199,249,75,0.35);border-radius:3px;padding:1px 3px;letter-spacing:0.5px;vertical-align:1px;white-space:nowrap}
 @media(max-width:900px){.mk-grid{grid-template-columns:1fr}}
+/* ---- Detaillierte Darstellung und Diagramm-Vergleich ------------------
+   Umschalter im Abschnittskopf: rechts neben der Linie, auf schmalen
+   Bildschirmen in eine eigene Zeile. Die Linie bekommt dafuer eine feste
+   Reihenfolge; in Koepfen ohne Umschalter aendert das nichts. */
+.sec-title:after{order:1}
+.sec-title.mit-wahl{flex-wrap:wrap;row-gap:10px}
+.sec-title .aw{order:2;display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;flex-shrink:0}
+.aw-k{background:none;border:0;padding:6px 11px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.8px;text-transform:uppercase;color:var(--ink-3);cursor:pointer;white-space:nowrap}
+.aw-k+.aw-k{border-left:1px solid var(--line)}
+.aw-k:hover{color:var(--ink)}
+.aw-k.an{background:var(--lime);color:var(--pitch);font-weight:700;cursor:default}
+.aw-k:focus-visible{outline:1px solid var(--lime);outline-offset:-3px}
+/* Percentil-Balken je Themenblock */
+.dk-grid,.pol-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.dk-kopf{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}
+.dk-blk,.pol-karte{background:var(--pitch-2);border:1px solid var(--line);border-radius:12px;padding:15px 17px 13px;min-width:0}
+.dk-blk-t{font-size:13px;font-weight:700;color:var(--ink);text-align:center;margin-bottom:12px}
+.dk-row{display:grid;grid-template-columns:minmax(0,42%) minmax(0,1fr);align-items:center;column-gap:12px;margin:0 -6px 4px;padding:3px 6px;border-radius:6px}
+.dk-row[data-erkl]:hover{background:rgba(127,127,127,0.08)}
+.dk-row[onclick]{cursor:pointer}
+.dk-row.mk-offen{background:rgba(127,127,127,0.14)}
+.dk-row.mk-offen .dk-name{color:var(--ink)}
+.dk-name{font-size:12px;line-height:1.3;color:var(--ink-2);text-align:right;min-width:0;overflow-wrap:anywhere}
+.dk-name i{display:block;font-style:normal;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3);margin-top:1px}
+.dk-bahn{position:relative;display:block;height:24px;border-right:1px solid var(--line);
+  background:linear-gradient(to right,var(--line) 1px,transparent 1px) 0 0/25% 100% repeat-x}
+.dk-bahn:after{content:'';position:absolute;left:50%;top:-4px;bottom:-4px;border-left:1px dashed var(--ink-3)}
+.dk-fuell{position:absolute;left:0;top:3px;bottom:3px;border-radius:2px;z-index:1}
+.dk-zahl{position:absolute;top:50%;z-index:2;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;line-height:1;white-space:nowrap}
+.dk-zahl.innen{color:var(--sk-text);transform:translate(calc(-100% - 6px),-50%)}
+.dk-zahl.innen.neutral{color:var(--ink)}
+.dk-zahl.aussen{color:var(--ink);transform:translate(6px,-50%)}
+.dk-achse{margin-top:3px;padding-top:0;padding-bottom:0}
+.dk-ticks{position:relative;display:block;height:12px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink-3)}
+.dk-ticks span{position:absolute;top:0;transform:translateX(-50%)}
+.dk-achse-t{display:block;text-align:center;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink-3);text-transform:uppercase;letter-spacing:1px}
+.legend.dk-spieler{margin:0 0 14px;padding-top:0;border-top:0}
+/* Polardiagramme */
+.pol-karte{display:flex;flex-direction:column}
+.pol-einzeln{max-width:560px;margin:0 auto}
+.pol-svg{width:100%;max-width:460px;height:auto;display:block;margin:0 auto}
+.pol-svg .pol-name{font-family:'Archivo',sans-serif;fill:var(--ink-2)}
+.pol-svg .pol-zahl{font-family:'JetBrains Mono',monospace;font-weight:700}
+@media(max-width:600px){.pol-karte{padding:12px 0 10px}}
+.pol-svg .pol-treffer{outline:none}
+.pol-svg .pol-treffer:hover,.pol-svg .pol-treffer:focus-visible{fill:rgba(127,127,127,0.12)}
+.pol-fuss{font-size:11px;line-height:1.5;color:var(--ink-3);text-align:center;margin-top:4px}
+.erkl-pop dl.erkl-werte{margin-bottom:9px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+@media(max-width:900px){.dk-grid,.pol-grid,.dk-kopf{grid-template-columns:1fr}}
 .bar.mid{background:var(--blue)}
 .bar.low{background:var(--amber)}
 .pct{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--ink);width:34px;text-align:right;flex-shrink:0;font-weight:500}
@@ -532,6 +581,10 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
   --ink:#18231D; --ink-2:#5A695F; --ink-3:#97A29A;
   --lime:#1E7A46; --lime-dim:#2E9358;
   --amber:#B26A00; --red:#C43B3B; --green:#1E8A4C; --blue:#2563B6;
+  /* Farbstufen der detaillierten Darstellung - Gruen, Oliv, Rot wie in den
+     Auswertungen der grossen Scouting-Werkzeuge. So dunkel, dass weisse
+     Zahlen im Balken den Kontrast halten. */
+  --sk-gut:#1C8047; --sk-mittel:#7F7224; --sk-schwach:#B8474F; --sk-neutral:#AEB6B0; --sk-text:#FFFFFF;
 }
 
 /* Raster: auf hellem Grund nur noch ein Hauch. */
@@ -659,6 +712,7 @@ input[type=range]::-webkit-slider-thumb{box-shadow:none}
   --ink:#ECF1EE; --ink-2:#93A29B; --ink-3:#5C6B64;
   --lime:#C8FA4B; --lime-dim:#9CD130;
   --amber:#F5A623; --red:#FF5B5B; --green:#5BD37A; --blue:#4DA6FF;
+  --sk-gut:#43BF6E; --sk-mittel:#B5A64E; --sk-schwach:#D5646A; --sk-neutral:#4A5752; --sk-text:#0A0F0D;
 }
 
 :root[data-theme="dark"] body:before{opacity:0.07}
@@ -3245,6 +3299,7 @@ function metrikAbschnitt(p){
   if(!METRIK||!METRIK.werte)return '';
   const v=METRIK.werte[p.id];
   if(!v)return '';
+  const detail=darstellung==='detail';
   const gruppe=(window.POSGRUPPE||{})[p.pos]||'ZM';
   const ligaId=p.note_liga_id||p.liga_id, liga=p.note_liga||p.liga;
   const vert=metrikVerteilung(ligaId,gruppe);
@@ -3268,6 +3323,9 @@ function metrikAbschnitt(p){
       const inNote=(imNote.indexOf(f.k)>=0)
         ? ' <span class="mk-note" title="Geht in die Liga-Note ein">Note</span>' : '';
       if(vert[f.k])gruppengroesse=Math.max(gruppengroesse,vert[f.k].length);
+      if(detail)
+        return dkZeile({name:f.n+inNote,roh:metrikWertText(f,wert),pct:pct,neutral:!!f.neutral,
+                        erkl:'m:'+f.k,klick:'schwarmAuf(this,\''+f.k+'\')'});
       /* Mengenangaben ohne eigene Wertung (Paraden, Gegentore,
          Ballkontakte) bekommen keine Farbe nach Gut und Schlecht - der
          Balken zeigt dort nur den Rang. */
@@ -3282,9 +3340,33 @@ function metrikAbschnitt(p){
         +(pct===null?0:pct)+'%;background:'+farbe+'"></span></span>'
         +'<span class="mk-pct">'+(pct===null?'–':'<b>'+pct+'</b>')+'</span></div>';
     }).join('');
-    return '<div class="mk-blk"><div class="mk-blk-t">'+(bnamen[bid]||bid)+'</div>'+zeilen+'</div>';
+    return detail
+      ? '<div class="dk-blk"><div class="dk-blk-t">'+(bnamen[bid]||bid)+'</div>'+zeilen+dkAchse()+'</div>'
+      : '<div class="mk-blk"><div class="mk-blk-t">'+(bnamen[bid]||bid)+'</div>'+zeilen+'</div>';
   }).filter(Boolean).join('');
   if(!bloecke)return '';
+  const titel='<div class="sec-title mit-wahl">Kennzahlen · Saison '
+    +(METRIK.saison||dataSaison||'')+darstellungWahl()+'</div>';
+
+  if(detail)
+    return '<div class="sec">'+titel
+      +'<div class="param-erklaerung">Dieselben Kennzahlen wie in der Übersicht, als '
+      +'Percentil-Balken je Themenblock. '
+      +(gruppengroesse>=5
+        ? 'Die Länge ist das Percentil innerhalb von <strong>'+gruppengroesse+'</strong> Spielern '
+          +'der Positionsgruppe '+gruppe+' in der '+liga+' mit mindestens '
+          +(window.MIN_MINUTEN||450)+' Minuten, die Zahl im Balken nennt es; der gestrichelte '
+          +'Strich bei 50 ist der Ligaschnitt. '
+        : 'Für einen Percentilvergleich sind zu wenige Spieler dieser Position in der '+liga
+          +' erfasst — die Balken bleiben leer, es stehen nur die Rohwerte. ')
+      +'Unter dem Namen steht der <strong>Rohwert</strong>. Die Farbe folgt denselben Stufen '
+      +'wie das Stärkenprofil; graue Balken sind Mengenangaben ohne Wertung. '
+      +(imNote.length?'Mit <span class="mk-note">Note</span> markierte Zeilen gehen in die '
+        +'Liga-Note ein. ':'')
+      +'<strong>Mit dem Zeiger über einer Zeile</strong> erklärt ein Fenster die Kennzahl; '
+      +'<strong>ein Klick</strong> zeigt die Verteilung der ganzen Liga.</div>'
+      +'<div class="dk-grid">'+bloecke+'</div>'+skalaLegende(true)
+      +'<div id="mk-schwarm" class="mk-schwarm"></div></div>';
 
   const basis=gruppengroesse>=5
     ? 'Der Balken zeigt das Percentil innerhalb von <strong>'+gruppengroesse
@@ -3293,8 +3375,7 @@ function metrikAbschnitt(p){
       +'der Mitte ist der Ligadurchschnitt.'
     : 'Für einen Percentilvergleich sind zu wenige Spieler dieser Position '
       +'in der '+liga+' erfasst — es stehen nur die Rohwerte.';
-  return '<div class="sec"><div class="sec-title">Kennzahlen · Saison '
-    +(METRIK.saison||dataSaison||'')+'</div>'
+  return '<div class="sec">'+titel
     +'<div class="param-erklaerung">Zählwerte von Sofascore, auf 90 Minuten '
     +'gerechnet. Links der Rohwert, rechts das Percentil. '+basis+' '
     +'Graue Balken sind reine Mengenangaben ohne Wertung — 1,5 Paraden je 90 '
@@ -3395,7 +3476,7 @@ function schwarmSVG(k,ligaId,gruppe,wert,vglWert,vglName){
 function schwarmAuf(el,k){
   const box=document.getElementById('mk-schwarm');
   if(!box||!activePlayer||!METRIK)return;
-  document.querySelectorAll('#metrik-block .mk-row.mk-offen')
+  document.querySelectorAll('#metrik-block .mk-offen')
     .forEach(x=>x.classList.remove('mk-offen'));
   if(box.dataset.k===k){box.innerHTML='';box.dataset.k='';return;}
   box.dataset.k=k;
@@ -3715,9 +3796,21 @@ function vergleichAbschnitt(p){
       +'Kennzahl liegt für beide vor.</span></div>';
   }
 
-  return '<div class="sec"><div class="sec-title">Direktvergleich</div>'+
-    '<div class="vgl-kopf">'+kopf+'</div>'+
-    hinweise.map(h=>'<div class="flag"><div class="fdot '+h.c+'"></div><span>'+h.t+'</span></div>').join('')+
+  const titel='<div class="sec-title mit-wahl">Direktvergleich'
+    +ansichtWahl(vergleichAnsicht,[['diagramme','Diagramme'],['tabelle','Tabelle']],'vergleichAnsichtSetzen')
+    +'</div>';
+  const oben='<div class="vgl-kopf">'+kopf+'</div>'+
+    hinweise.map(h=>'<div class="flag"><div class="fdot '+h.c+'"></div><span>'+h.t+'</span></div>').join('');
+  /* Diagramme zuerst: zwei Profile lassen sich als Flaeche schneller
+     vergleichen als in zwei Zahlenspalten. Fehlen Einzelkennzahlen, steht
+     dort derselbe Hinweis wie in der Tabelle - die Bereiche der Note gibt
+     es trotzdem, fuer jeden bewerteten Spieler. */
+  if(vergleichAnsicht==='diagramme')
+    return '<div class="sec">'+titel+oben
+      +vergleichDiagramme(p,b,(METRIK&&wA&&wB)?{wA:wA,wB:wB,lA:lA,lB:lB,gA:gA,gB:gB}:null,tabelle)
+      +suche+'</div>';
+
+  return '<div class="sec">'+titel+oben+
     '<div class="param-erklaerung" style="margin:16px 0 4px">Links der Wert von '
     +'<strong style="color:var(--lime)">'+vglEsc(p.name)+'</strong>, rechts der von '
     +'<strong style="color:var(--blue)">'+vglEsc(b.name)+'</strong>; die farbige '
@@ -3726,6 +3819,437 @@ function vergleichAbschnitt(p){
     +'lässt sich ablesen, ob ein Vorsprung viel bedeutet oder beide über dem '
     +'Schnitt liegen. <i>P</i> ist das Percentil in der jeweils eigenen Liga.</div>'+
     tabelle+suche+'</div>';
+}
+
+/* ---------- Detaillierte Darstellung und Diagramm-Vergleich --------------
+   Dieselben Zahlen wie in der Uebersicht, gezeichnet wie in den
+   Auswertungen der grossen Scouting-Werkzeuge: Percentil-Balken je
+   Themenblock mit Farbstufen und Polardiagramme, in denen jedes
+   Kreisstueck eine Kennzahl ist.
+
+   NICHTS DAVON IST EINE NEUE BEWERTUNG. Die Laenge ist immer das
+   Percentil oder die Teilnote, die auch in der Uebersicht steht; die
+   Farbstufen haben die Schwellen des Staerkenprofils (ab 70, 40 bis 69,
+   unter 40); die Kaestchen tragen den Rohwert. Die Vorlagen faerben erst
+   ab 80 gruen - das waere eine andere Einstufung und bleibt eine
+   Entscheidung des Nutzers.
+
+   Fuer einen einzelnen Spieler erscheint das nur auf Klick, dann aber in
+   allen drei Abschnitten mit Skalen zugleich (Kennzahlen, Notenaufbau,
+   Staerkenprofil): es ist eine Darstellungsweise, kein Schalter je Kasten.
+   Im Direktvergleich sind die Diagramme die erste Ansicht, die Tabelle
+   bleibt einen Klick entfernt. */
+let darstellung='uebersicht';       // 'uebersicht' | 'detail' - gilt fuer die ganze Akte
+let vergleichAnsicht='diagramme';   // 'diagramme' | 'tabelle'
+
+function ansichtWahl(wert,optionen,aufruf){
+  return '<span class="aw" role="group" aria-label="Darstellung">'+optionen.map(function(o){
+    const an=o[0]===wert;
+    return '<button type="button" class="aw-k'+(an?' an':'')+'" aria-pressed="'+an+'" '
+      +'onclick="'+aufruf+'(\''+o[0]+'\',this)">'+o[1]+'</button>';
+  }).join('')+'</span>';
+}
+function darstellungWahl(){
+  return ansichtWahl(darstellung,[['uebersicht','Übersicht'],['detail','Detailliert']],'darstellungSetzen');
+}
+
+/* Der geklickte Umschalter bleibt unter dem Zeiger. Die Abschnitte
+   darueber wechseln beim Umschalten ihre Hoehe mit - ohne Ausgleich
+   sprang die Seite weg. */
+function ansichtHalten(knopf,bereich,zeichnen){
+  const kasten=knopf&&knopf.closest?knopf.closest(bereich):null;
+  const vorher=knopf?knopf.getBoundingClientRect().top:0;
+  erklWeg();
+  zeichnen();
+  const neu=kasten&&kasten.querySelector('.aw-k.an');
+  /* Sofort, nicht weich: die Seite scrollt sonst sichtbar hinterher. */
+  if(neu)window.scrollBy({top:neu.getBoundingClientRect().top-vorher,behavior:'instant'});
+}
+function darstellungSetzen(art,knopf){
+  if(art===darstellung||!activePlayer)return;
+  ansichtHalten(knopf,'#metrik-block,#noten-block,#staerken-block',function(){
+    darstellung=art;
+    const p=activePlayer;
+    const setze=(id,html)=>{const el=document.getElementById(id);if(el)el.innerHTML=html;};
+    if(METRIK)setze('metrik-block',metrikAbschnitt(p));
+    setze('noten-block',notenAufbauAbschnitt(p));
+    setze('staerken-block',staerkenAbschnitt(p));
+  });
+}
+function vergleichAnsichtSetzen(art,knopf){
+  if(art===vergleichAnsicht||!activePlayer)return;
+  ansichtHalten(knopf,'#vergleich-block',function(){
+    vergleichAnsicht=art;
+    const el=document.getElementById('vergleich-block');
+    if(el)el.innerHTML=vergleichAbschnitt(activePlayer);
+  });
+}
+
+function skalaFarbe(pct,neutral){
+  if(pct===null||pct===undefined)return 'var(--ink-3)';
+  if(neutral)return 'var(--sk-neutral)';
+  return pct>=70?'var(--sk-gut)':pct<40?'var(--sk-schwach)':'var(--sk-mittel)';
+}
+function legendePunkt(farbe,text){
+  return '<div class="leg-item"><div class="leg-dot" style="background:'+farbe+'"></div>'+text+'</div>';
+}
+function skalaLegende(mitGrau){
+  return '<div class="legend">'+legendePunkt('var(--sk-gut)','ab 70 — über dem Schnitt')
+    +legendePunkt('var(--sk-mittel)','40–69 — im Schnitt')
+    +legendePunkt('var(--sk-schwach)','unter 40 — Schwachpunkt')
+    +(mitGrau?legendePunkt('var(--sk-neutral)','ohne Wertung'):'')+'</div>';
+}
+function spielerLegende(a,b){
+  return '<div class="legend dk-spieler">'+legendePunkt('var(--lime)',vglEsc(a.name))
+    +legendePunkt('var(--blue)',vglEsc(b.name))+'</div>';
+}
+
+/* Eine Balkenzeile wie in den Vorlagen: Name rechtsbuendig, darunter der
+   Rohwert; die Zahl steht im Balken, bei kurzen Balken dahinter. */
+function dkZeile(o){
+  const pct=(o.pct===null||o.pct===undefined)?null:o.pct;
+  const innen=pct!==null&&pct>=18;
+  return '<div class="dk-row" data-erkl="'+o.erkl+'" tabindex="0"'
+    +(o.klick?' onclick="'+o.klick+'"':'')+'>'
+    +'<span class="dk-name">'+o.name+(o.roh!==undefined&&o.roh!==''?'<i>'+o.roh+'</i>':'')+'</span>'
+    +'<span class="dk-bahn">'
+    +(pct===null?'':'<span class="dk-fuell" style="width:'+pct+'%;background:'
+      +skalaFarbe(pct,o.neutral)+'"></span>')
+    +'<span class="dk-zahl '+(innen?'innen':'aussen')+(o.neutral?' neutral':'')+'" style="left:'
+    +(pct===null?0:pct)+'%">'+(pct===null?'–':pct)+'</span></span></div>';
+}
+function dkAchse(){
+  return '<div class="dk-row dk-achse" aria-hidden="true"><span></span><span class="dk-ticks">'
+    +[0,25,50,75,100].map(v=>'<span style="left:'+v+'%">'+v+'</span>').join('')
+    +'</span></div><div class="dk-row dk-achse" aria-hidden="true"><span></span>'
+    +'<span class="dk-achse-t">Percentil</span></div>';
+}
+
+/* ---- Polardiagramm ------------------------------------------------------
+   Jede Achse ein Kreisstueck; wie weit es hinausreicht, ist der Wert von
+   0 bis 100 (Percentil oder Teilnote), linear im Radius wie in den
+   Vorlagen. Drei Arten:
+     skala     ein Spieler, Farbe nach den Stufen
+     vergleich zwei Spieler uebereinander - vorn der kuerzere Teil,
+               dahinter ragt der laengere hinaus
+     umriss    der erste als Flaeche, der zweite gestrichelt umrissen
+   achsen: [{name, erkl, a:{p,text}, b:{p,text}}]; p darf null sein
+   (kein Percentil), dann bleibt das Stueck leer und nur das Kaestchen
+   mit dem Rohwert steht da. */
+/* R so gross, dass auch dreizeilige Namen der laengsten Kennzahlen noch
+   rund 30 Einheiten vom Rand bleiben (im Browser nachgemessen). */
+const POL={w:460,c:230,R:156,r0:16};
+function polPunkt(r,grad){
+  const a=(grad-90)*Math.PI/180;
+  return [POL.c+r*Math.cos(a),POL.c+r*Math.sin(a)];
+}
+function polRadius(p){
+  return POL.r0+(POL.R-POL.r0)*Math.max(0,Math.min(100,p))/100;
+}
+/* Kreisringstueck von r1 bis r2 zwischen zwei Winkeln (Grad, 0 = oben,
+   im Uhrzeigersinn) */
+function polStueck(r1,r2,g1,g2){
+  if(r2-r1<0.4)return '';
+  const f=v=>v.toFixed(1), gross=(g2-g1)>180?1:0;
+  const a=polPunkt(r2,g1),b=polPunkt(r2,g2),c=polPunkt(r1,g2),d=polPunkt(r1,g1);
+  return 'M'+f(a[0])+' '+f(a[1])+'A'+f(r2)+' '+f(r2)+' 0 '+gross+' 1 '+f(b[0])+' '+f(b[1])
+    +'L'+f(c[0])+' '+f(c[1])+'A'+f(r1)+' '+f(r1)+' 0 '+gross+' 0 '+f(d[0])+' '+f(d[1])+'Z';
+}
+/* Namen am Kreisrand umbrechen. Zu lange Woerter werden an der Wortfuge
+   getrennt ("Defensiv-aktionen") - die Liste deckt die Bestandteile der
+   Kennzahl- und Bereichsnamen ab, laengere zuerst. */
+const POL_TEILE=['zweikämpfe','sicherheit','kreativität','angekommen','aktionen','kontakte',
+  'verluste','barkeit','drittel','gewinne','chancen','duelle','anteil','kämpfe','laufen',
+  'quote','pässe','bälle','toren'];
+function polTrennen(w,max){
+  if(w.length<=max)return [w];
+  const strich=w.lastIndexOf('-',max-1);
+  if(strich>=2)return [w.slice(0,strich+1)].concat(polTrennen(w.slice(strich+1),max));
+  const klein=w.toLowerCase();
+  for(const t of POL_TEILE){
+    const pos=klein.lastIndexOf(t);
+    if(pos>=3&&pos+1<=max)return [w.slice(0,pos)+'-'].concat(polTrennen(w.slice(pos),max));
+  }
+  return [w];
+}
+function polZeilen(text,max){
+  /* "/ 90" bleibt beisammen, darf aber in die naechste Zeile rutschen. */
+  const woerter=[];
+  String(text).replace(/ \/ /g,' / ').split(' ')
+    .forEach(w=>{woerter.push.apply(woerter,polTrennen(w,max))});
+  const zeilen=[];let akt='';
+  woerter.forEach(function(w){
+    if(!akt)akt=w;
+    else if(!/-$/.test(akt)&&(akt+' '+w).length<=max)akt+=' '+w;
+    else{zeilen.push(akt);akt=w;}
+  });
+  if(akt)zeilen.push(akt);
+  return zeilen;
+}
+/* Passt ein Name nicht in drei Zeilen der verfuegbaren Breite, wird seine
+   Schrift stufenweise kleiner - nie unter 72 %. */
+function polBeschriftung(name,zeichen){
+  for(const faktor of [1,0.9,0.8,0.72]){
+    const max=Math.floor(zeichen/faktor);
+    const z=polZeilen(name,max);
+    if(z.length<=3&&z.every(l=>l.length<=max))return {zeilen:z,faktor:faktor};
+  }
+  const max=Math.floor(zeichen/0.72);
+  let z=polZeilen(name,max);
+  if(z.length>3)z=z.slice(0,2).concat([z.slice(2).join(' ').slice(0,max-1)+'…']);
+  return {zeilen:z,faktor:0.72};
+}
+function polarSVG(achsen,modus,aria){
+  const n=achsen.length;
+  if(n<3)return '';
+  /* Auf dem Handy schrumpft der Kreis auf gut die Haelfte - Schrift und
+     Kaestchen waeren dort kaum lesbar. Dann groesser, der Kreis etwas
+     kleiner, damit die Namen Platz behalten. */
+  const eng=!!(window.matchMedia&&window.matchMedia('(max-width: 600px)').matches);
+  const M=eng?{R:136,name:18,zahl:14,hoehe:20,zeichen:8.6,zeile:19,abstand:22}
+             :{R:156,name:12.5,zahl:10.5,hoehe:16,zeichen:6.4,zeile:14,abstand:19};
+  POL.R=M.R;
+  const C=POL.c,R=POL.R,r0=POL.r0,schritt=360/n,f=v=>v.toFixed(1);
+  const hat=(x,w)=>!!(x[w]&&x[w].p!==null&&x[w].p!==undefined);
+  const linie=(a,b,farbe,breite)=>'<line x1="'+f(a[0])+'" y1="'+f(a[1])+'" x2="'+f(b[0])+'" y2="'+f(b[1])
+    +'" stroke="'+farbe+'" stroke-width="'+breite+'"/>';
+  let unter='',stuecke='',trenner='',ringe='',umriss='',kaesten='',namen='',treffer='';
+
+  /* Speichen unter den Stuecken: sichtbar bleiben sie nur im leeren Teil. */
+  const aussen=[];
+  achsen.forEach(function(x,i){
+    const g1=i*schritt-schritt/2, g2=g1+schritt;
+    unter+=linie(polPunkt(r0,g1),polPunkt(R,g1),'var(--line)',1);
+    let rAus=r0;
+    if(modus==='skala'||modus==='umriss'){
+      if(hat(x,'a')){
+        rAus=polRadius(x.a.p);
+        stuecke+='<path d="'+polStueck(r0,rAus,g1,g2)+'" fill="'
+          +(modus==='skala'?skalaFarbe(x.a.p,x.neutral)+'"':'var(--lime)" fill-opacity="0.85"')+'/>';
+      }
+    }else{
+      const teile=[];
+      if(hat(x,'a'))teile.push({r:polRadius(x.a.p),farbe:'var(--lime)'});
+      if(hat(x,'b'))teile.push({r:polRadius(x.b.p),farbe:'var(--blue)'});
+      if(teile.length===2&&x.a.p===x.b.p){
+        /* Gleichstand: halb und halb, sonst saehe einer kleiner aus. */
+        const gm=(g1+g2)/2;
+        stuecke+='<path d="'+polStueck(r0,teile[0].r,g1,gm)+'" fill="var(--lime)"/>'
+          +'<path d="'+polStueck(r0,teile[1].r,gm,g2)+'" fill="var(--blue)"/>';
+        rAus=teile[0].r;
+      }else{
+        teile.sort((u,v)=>u.r-v.r);
+        let innen=r0;
+        teile.forEach(function(t){
+          stuecke+='<path d="'+polStueck(innen,t.r,g1,g2)+'" fill="'+t.farbe+'"/>';
+          innen=t.r;
+        });
+        if(teile.length)rAus=teile[teile.length-1].r;
+      }
+    }
+    aussen.push(rAus);
+  });
+  /* Trennfugen zwischen benachbarten Stuecken, in der Farbe des Grundes */
+  achsen.forEach(function(x,i){
+    const r=Math.max(aussen[i],aussen[(i-1+n)%n]);
+    if(r>r0)trenner+=linie(polPunkt(r0,i*schritt-schritt/2),polPunkt(r,i*schritt-schritt/2),'var(--pitch-2)',2);
+  });
+  /* Ringe bei 25, 50, 75 - der mittlere kraeftiger: der Ligaschnitt */
+  [25,50,75].forEach(function(q){
+    ringe+='<circle cx="'+C+'" cy="'+C+'" r="'+f(polRadius(q))+'" fill="none" stroke="var(--ink-3)" '
+      +(q===50?'stroke-opacity="0.85" stroke-width="1.3" stroke-dasharray="6 4"'
+              :'stroke-opacity="0.5" stroke-width="1" stroke-dasharray="2 4"')+'/>';
+  });
+  /* Umriss des zweiten Spielers: Bogen je Stueck, dazwischen radiale Stufen */
+  if(modus==='umriss'){
+    let d='',offen=false,erster=null;
+    achsen.forEach(function(x,i){
+      if(!hat(x,'b')){offen=false;return;}
+      const g1=i*schritt-schritt/2, g2=g1+schritt, r=polRadius(x.b.p);
+      const a=polPunkt(r,g1), b=polPunkt(r,g2);
+      if(i===0)erster=a;
+      d+=(offen?'L':'M')+f(a[0])+' '+f(a[1])+'A'+f(r)+' '+f(r)+' 0 0 1 '+f(b[0])+' '+f(b[1]);
+      offen=true;
+    });
+    if(d&&erster&&hat(achsen[n-1],'b'))d+='L'+f(erster[0])+' '+f(erster[1]);
+    /* Dunkler Saum unter der Strichlinie: auf der gruenen Flaeche waere
+       Blau allein kaum zu sehen. */
+    if(d)umriss='<path d="'+d+'" fill="none" stroke="var(--pitch-2)" stroke-opacity="0.75" '
+      +'stroke-width="5" stroke-linejoin="round"/>'
+      +'<path d="'+d+'" fill="none" stroke="var(--blue)" stroke-width="2.6" '
+      +'stroke-dasharray="7 4" stroke-linejoin="round"/>';
+  }
+
+  /* Kaestchen mit dem Rohwert am Rand des Stuecks. Innen wird es eng:
+     nie naeher an der Mitte, als die Kaestchen nebeneinander Platz haben. */
+  const breite=t=>String(t).length*M.zeichen+10;
+  let maxB=0;
+  achsen.forEach(x=>{['a','b'].forEach(w=>{if(x[w]&&x[w].text!=null)maxB=Math.max(maxB,breite(x[w].text))})});
+  const rMin=Math.max(r0+M.hoehe*0.8,(maxB+6)*n/(2*Math.PI)), rMax=R-M.hoehe/2-1;
+  const klemm=r=>Math.max(rMin,Math.min(rMax,r));
+  /* Erst alle Kaestchen an ihren Rand setzen ... */
+  const liste=[];
+  const setze=(r,g,text,fill,schrift,aussen)=>{
+    const q=polPunkt(r,g);
+    liste.push({x:q[0],y:q[1],b:breite(text),text:text,fill:fill,schrift:schrift,aussen:aussen});
+  };
+  achsen.forEach(function(x,i){
+    const g=i*schritt;
+    const ta=!!(x.a&&x.a.text!=null), tb=modus!=='skala'&&!!(x.b&&x.b.text!=null);
+    const ra=hat(x,'a')?polRadius(x.a.p):rMin, rb=hat(x,'b')?polRadius(x.b.p):rMin;
+    const farbeA=modus==='skala'?(hat(x,'a')?skalaFarbe(x.a.p,x.neutral):'var(--ink-3)'):'var(--lime)';
+    const schriftA=modus==='skala'?(x.neutral?'var(--ink)':'var(--sk-text)'):'var(--pitch)';
+    if(ta)setze(klemm(ra),g,x.a.text,farbeA,schriftA,ra);
+    if(tb)setze(klemm(rb),g,x.b.text,'var(--blue)','var(--pitch)',rb);
+  });
+  /* ... dann auseinanderschieben, wo sie sich beruehren: jeweils entlang
+     der Achse mit der kleineren Ueberlappung, also um das kleinstmoegliche
+     Stueck. Oben und unten im Kreis geht das meist senkrecht, an den
+     Seiten ebenfalls - dort reicht eine Kaestchenhoehe statt einer Breite. */
+  const schieben=function(){
+    for(let runde=0;runde<40;runde++){
+      let bewegt=false;
+      for(let i=0;i<liste.length;i++)for(let j=i+1;j<liste.length;j++){
+        const u=liste[i],v=liste[j];
+        const ox=(u.b+v.b)/2+3-Math.abs(u.x-v.x), oy=M.hoehe+3-Math.abs(u.y-v.y);
+        if(ox<=0||oy<=0)continue;
+        bewegt=true;
+        if(oy<=ox){
+          /* Wer weiter aussen liegt, geht in seine Richtung - bei
+             Gleichstand der erste nach oben. */
+          const uOben=Math.abs(u.y-v.y)>0.5?u.y<v.y:(u.aussen>=v.aussen)===(u.y<=C);
+          u.y+=(uOben?-1:1)*oy/2; v.y+=(uOben?1:-1)*oy/2;
+        }else{
+          const uLinks=Math.abs(u.x-v.x)>0.5?u.x<v.x:i<j;
+          u.x+=(uLinks?-1:1)*ox/2; v.x+=(uLinks?1:-1)*ox/2;
+        }
+      }
+      if(!bewegt)break;
+    }
+  };
+  /* Kein Kaestchen ragt ueber den Kreis hinaus, sonst laege es auf den
+     Namen - an den Seiten zaehlt dabei seine Breite, nicht die Hoehe. */
+  const zurueck=function(k){
+    for(let t=0;t<8;t++){
+      const dx=k.x-C, dy=k.y-C;
+      const ecke=Math.hypot(Math.abs(dx)+k.b/2,Math.abs(dy)+M.hoehe/2);
+      if(ecke<=R-1)return;
+      const r=Math.hypot(dx,dy)||1, weg=Math.min(r,ecke-(R-1));
+      k.x-=dx/r*weg; k.y-=dy/r*weg;
+    }
+  };
+  for(let zyklus=0;zyklus<5;zyklus++){schieben();liste.forEach(zurueck);}
+  liste.forEach(function(k){
+    const h=M.hoehe;
+    kaesten+='<rect x="'+f(k.x-k.b/2)+'" y="'+f(k.y-h/2)+'" width="'+f(k.b)+'" height="'+h+'" rx="3" fill="'
+      +k.fill+'" stroke="var(--pitch-2)" stroke-width="1.5"/>'
+      +'<text x="'+f(k.x)+'" y="'+f(k.y)+'" dy="0.36em" text-anchor="middle" class="pol-zahl" '
+      +'font-size="'+M.zahl+'" fill="'+k.schrift+'">'+vglEsc(k.text)+'</text>';
+  });
+
+  /* Namen tangential am Rand wie in den Vorlagen; in der unteren Haelfte
+     gedreht, damit nichts auf dem Kopf steht. */
+  const zeichen=Math.max(8,Math.min(18,Math.floor((2*Math.PI*(R+M.abstand)/n-12)/(M.name*0.55))));
+  achsen.forEach(function(x,i){
+    const g=i*schritt, unten=g>90&&g<270, rot=unten?g-180:g;
+    const bs=polBeschriftung(x.name,zeichen), zeilen=bs.zeilen;
+    zeilen.forEach(function(z,j){
+      const q=polPunkt(R+M.abstand+(unten?j:(zeilen.length-1-j))*M.zeile*bs.faktor,g);
+      namen+='<text x="'+f(q[0])+'" y="'+f(q[1])+'" dy="0.36em" text-anchor="middle" class="pol-name" '
+        +'font-size="'+f(M.name*bs.faktor)+'" transform="rotate('+f(rot)+' '+f(q[0])+' '+f(q[1])+')">'
+        +vglEsc(z)+'</text>';
+    });
+    /* Trefferflaeche fuer das Erklaerfenster ueber dem ganzen Stueck */
+    treffer+='<path class="pol-treffer" d="'+polStueck(r0,R+8,g-schritt/2,g+schritt/2)
+      +'" fill="transparent" tabindex="0" data-erkl="'+x.erkl+'" aria-label="'+vglEsc(x.name)+'"/>';
+  });
+
+  return '<svg viewBox="0 0 '+POL.w+' '+POL.w+'" class="pol-svg" role="group" aria-label="'
+    +vglEsc(aria||'Polardiagramm')+'">'+unter
+    +'<circle cx="'+C+'" cy="'+C+'" r="'+R+'" fill="none" stroke="var(--line-bright)" stroke-width="1"/>'
+    +stuecke+trenner+ringe+umriss
+    +'<circle cx="'+C+'" cy="'+C+'" r="'+r0+'" fill="var(--pitch-2)" stroke="var(--line-bright)" stroke-width="1"/>'
+    +kaesten+namen+treffer+'</svg>';
+}
+function polKarte(titel,svg,fuss){
+  if(!svg)return '';
+  return '<div class="pol-karte"><div class="dk-blk-t">'+titel+'</div>'+svg
+    +'<div class="pol-fuss">'+(fuss?fuss+' · ':'')+'Ringe bei 25, 50 und 75</div></div>';
+}
+
+/* Bereiche der Liga-Note in thematischer Folge - Angriff, Spielaufbau,
+   Verteidigung, dann Einsatz und Disziplin -, statt alphabetisch. */
+const BEREICH_FOLGE=['offensiv','kreativ','pass','ballsicherheit','zweikampf',
+  'defensiv_ind','defensiv','torwart','verfuegbarkeit','disziplin'];
+function bereichReihe(){
+  const alle={};
+  Array.prototype.forEach.call(arguments,function(tn){Object.keys(tn||{}).forEach(k=>{alle[k]=1})});
+  return Object.keys(alle).sort(function(a,b){
+    const ia=BEREICH_FOLGE.indexOf(a), ib=BEREICH_FOLGE.indexOf(b);
+    return ((ia<0?99:ia)-(ib<0?99:ib))||(a<b?-1:1);
+  });
+}
+
+/* Diagramme im Direktvergleich: zuerst die Bereiche der Note (fuer jeden
+   bewerteten Spieler vorhanden), dann je Themenblock ein Kreis mit beiden
+   Spielern. Verglichen werden dieselben Kennzahlen wie in der Tabelle,
+   ohne die Mengenangaben ohne Wertung - ein Kreisstueck behauptet ein
+   Besser oder Schlechter, das es dort nicht gibt. */
+function vergleichDiagramme(p,b,kz,ersatz){
+  const tA=p.teilnoten||{}, tB=b.teilnoten||{};
+  const bereichAchsen=bereichReihe(tA,tB).map(k=>({
+    name:(window.BEREICHE||{})[k]||k, erkl:'u:'+k,
+    a:tA[k]===undefined?null:{p:tA[k],text:String(tA[k])},
+    b:tB[k]===undefined?null:{p:tB[k],text:String(tB[k])}
+  }));
+  const kurzA=vglEsc(p.name.split(' ').pop()), kurzB=vglEsc(b.name.split(' ').pop());
+  const karten=[];
+  if(bereichAchsen.length>=3)
+    karten.push(polKarte('Bereiche der Liga-Note',
+      polarSVG(bereichAchsen,'umriss','Bereiche der Liga-Note im Vergleich'),
+      'Fläche: '+kurzA+' · gestrichelt: '+kurzB+' · Teilnoten 0–100'));
+
+  const ausgelassen=[];
+  if(kz){
+    const jeBereich={}; (METRIK.felder||[]).forEach(f=>{(jeBereich[f.b]||(jeBereich[f.b]=[])).push(f)});
+    const bnamen={}; (METRIK.bereiche||[]).forEach(x=>{bnamen[x.id]=x.name});
+    const text=(f,w)=>metrikWertText(f,w).replace(/&nbsp;/g,'\u00a0');
+    ((METRIK.bloecke||{})[kz.gA]||[]).forEach(function(bid){
+      const felder=(jeBereich[bid]||[]).filter(f=>!f.neutral
+        &&kz.wA[f.k]!==undefined&&kz.wB[f.k]!==undefined);
+      if(!felder.length)return;
+      if(felder.length<3){ausgelassen.push(bnamen[bid]||bid);return;}
+      const achsen=felder.map(f=>({
+        name:f.n, erkl:'p:'+f.k,
+        a:{p:metrikPercentil(kz.wA[f.k],metrikVerteilung(kz.lA,kz.gA)[f.k],!!f.hoch),text:text(f,kz.wA[f.k])},
+        b:{p:metrikPercentil(kz.wB[f.k],metrikVerteilung(kz.lB,kz.gB)[f.k],!!f.hoch),text:text(f,kz.wB[f.k])}
+      }));
+      karten.push(polKarte(bnamen[bid]||bid,polarSVG(achsen,'vergleich',(bnamen[bid]||bid)+' im Vergleich'),''));
+    });
+  }
+
+  const nA='<strong style="color:var(--lime)">'+vglEsc(p.name)+'</strong>';
+  const nB='<strong style="color:var(--blue)">'+vglEsc(b.name)+'</strong>';
+  return '<div class="param-erklaerung" style="margin:16px 0 12px">'
+    +(kz
+      ? 'Jedes Kreisstück ist eine Kennzahl. Wie weit es hinausreicht, ist das '
+        +'<strong>Percentil</strong>: wie viel Prozent der Vergleichsgruppe der Spieler '
+        +'übertrifft, jeder in seiner eigenen Liga und Positionsgruppe — wie in der Tabelle. '
+        +nA+' und '+nB+' liegen übereinander: vorn der kürzere Teil, dahinter ragt der '
+        +'längere hinaus. In den Kästchen steht der <strong>Rohwert</strong>; der kräftiger '
+        +'gestrichelte Ring ist der Ligaschnitt (50). '
+      : '')
+    +'Der erste Kreis zeigt die Bereiche, aus denen die Liga-Note entsteht: '+nA
+    +' als Fläche, '+nB+' gestrichelt umrissen. '
+    +(kz?'Kennzahlen ohne Wertung wie Ballkontakte oder Paraden fehlen in den Kreisen; '
+      +'die Tabelle führt sie. ':'')
+    +'<strong>Mit dem Zeiger über einem Stück</strong> stehen beide Werte im Fenster.</div>'
+    +spielerLegende(p,b)
+    +(karten.length?'<div class="pol-grid">'+karten.join('')+'</div>':'')
+    +(ausgelassen.length
+      ? '<div class="mk-hinweis" style="margin-top:10px">Zu wenige wertbare Kennzahlen für einen '
+        +'Kreis: '+ausgelassen.join(', ')+' — die Tabelle führt sie.</div>' : '')
+    +(kz?'':'<div style="margin-top:14px">'+ersatz+'</div>');
 }
 
 /* ---------- Erklaerfenster -----------------------------------------------
@@ -3824,6 +4348,47 @@ function erklRolle(i){
     +'<div class="erkl-fuss">Beschreibt sein Zahlenbild, nicht, wie ein Trainer ihn einsetzt.</div>';
 }
 
+/* Kreisstueck im Diagramm-Vergleich: zuerst beide Werte mit Percentil -
+   in den Kaestchen steht nur der Rohwert -, dann die Erklaerung. */
+function erklVergleichMetrik(k){
+  const p=activePlayer, b=vergleichId?PLAYERS.find(x=>x.id===vergleichId):null;
+  if(!p||!b||!METRIK)return '';
+  const f=(METRIK.felder||[]).find(x=>x.k===k);
+  if(!f)return '';
+  const wert=function(x){
+    const w=((METRIK.werte||{})[x.id]||{})[k];
+    if(w===undefined)return 'kein Wert';
+    const g=(window.POSGRUPPE||{})[x.pos]||'ZM', l=x.note_liga_id||x.liga_id;
+    const pct=metrikPercentil(w,metrikVerteilung(l,g)[k],!!f.hoch);
+    return metrikWertText(f,w)+' — '+(pct===null
+      ?'kein Percentil, zu wenige Vergleichsspieler'
+      :'Percentil '+pct+' unter den '+g+' der '+vglEsc(x.note_liga||x.liga));
+  };
+  return erklMetrik(k,false).replace('</h6>','</h6><dl class="erkl-werte">'
+    +erklZeile(vglEsc(p.name.split(' ').pop()),wert(p))
+    +erklZeile(vglEsc(b.name.split(' ').pop()),wert(b))+'</dl>');
+}
+
+/* Bereich der Liga-Note (b: einzeln, u: im Vergleich mit Umriss) */
+function erklBereich(k,mitVergleich){
+  const p=activePlayer;
+  if(!p)return '';
+  const b=(mitVergleich&&vergleichId)?PLAYERS.find(x=>x.id===vergleichId):null;
+  const wert=function(x){
+    const v=(x.teilnoten||{})[k];
+    return v===undefined
+      ?'kein Wert — bei ihm geht dieser Bereich nicht in die Note ein'
+      :v+' von 100 · '+vglEsc(x.pos)+', '+vglEsc(x.note_liga||x.liga);
+  };
+  return '<h6>'+vglEsc((window.BEREICHE||{})[k]||k)+'</h6>'
+    +'<dl class="erkl-werte">'+erklZeile(vglEsc(p.name.split(' ').pop()),wert(p))
+    +(b?erklZeile(vglEsc(b.name.split(' ').pop()),wert(b)):'')+'</dl>'
+    +'<p>Teilnote der Liga-Note: das gewichtete Mittel der Percentile, mit denen die '
+    +'Kennzahlen dieses Bereichs in die Note eingehen, mit denselben Gewichten wie dort. '
+    +'Um 50 liegt der Ligaschnitt.</p>'
+    +(k==='defensiv'?'<div class="erkl-fuss">Mannschaftswert: beschreibt die Abwehr, nicht den einzelnen Spieler.</div>':'');
+}
+
 let erklAktiv=null;
 function erklZeigen(el){
   if(el===erklAktiv)return;
@@ -3835,6 +4400,9 @@ function erklZeigen(el){
     else if(art==='v')html=erklMetrik(wert,false);
     else if(art==='k')html=erklParam(+wert);
     else if(art==='r')html=erklRolle(+wert);
+    else if(art==='p')html=erklVergleichMetrik(wert);
+    else if(art==='b')html=erklBereich(wert,false);
+    else if(art==='u')html=erklBereich(wert,true);
   }catch(e){html='';}
   const pop=erklPop();
   if(!html){erklWeg();return;}
@@ -4415,6 +4983,147 @@ function profilFormationSetzen(f){
   if(activePlayer)showProfile(activePlayer.id);
 }
 
+/* ---------- Umschaltbare Abschnitte der Akte ------------------------------
+   Aus renderProfile herausgeloest, damit "Detailliert" sie an Ort und
+   Stelle neu zeichnen kann, statt die ganze Akte aufzubauen - das sprang
+   jedes Mal an den Seitenanfang. In der Uebersicht erzeugen sie genau
+   das, was vorher inline stand. */
+function notenAufbauAbschnitt(p){
+  /* Notenaufschluesselung. Eine einzelne Zahl verdeckt, woher sie kommt -
+     und genau das laesst Bewertungen zwischen Vereinen schwanken: bei
+     Abwehrspielern stammt ein grosser Teil aus Mannschaftswerten. */
+  if(!p.teilnoten) return '';
+  const namen=(window.BEREICHE||{});
+  const reihe=Object.keys(p.teilnoten).sort();
+  const balken=reihe.map(function(b){
+    const v=p.teilnoten[b];
+    const istTeam=(b==='defensiv');
+    return '<div class="param-row"><div class="param-name">'+(namen[b]||b)
+      +(istTeam?' <span class="param-team">Team</span>':'')+'</div>'
+      +'<div class="bar-wrap"><div class="bar '+(v>=70?'top':v<40?'low':'mid')
+      +'" style="width:'+v+'%"></div></div>'
+      +'<div class="param-wert"><b>'+v+'</b></div></div>';
+  }).join('');
+  const t=p.anteil_team||0;
+  const warnung=t>=30
+    ? '<div class="flag"><div class="fdot neg"></div><span><strong>'+t
+      +' % der Note stammen aus Mannschaftswerten.</strong> Für diesen '
+      +'Spieler liegen keine individuellen Werte vor — Sofascore führt '
+      +'Spielerstatistik nur bis zur 3. Liga. Ein Spieler einer starken '
+      +'Abwehr profitiert davon, ohne dass sein eigener Beitrag messbar '
+      +'wäre. Zwischen Vereinen schwankt die Note deshalb spürbar.'
+      +'</span></div>'
+    : '<div class="flag"><div class="fdot pos"></div><span>'+(t?t:'0')
+      +' % der Note stammen aus Mannschaftswerten — sie beschreibt also '
+      +'überwiegend den Spieler selbst.</span></div>';
+  const basis=p.basis
+    ? '<div class="flag"><div class="fdot neu"></div><span>Verglichen mit '
+      +'<strong>'+p.basis.gruppe+'</strong> Spielern derselben Position in '
+      +'derselben Liga, auf Grundlage von <strong>'+p.basis.minuten
+      +'</strong> Spielminuten.</span></div>' : '';
+  const titel='<div class="sec-title mit-wahl">Woraus die Note entsteht'+darstellungWahl()+'</div>';
+  const detail=darstellung==='detail';
+  if(detail&&reihe.length>=3){
+    const achsen=bereichReihe(p.teilnoten).map(k=>({
+      name:namen[k]||k, erkl:'b:'+k, a:{p:p.teilnoten[k],text:String(p.teilnoten[k])}
+    }));
+    return '<div class="sec">'+titel
+      +'<div class="param-erklaerung">Die Liga-Note <strong>'+p.ln+'</strong> ist ein '
+      +'gewichtetes Mittel dieser Bereiche. Jedes Kreisstück ist ein Bereich, seine Länge '
+      +'die Teilnote von 0 bis 100 — dieselbe Zahl wie in der Übersicht; der kräftiger '
+      +'gestrichelte Ring liegt bei 50. <strong>Mit dem Zeiger über einem Stück</strong> '
+      +'erklärt ein Fenster den Bereich.</div>'
+      +'<div class="pol-einzeln">'+polKarte('Bereiche der Liga-Note',
+        polarSVG(achsen,'skala','Bereiche der Liga-Note von '+p.name),'')+'</div>'
+      +skalaLegende(false)
+      +'<div style="margin-top:18px">'+warnung+basis+'</div></div>';
+  }
+  return '<div class="sec">'+titel+
+    '<div class="param-erklaerung">Die Liga-Note <strong>'+p.ln+'</strong> ist ein '
+    +'gewichtetes Mittel dieser Bereiche. Aufgeschlüsselt zeigt sich, worauf '
+    +'sie beruht.</div>'+
+    (detail?'<div class="flag" style="margin-bottom:14px"><div class="fdot neu"></div><span>Für einen '
+      +'Kreis sind es zu wenige Bereiche — die Balken zeigen dieselben Zahlen.</span></div>':'')+
+    balken+'<div style="margin-top:18px">'+warnung+basis+'</div></div>';
+}
+
+function staerkenAbschnitt(p){
+  /* "Percentil 92" sagt den meisten Lesern nichts. Ausgeschrieben heisst
+     es: besser als 92 % der Spieler derselben Position in derselben Liga.
+     Genau das steht jetzt da - samt Einordnung in Worten. */
+  const einstufung=v=>v>=90?'Spitzenwert':v>=70?'über dem Schnitt'
+                   :v>=40?'im Schnitt':v>=20?'unter dem Schnitt':'Schwachpunkt';
+  const titel='<div class="sec-title mit-wahl">Stärkenprofil im Ligavergleich'+darstellungWahl()+'</div>';
+  if(darstellung==='detail')return staerkenDetail(p,titel,einstufung);
+  /* Die Kennzahlen zaehlen je Position unterschiedlich viel (pm.g). Fuer
+     einen Stuermer wiegt "Tore / 90" dreifach, "Disziplin" einfach. Das
+     gehoert sichtbar gemacht, sonst wirkt die Note wie ein schlichter
+     Mittelwert. Mannschaftswerte werden zusaetzlich gekennzeichnet - sie
+     beschreiben das Team, nicht den einzelnen Spieler. */
+  const bars=p.params.map((pm,i)=>{
+    const gew=pm.g||1;
+    const istTeam=!!pm.team;
+    return '<div class="param-row" data-erkl="k:'+i+'" tabindex="0">'
+    +'<div class="param-name">'+pm.n
+    +(istTeam?' <span class="param-team">Team</span>':'')
+    +(gew>1?' <span class="param-gew">×'+gew+'</span>':'')+'</div>'
+    +'<div class="bar-wrap"><div class="bar '+pm.cat+'" style="width:'+pm.p+'%"></div></div>'
+    +'<div class="param-wert"><b>'+pm.p+'%</b> <span>'+einstufung(pm.p)+'</span></div>'
+    +'</div>';}).join('')
+    +'<div class="param-skala"><span>schwächster</span><span>Ligaschnitt</span>'
+    +'<span>bester</span></div>';
+  return '<div class="sec">'+titel+
+    '<div class="param-erklaerung">Jeder Wert sagt, <strong>wie viel Prozent der '+p.pos
+    +' in der '+p.liga+' dieser Spieler übertrifft</strong>. 88 % heißt: nur 12 % sind besser. '
+    +'Die Linie in der Mitte markiert den Ligadurchschnitt. '
+    +'Verglichen wird immer nur innerhalb dieser Liga und Position — '
+    +'nicht mit anderen Ligen. <strong>×2</strong> und <strong>×3</strong> zeigen, '
+    +'wie stark eine Kennzahl in die Note dieser Position eingeht. '
+    +'Mit <strong>Team</strong> markierte Werte beschreiben die Mannschaft, '
+    +'nicht den einzelnen Spieler. Der gestrichelte Ring im Radar ist der '
+    +'Ligaschnitt.</div>'+
+    '<div class="radar-grid"><div class="radar-box">'+radarSVG(p.params,
+       (vergleichId?(PLAYERS.find(x=>x.id===vergleichId)||{}).params:null))+'</div><div>'+bars+'</div></div>'+
+    '<div class="legend"><div class="leg-item"><div class="leg-dot" style="background:var(--lime)"></div>ab 70 % — über dem Schnitt</div><div class="leg-item"><div class="leg-dot" style="background:var(--blue)"></div>40–69 % — im Schnitt</div><div class="leg-item"><div class="leg-dot" style="background:var(--amber)"></div>unter 40 % — Schwachpunkt</div></div></div>';
+}
+
+/* Staerkenprofil detailliert: Polardiagramm statt Radar, daneben die
+   Balken. Ist ein Vergleichsspieler gewaehlt, liegt er im Kreis dahinter -
+   wie im Radar der Uebersicht. */
+function staerkenDetail(p,titel,einstufung){
+  const b=vergleichId?PLAYERS.find(x=>x.id===vergleichId):null;
+  const mitB=!!(b&&b.params&&b.params.length);
+  const nachB={};
+  if(mitB)b.params.forEach(x=>{nachB[x.n]=x.p});
+  const achsen=p.params.map((pm,i)=>({
+    name:pm.n, erkl:'k:'+i, a:{p:pm.p,text:String(pm.p)},
+    b:(mitB&&nachB[pm.n]!==undefined)?{p:nachB[pm.n],text:String(nachB[pm.n])}:null
+  }));
+  const polar=polarSVG(achsen,mitB?'vergleich':'skala','Stärkenprofil von '+p.name);
+  const zeilen=p.params.map((pm,i)=>{
+    const gew=pm.g||1;
+    return dkZeile({name:pm.n+(pm.team?' <span class="param-team">Team</span>':'')
+      +(gew>1?' <span class="param-gew">×'+gew+'</span>':''),
+      roh:einstufung(pm.p),pct:pm.p,erkl:'k:'+i});
+  }).join('');
+  return '<div class="sec">'+titel
+    +'<div class="param-erklaerung">Jeder Wert sagt, <strong>wie viel Prozent der '+p.pos
+    +' in der '+p.liga+' dieser Spieler übertrifft</strong> — dieselben Zahlen wie in der '
+    +'Übersicht. Im Kreis ist jedes Stück ein Parameter: je weiter es hinausreicht, desto '
+    +'besser; der kräftiger gestrichelte Ring ist der Ligaschnitt (50). '
+    +(mitB?'<strong style="color:var(--lime)">'+vglEsc(p.name)+'</strong> und '
+      +'<strong style="color:var(--blue)">'+vglEsc(b.name)+'</strong> liegen übereinander, '
+      +'vorn der kürzere Teil — jeder in seiner eigenen Liga gemessen. ':'')
+    +'Daneben dieselben Werte als Balken. <strong>×2</strong> und <strong>×3</strong> zeigen, '
+    +'wie stark eine Kennzahl in die Note dieser Position eingeht; mit <strong>Team</strong> '
+    +'markierte Werte beschreiben die Mannschaft, nicht den einzelnen Spieler.</div>'
+    +(mitB?spielerLegende(p,b):'')
+    +'<div class="dk-kopf">'
+    +(polar?'<div class="pol-karte">'+polar+'<div class="pol-fuss">Ringe bei 25, 50 und 75</div></div>':'')
+    +'<div class="dk-blk">'+zeilen+dkAchse()+'</div></div>'
+    +skalaLegende(false)+'</div>';
+}
+
 function showProfile(id){
   const p=PLAYERS.find(x=>x.id===id);activePlayer=p;
   const bezug=profilBezug();
@@ -4438,28 +5147,6 @@ function renderProfile(p,hasV,vN){
     ?ringCard('TN','Team-Note',lastTN.tn,'Passung zu '+vN,'var(--blue)')
     :'<div class="nc locked"><div class="nc-lbl">Team-Note <span>TN</span></div><div class="nc-val">–</div><div class="nc-sub">Nur mit Vereinskontext (via Matching oder Kaderanalyse)</div></div>';
   const tnSec=(hasV&&lastTN)?tnSection(lastTN,vN):'';
-  /* "Percentil 92" sagt den meisten Lesern nichts. Ausgeschrieben heisst
-     es: besser als 92 % der Spieler derselben Position in derselben Liga.
-     Genau das steht jetzt da - samt Einordnung in Worten. */
-  const einstufung=v=>v>=90?'Spitzenwert':v>=70?'über dem Schnitt'
-                   :v>=40?'im Schnitt':v>=20?'unter dem Schnitt':'Schwachpunkt';
-  /* Die Kennzahlen zaehlen je Position unterschiedlich viel (pm.g). Fuer
-     einen Stuermer wiegt "Tore / 90" dreifach, "Disziplin" einfach. Das
-     gehoert sichtbar gemacht, sonst wirkt die Note wie ein schlichter
-     Mittelwert. Mannschaftswerte werden zusaetzlich gekennzeichnet - sie
-     beschreiben das Team, nicht den einzelnen Spieler. */
-  const bars=p.params.map((pm,i)=>{
-    const gew=pm.g||1;
-    const istTeam=!!pm.team;
-    return '<div class="param-row" data-erkl="k:'+i+'" tabindex="0">'
-    +'<div class="param-name">'+pm.n
-    +(istTeam?' <span class="param-team">Team</span>':'')
-    +(gew>1?' <span class="param-gew">×'+gew+'</span>':'')+'</div>'
-    +'<div class="bar-wrap"><div class="bar '+pm.cat+'" style="width:'+pm.p+'%"></div></div>'
-    +'<div class="param-wert"><b>'+pm.p+'%</b> <span>'+einstufung(pm.p)+'</span></div>'
-    +'</div>';}).join('')
-    +'<div class="param-skala"><span>schwächster</span><span>Ligaschnitt</span>'
-    +'<span>bester</span></div>';
   document.getElementById('profil-content').innerHTML=rb+
   '<div class="ph"><div class="ph-banner">'+phAvatar(p)+'<div class="ph-id"><div class="ph-name"><a href="'+tmUrl(p)+'" target="_blank" rel="noopener noreferrer" class="tm-link" title="Profil auf transfermarkt.de öffnen">'+p.name+'<i class="ti ti-external-link"></i></a></div><div class="ph-sub"><span class="pos-tag">'+p.pos+'</span> · '+wappenImg(p)+p.club+' · '+p.liga+(p.number?' · #'+p.number:'')+'</div>'+
     /* Note aus einem anderen Verein oder einer anderen Liga: gesagt, nicht
@@ -4549,45 +5236,7 @@ function renderProfile(p,hasV,vN){
         z('Aufbaubeteiligung / 90',zahl(x.aufbau90),'xG der Angriffe mit ihm')+
       '</div></div>';
   })()+
-  (function(){
-    /* Notenaufschluesselung. Eine einzelne Zahl verdeckt, woher sie kommt -
-       und genau das laesst Bewertungen zwischen Vereinen schwanken: bei
-       Abwehrspielern stammt ein grosser Teil aus Mannschaftswerten. */
-    if(!p.teilnoten) return '';
-    const namen=(window.BEREICHE||{});
-    const reihe=Object.keys(p.teilnoten).sort();
-    const balken=reihe.map(function(b){
-      const v=p.teilnoten[b];
-      const istTeam=(b==='defensiv');
-      return '<div class="param-row"><div class="param-name">'+(namen[b]||b)
-        +(istTeam?' <span class="param-team">Team</span>':'')+'</div>'
-        +'<div class="bar-wrap"><div class="bar '+(v>=70?'top':v<40?'low':'mid')
-        +'" style="width:'+v+'%"></div></div>'
-        +'<div class="param-wert"><b>'+v+'</b></div></div>';
-    }).join('');
-    const t=p.anteil_team||0;
-    const warnung=t>=30
-      ? '<div class="flag"><div class="fdot neg"></div><span><strong>'+t
-        +' % der Note stammen aus Mannschaftswerten.</strong> Für diesen '
-        +'Spieler liegen keine individuellen Werte vor — Sofascore führt '
-        +'Spielerstatistik nur bis zur 3. Liga. Ein Spieler einer starken '
-        +'Abwehr profitiert davon, ohne dass sein eigener Beitrag messbar '
-        +'wäre. Zwischen Vereinen schwankt die Note deshalb spürbar.'
-        +'</span></div>'
-      : '<div class="flag"><div class="fdot pos"></div><span>'+(t?t:'0')
-        +' % der Note stammen aus Mannschaftswerten — sie beschreibt also '
-        +'überwiegend den Spieler selbst.</span></div>';
-    const basis=p.basis
-      ? '<div class="flag"><div class="fdot neu"></div><span>Verglichen mit '
-        +'<strong>'+p.basis.gruppe+'</strong> Spielern derselben Position in '
-        +'derselben Liga, auf Grundlage von <strong>'+p.basis.minuten
-        +'</strong> Spielminuten.</span></div>' : '';
-    return '<div class="sec"><div class="sec-title">Woraus die Note entsteht</div>'+
-      '<div class="param-erklaerung">Die Liga-Note <strong>'+p.ln+'</strong> ist ein '
-      +'gewichtetes Mittel dieser Bereiche. Aufgeschlüsselt zeigt sich, worauf '
-      +'sie beruht.</div>'+
-      balken+'<div style="margin-top:18px">'+warnung+basis+'</div></div>';
-  })()+
+  '<div id="noten-block">'+notenAufbauAbschnitt(p)+'</div>'+
   (function(){
     /* Verletzungshistorie - fuer Scouting oft entscheidender als eine
        Kennzahl mehr. Wird nur fuer Spieler ab Note 70 geholt (ein Abruf
@@ -4623,19 +5272,7 @@ function renderProfile(p,hasV,vN){
       aktuell+jahre+arten+
       (liste?'<div style="margin-top:16px">'+liste+'</div>':'')+'</div>';
   })()+
-  '<div class="sec"><div class="sec-title">Stärkenprofil im Ligavergleich</div>'+
-    '<div class="param-erklaerung">Jeder Wert sagt, <strong>wie viel Prozent der '+p.pos
-    +' in der '+p.liga+' dieser Spieler übertrifft</strong>. 88 % heißt: nur 12 % sind besser. '
-    +'Die Linie in der Mitte markiert den Ligadurchschnitt. '
-    +'Verglichen wird immer nur innerhalb dieser Liga und Position — '
-    +'nicht mit anderen Ligen. <strong>×2</strong> und <strong>×3</strong> zeigen, '
-    +'wie stark eine Kennzahl in die Note dieser Position eingeht. '
-    +'Mit <strong>Team</strong> markierte Werte beschreiben die Mannschaft, '
-    +'nicht den einzelnen Spieler. Der gestrichelte Ring im Radar ist der '
-    +'Ligaschnitt.</div>'+
-    '<div class="radar-grid"><div class="radar-box">'+radarSVG(p.params,
-       (vergleichId?(PLAYERS.find(x=>x.id===vergleichId)||{}).params:null))+'</div><div>'+bars+'</div></div>'+
-    '<div class="legend"><div class="leg-item"><div class="leg-dot" style="background:var(--lime)"></div>ab 70 % — über dem Schnitt</div><div class="leg-item"><div class="leg-dot" style="background:var(--blue)"></div>40–69 % — im Schnitt</div><div class="leg-item"><div class="leg-dot" style="background:var(--amber)"></div>unter 40 % — Schwachpunkt</div></div></div>'+
+  '<div id="staerken-block">'+staerkenAbschnitt(p)+'</div>'+
   '<div class="sec"><div class="sec-title">Normabweichungs-Flags</div><div class="flag-list">'+flagsArr.map(f=>'<div class="flag"><div class="fdot '+f.c+'"></div><span>'+f.t+'</span></div>').join('')+'</div></div>'+
   '<div class="sec"><div class="sec-title">Scout-Fazit</div><div class="fazit">'+fazitFuer(p)+'</div></div>'+
   herkunftAbschnitt();
