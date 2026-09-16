@@ -780,6 +780,88 @@ input[type=range]::-webkit-slider-thumb{box-shadow:none}
 .theme-schalter:hover{border-color:var(--lime);color:var(--lime);background:var(--panel-2)}
 .theme-schalter i{font-size:17px}
 
+
+/* ====================================================================
+   SCHMALE BILDSCHIRME — nur Aussehen
+   --------------------------------------------------------------------
+   Auf dem Handy (375 px) war die Spielerakte breiter als der Bildschirm
+   und liess sich seitlich verschieben; im Vereins-Matching und in der
+   Kaderanalyse ebenso, sobald eine Liga gewaehlt war. In den
+   Trefferlisten waren die Notenkaesten rechts abgeschnitten, in der Akte
+   der Stern zum Merken ganz. Zwei Ursachen:
+
+   1. Einspaltige Raster mit "1fr". Das heisst minmax(auto,1fr): die
+      Spalte wird nie schmaler als das breiteste unteilbare Stueck darin -
+      eine Zeile mit festen Breiten, ein langes Wort - und schiebt sich
+      dann ueber den Rand. minmax(0,1fr) haelt sie in der Seitenbreite.
+   2. Zeilen mit festen Breiten fuer breite Bildschirme (Name 210 px,
+      Wert 132 px, Notenkaesten 134 px), die nicht schrumpfen duerfen.
+      Auf dem Handy ordnen sie sich um, statt ueberzustehen.
+
+   Alles steht in Medienabfragen. Ueber 600 px sieht die Seite aus wie
+   bisher - die beiden Rasterregeln greifen dort nur, wenn sonst etwas
+   ueberstuende. Keine Klasse, keine Kennung und kein Skript wird
+   angefasst.
+   ==================================================================== */
+
+@media(max-width:920px){
+  .radar-grid,.vm-grid{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:900px){
+  .mk-grid{grid-template-columns:minmax(0,1fr)}
+}
+
+@media(max-width:600px){
+  /* Profilkopf: Foto und Stern in einer Zeile, Name und Angaben darunter
+     in voller Breite. Nebeneinander passten die drei nicht, und der Stern
+     lag ausserhalb des Kastens, den .ph-banner abschneidet. */
+  .ph-banner{flex-wrap:wrap}
+  .ph-id{order:1;flex-basis:100%;min-width:0}
+  .ph-name{overflow-wrap:anywhere}
+  .stern-halter{margin-left:auto;align-self:center}
+
+  /* Balkenzeilen (Notenaufbau, Staerkenprofil, Verletzungen, Passung):
+     Name und Wert oben, der Balken darunter in voller Breite. Die Skala
+     unter dem Staerkenprofil steht damit genau unter den Balken. */
+  .param-row{flex-wrap:wrap;row-gap:6px}
+  .param-name{flex:1 1 0;min-width:0}
+  .param-wert{width:auto}
+  .param-row .bar-wrap{order:1;flex-basis:100%}
+  .param-skala{margin-left:0;padding-left:0}
+
+  /* Direktvergleich als Tabelle: die Kennzahl oben, darunter beide Werte
+     mit ihren Balken. Das Percentil darf unter den Wert rutschen. */
+  .vgl-row{flex-wrap:wrap;row-gap:4px}
+  .vgl-name{flex-basis:100%}
+  .vgl-wert{flex:1 1 0;min-width:0;width:auto}
+  .vgl-wert i{display:inline-block}
+
+  /* Vereinskacheln einspaltig - Namen wie "Moenchengladbach" lassen sich
+     nicht teilen, zwei Kacheln nebeneinander liefen ueber. */
+  .verein-grid{grid-template-columns:minmax(0,1fr)}
+
+  /* Trefferkarten: die Notenkaesten unter die Angaben statt daneben. */
+  .pcard{grid-template-columns:52px minmax(0,1fr);row-gap:12px}
+  .pcard .scores{grid-column:2}
+}
+
+@media(max-width:480px){
+  /* Kennzahlen: der Name in eigener Zeile, darunter Rohwert, Balken und
+     Percentil rechtsbuendig in festen Spalten - wie auf breiten Schirmen,
+     nur eine Zeile tiefer. */
+  .mk-row{flex-wrap:wrap;row-gap:3px}
+  .mk-name{flex-basis:100%}
+  .mk-roh{width:54px;margin-left:auto}
+
+  /* Gegenprobe-Tabelle: etwas kleiner und enger, lange Kennzahlnamen
+     werden getrennt. Sonst stand sie ueber den Rand ihres Kastens. */
+  .gp-tab{font-size:11px}
+  .gp-tab th,.gp-tab td{padding-right:5px}
+  .gp-tab th:last-child,.gp-tab td:last-child{padding-right:0}
+  .gp-tab th{letter-spacing:0.6px}
+  .gp-tab td:first-child{-webkit-hyphens:auto;hyphens:auto;overflow-wrap:anywhere}
+}
+
 </style>
 <script>
 /* Farbwahl setzen, bevor irgendetwas gezeichnet wird - sonst blitzt beim
