@@ -759,6 +759,41 @@ Eine bekannte Schwäche, bewusst so belassen: Bei Rotation ist „meiste
 Minuten" ein Münzwurf — in Bayerns Offensivmittelfeld liegt Karl
 (1.282 Min.) vor Gnabry (1.228 Min.).
 
+### Aufstellung
+
+Ganz oben in der Kaderanalyse steht diese Startelf auf dem Platz, im 4-2-3-1,
+daneben die **Tiefe je Position** mit Startelf und Ersatz, nach Ligaminuten
+sortiert. Jeder Spieler — auf dem Platz wie in der Liste — öffnet mit Klick
+seine Akte; deren Zurück führt wieder zur Kaderanalyse.
+
+- **Am Spieler:** Foto, Rückennummer, Liga-Note (auf das Niveau der Liga des
+  Vereins umgerechnet, wie überall in der Kaderanalyse), Nachname, Zeichen für
+  Leihe und für einen Vertrag, der in zwölf Monaten oder früher endet.
+- **Der Ring** ist der Rang seiner Position unter den Vereinen der Liga —
+  dieselbe Zahl und dieselben Stufen wie in den Balken darunter (obere
+  Ligahälfte, Mittelfeld, unteres Drittel). Farbe steht nie allein: unter
+  jedem Spieler steht der Rang als Text, etwa „IV · 4./18".
+- **Das Erklärfenster** nennt Position, Note mit Herkunft, Spielzeit, Rang und
+  Vertrag.
+
+**Lücken.** Die Startelf zählt streng je Position — ein Kader mit drei ZM und
+keinem DM hat keinen DM. Gemessen traf das 416 von 629 Vereinen. Für das
+*Bild* rückt deshalb der meistgespielte Ersatz einer verwandten Position nach
+(etwa ZM auf DM), gestrichelt umrandet und als „ZM → DM" beschriftet: 574
+Plätze werden so besetzt. Wo auch das nicht geht — meist bei Vereinen mit zu
+wenigen bewerteten Spielern —, bleibt „unbesetzt" stehen (483 Plätze). Die
+Analyse selbst, also Ränge, Balken und Empfehlungen, rechnet weiter streng je
+Position.
+
+**Geprüft für alle 629 Vereine**, am Desktop und auf Handybreiten von 240 bis
+460 Pixel: keine Überlappung zwischen Spielern, nichts ragt über den Platz.
+Auf dem Handy stehen die Reihen geschlossen, und der Platz ist 120 statt
+105 Meter lang — die höchste nach den Regeln zulässige Länge —, damit fünf
+Reihen mit lesbaren Namen untereinander passen. Die Markierungen sind in
+Metern nach den Spielregeln gezeichnet, Kreise bleiben also rund. Die
+Statusringe halten auf dem Rasen mindestens 3,3:1 Kontrast, die Beschriftung
+4,5:1.
+
 ## Passung direkt in der Spielerakte
 
 Die Passungsanalyse gab es bisher nur in eine Richtung: erst einen Verein

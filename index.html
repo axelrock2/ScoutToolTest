@@ -515,6 +515,93 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 .ld-karte.rot{background:#D7263D}
 .ld-karte.gelbrot{background:linear-gradient(135deg,#F2C200 50%,#D7263D 50%)}
 .ld-kurz{display:none}
+/* ---- Aufstellung in der Kaderanalyse ----------------------------------
+   Links der Platz in echten Massen (68 x 105 m, eigenes Tor unten), rechts
+   die Tiefe je Position. Die rechte Spalte nimmt die Hoehe des Platzes an
+   und scrollt in sich (height:0 + min-height:100%), statt die Zeile zu
+   strecken; auf dem Handy stehen beide untereinander. */
+.au-kopf{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline;margin-bottom:16px;font-size:12.5px;color:var(--ink-2);line-height:1.5}
+.au-kopf strong{color:var(--ink)}
+.au-raster{display:grid;grid-template-columns:minmax(0,460px) minmax(0,1fr);gap:24px;align-items:stretch}
+.au-platz{--au-d:56px;position:relative;width:100%;aspect-ratio:68/105;border-radius:14px;
+  background-color:var(--au-rasen);
+  background-image:repeating-linear-gradient(180deg,var(--au-streifen) 0 7.1428%,transparent 7.1428% 14.2857%)}
+.au-linien{position:absolute;inset:0;width:100%;height:100%}
+.au-linien *{fill:none;stroke:var(--au-linie);stroke-width:1.3}
+.au-linien .au-punkt-l{fill:var(--au-linie);stroke:none}
+.au-formation{position:absolute;right:12px;bottom:10px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1.5px;color:var(--ink-3)}
+.au-wappen{position:absolute;left:12px;bottom:9px;width:22px;height:22px;object-fit:contain;opacity:0.9}
+.au-sp,.au-leer{position:absolute;transform:translate(-50%,calc(var(--au-d) / -2 - 4px));display:flex;flex-direction:column;align-items:center;gap:0;
+  background:none;border:0;padding:4px;margin:0;font:inherit;color:inherit;border-radius:12px;z-index:1}
+.au-sp{cursor:pointer}
+.au-kreis{position:relative;width:var(--au-d);height:var(--au-d);border-radius:50%;display:flex;align-items:center;justify-content:center;
+  background:var(--panel);color:var(--ink-2);font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;
+  box-shadow:0 0 0 2px var(--au-rasen),0 0 0 5px var(--au-ring,var(--line-bright));transition:transform .15s ease}
+.au-kreis img{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;object-fit:cover;object-position:top}
+.au-gut{--au-ring:var(--green)}
+.au-mittel{--au-ring:var(--amber)}
+.au-schwach{--au-ring:var(--red)}
+/* Aufgerueckt von einer verwandten Position: gestrichelt statt Statusfarbe -
+   auf diesem Platz gibt es keinen Rang. */
+.au-ersatz .au-kreis{box-shadow:0 0 0 2px var(--au-rasen);outline:2px dashed var(--ink-3);outline-offset:1px}
+.au-legende .au-ersatz .leg-dot{box-shadow:none;outline:2px dashed var(--ink-3);outline-offset:-2px}
+.au-z-name em.au-als{color:var(--ink-3)}
+.au-nr{position:absolute;left:-9px;top:-5px;min-width:19px;height:17px;padding:0 4px;border-radius:5px;background:var(--panel-2);border:1px solid var(--line-bright);
+  font-size:9.5px;line-height:15px;color:var(--ink-2);text-align:center;z-index:2}
+.au-note{position:absolute;right:-11px;bottom:-5px;min-width:26px;height:19px;padding:0 5px;border-radius:6px;background:var(--panel);border:1px solid var(--line-bright);
+  font-size:11.5px;line-height:17px;color:var(--ink);text-align:center;z-index:2}
+.au-name{margin-top:9px;max-width:112px;padding:2px 8px;border-radius:7px;background:var(--panel);color:var(--ink);font-family:'Archivo',sans-serif;
+  font-size:11.5px;font-weight:700;line-height:1.3;text-align:center;overflow-wrap:anywhere;box-shadow:0 1px 2px rgba(0,0,0,0.12)}
+.au-name i{font-size:11px;margin-left:3px;color:var(--amber);vertical-align:-1px}
+.au-pos{margin-top:3px;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:0.5px;color:var(--ink-2);white-space:nowrap}
+.au-sp:hover .au-kreis,.au-sp:focus-visible .au-kreis{transform:translateY(-2px)}
+.au-sp:focus-visible{outline:2px solid var(--lime);outline-offset:2px}
+.au-leer .au-kreis{background:transparent;box-shadow:none;border:1.5px dashed var(--au-linie);color:var(--ink-3);font-size:11px}
+.au-leer .au-name{background:transparent;box-shadow:none;color:var(--ink-3);font-weight:400}
+.au-legende{margin-top:14px}
+.au-legende .leg-dot{border-radius:50%;background:transparent;box-shadow:inset 0 0 0 3px var(--au-ring)}
+.au-legende i{font-size:12px;color:var(--amber)}
+.au-hinweis{margin-top:12px;font-size:12px;line-height:1.6;color:var(--ink-3)}
+/* Tiefe je Position */
+.au-tiefe{height:0;min-height:100%;overflow-y:auto;border:1px solid var(--line);border-radius:14px;background:var(--pitch-2);padding:6px 0}
+.au-gruppe{padding:10px 14px 8px;border-top:1px solid var(--line)}
+.au-gruppe:first-child{border-top:0}
+.au-g-kopf{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12.5px;color:var(--ink)}
+.au-g-kopf strong{font-weight:700}
+.au-g-kopf .au-rang{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-2);white-space:nowrap}
+.au-g-punkt{width:10px;height:10px;border-radius:50%;flex-shrink:0;box-shadow:inset 0 0 0 3px var(--au-ring,var(--line-bright))}
+.au-zeile{display:grid;grid-template-columns:26px minmax(0,1fr) auto 30px;align-items:center;gap:9px;width:100%;padding:4px 6px;margin:0 -6px;
+  background:none;border:0;border-radius:8px;font:inherit;color:var(--ink-2);text-align:left;cursor:pointer}
+.au-zeile:hover{background:rgba(127,127,127,0.09)}
+.au-zeile:focus-visible{outline:2px solid var(--lime);outline-offset:-2px}
+.au-zeile.au-start{color:var(--ink)}
+.au-zeile.au-start .au-z-name{font-weight:700}
+.au-mini{position:relative;width:26px;height:26px;border-radius:50%;background:var(--panel);display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink-3);overflow:hidden}
+.au-mini img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top}
+.au-z-name{font-size:12.5px;line-height:1.3;overflow-wrap:anywhere}
+.au-z-name em{font-style:normal;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:0.8px;text-transform:uppercase;color:var(--lime);margin-left:6px}
+.au-z-min{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--ink-3);white-space:nowrap;font-variant-numeric:tabular-nums}
+.au-z-note{font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:700;color:var(--ink);text-align:right;font-variant-numeric:tabular-nums}
+.au-z-leer{font-size:12px;color:var(--ink-3);padding:2px 0 4px}
+@media(max-width:900px){
+  .au-raster{grid-template-columns:1fr}
+  .au-platz{max-width:460px;margin:0 auto}
+  .au-tiefe{height:auto;min-height:0;overflow:visible}
+}
+@media(max-width:600px){
+  /* 120 m statt 105 m - dieselbe Laenge nutzt aufstellungHTML fuer die
+     Markierungen (Wert L), sonst waeren die Kreise oval. */
+  .au-platz{--au-d:38px;aspect-ratio:68/120}
+  .au-sp,.au-leer{padding:4px 0}
+  .au-kreis{font-size:10px}
+  .au-name{font-size:9.5px;max-width:60px;padding:1px 4px;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .au-name i{font-size:9px;margin-left:2px}
+  .au-pos{font-size:8px;margin-top:2px;letter-spacing:0}
+  .au-note{font-size:9.5px;min-width:20px;height:15px;line-height:13px;right:-9px;bottom:-4px;padding:0 3px}
+  .au-nr{font-size:8px;min-width:15px;height:14px;line-height:12px;left:-8px;top:-4px;padding:0 3px}
+}
+@media(prefers-reduced-motion:reduce){.au-kreis{transition:none}}
 @media(max-width:700px){
   /* Auch bei 250 px Tabellenbreite passt alles: sieben schmale Spalten,
      die Minuten doppelt so breit (im Browser nachgemessen). */
@@ -615,6 +702,10 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
      Auswertungen der grossen Scouting-Werkzeuge. So dunkel, dass weisse
      Zahlen im Balken den Kontrast halten. */
   --sk-gut:#1C8047; --sk-mittel:#7F7224; --sk-schwach:#B8474F; --sk-neutral:#AEB6B0; --sk-text:#FFFFFF;
+  /* Spielfeld der Aufstellung: Rasen, Maehstreifen, Kreidelinien. Die
+     Statusringe (--green/--amber/--red) halten darauf mindestens 3,3:1,
+     die Beschriftung in --ink-2 4,5:1 (nachgerechnet). */
+  --au-rasen:#DCE6D9; --au-streifen:rgba(30,122,70,0.06); --au-linie:rgba(24,35,29,0.24);
 }
 
 /* Raster: auf hellem Grund nur noch ein Hauch. */
@@ -743,6 +834,7 @@ input[type=range]::-webkit-slider-thumb{box-shadow:none}
   --lime:#C8FA4B; --lime-dim:#9CD130;
   --amber:#F5A623; --red:#FF5B5B; --green:#5BD37A; --blue:#4DA6FF;
   --sk-gut:#43BF6E; --sk-mittel:#B5A64E; --sk-schwach:#D5646A; --sk-neutral:#4A5752; --sk-text:#0A0F0D;
+  --au-rasen:#0C1812; --au-streifen:rgba(200,250,75,0.025); --au-linie:rgba(236,241,238,0.17);
 }
 
 :root[data-theme="dark"] body:before{opacity:0.07}
@@ -1035,6 +1127,7 @@ input[type=range]::-webkit-slider-thumb{box-shadow:none}
   <button class="nav-back" onclick="go('kaderanalyse')"><i class="ti ti-arrow-left"></i> Eingabe</button>
   <div class="kad-wrap">
     <div class="kad-head" id="kad-result-header"></div>
+    <div class="sec"><div class="sec-title">Aufstellung</div><div id="kad-aufstellung"></div></div>
     <div class="sec"><div class="sec-title">Einordnung in der Liga</div><div id="kad-gesamt"></div></div>
     <div class="sec"><div class="sec-title">Position im Vergleich zur Ligakonkurrenz</div><div id="kad-bars"></div><div class="legend"><div class="leg-item"><div class="leg-dot" style="background:var(--green)"></div>obere Ligahälfte</div><div class="leg-item"><div class="leg-dot" style="background:var(--amber)"></div>Mittelfeld</div><div class="leg-item"><div class="leg-dot" style="background:var(--red)"></div>unteres Drittel</div></div></div>
     <div class="sec"><div class="sec-title">Empfohlene Verstärkungen</div><p style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-2);text-transform:uppercase;letter-spacing:1px;margin-bottom:16px">Positionen im unteren Drittel der Liga</p><div id="kad-recs"></div></div>
@@ -1538,6 +1631,8 @@ function renderKadResult(){
       '<div class="empty-panel" style="padding:40px 16px"><i class="ti ti-database-off"></i>'
       +'<p>Für diesen Verein liegen keine bewerteten Spieler vor</p></div>';
     document.getElementById('kad-recs').innerHTML='';
+    document.getElementById('kad-aufstellung').innerHTML=
+      '<div class="au-hinweis">Ohne bewertete Spieler lässt sich keine Aufstellung ableiten.</div>';
     return;
   }
 
@@ -1547,6 +1642,8 @@ function renderKadResult(){
   const mitRang=kaderMitRang(name,lid);
   const rangAnteil=r=>r.rang&&r.vonWievielen>1
     ? Math.round(100*(r.vonWievielen-r.rang)/(r.vonWievielen-1)) : 50;
+
+  document.getElementById('kad-aufstellung').innerHTML=aufstellungHTML(name,lid,mitRang,kader);
 
   document.getElementById('kad-bars').innerHTML=
     '<div class="kad-hint">Grundlage ist die <strong>Startelf</strong>: je '
@@ -1623,6 +1720,240 @@ function renderKadResult(){
           '<span><strong>'+r.pos+'</strong> · Startelf '+elf+' · '+text+'</span></div>';
       }).join(''));
   }
+}
+
+/* ---------- Aufstellung ---------------------------------------------------
+   Die Startelf, auf der die Kaderanalyse ohnehin beruht, auf dem Platz: je
+   Position der Spieler des heutigen Kaders mit den meisten Ligaminuten der
+   Notensaison, in der Innenverteidigung die zwei meistgespielten - elf, wie
+   in einem 4-2-3-1 (siehe startelfJePosition). Aufstellungen fuehrt die
+   freie Quelle nicht; gezeigt ist also, wer auf seiner Position am meisten
+   gespielt hat, nicht, wen ein Trainer aufstellt. So steht es unter dem Platz.
+
+   Der Ring um einen Spieler ist der Rang seiner Position unter den Vereinen
+   der Liga - dieselbe Zahl und dieselben Stufen wie in den Balken darunter,
+   und nie Farbe allein: der Rang steht als Text unter jedem Spieler. Jeder
+   Spieler ist ein Knopf; Klick oder Enter oeffnet die Akte, und deren
+   Zurueck fuehrt wieder hierher. */
+const AUFSTELLUNG_PLAETZE={
+  // Position -> Platz auf dem Feld in Prozent (x von links, y von oben;
+  // eigenes Tor unten). Die Innenverteidigung hat zwei Plaetze.
+  // Nachgerechnet: Spieler, die sich waagrecht ueberdecken koennen, liegen
+  // mindestens eine Figurhoehe (Kreis, Name, Rang) auseinander, und der
+  // Torwart steht bei 87 statt auf der Torlinie, damit der Rand Name und
+  // Rang nicht abschneidet.
+  ST:[[50,11]],
+  LA:[[16,30]], OM:[[50,34]], RA:[[84,30]],
+  DM:[[33,52]], ZM:[[67,52]],
+  LV:[[13,66]], IV:[[37,70],[63,70]], RV:[[87,66]],
+  TW:[[50,87]]
+};
+/* Auf dem Handy (Platz rund 255 px breit) passen vier Verteidiger mit
+   lesbaren Namen nicht versetzt uebereinander. Dort stehen die Reihen
+   geschlossen - Abwehr auf einer Hoehe, dahinter DM/ZM, dann LA/OM/RA -, und
+   der Platz ist 120 statt 105 m lang (nach den Regeln die hoechste
+   zulaessige Laenge), damit fuenf Reihen Figurenhoehe untereinander
+   passen. Nachgemessen ueber alle Vereine: keine Ueberlappung. */
+const AUFSTELLUNG_PLAETZE_ENG={
+  ST:[[50,9]],
+  LA:[[16,28.5]], OM:[[50,28.5]], RA:[[84,28.5]],
+  DM:[[33,48]], ZM:[[67,48]],
+  LV:[[13,67.5]], IV:[[37,67.5],[63,67.5]], RV:[[87,67.5]],
+  TW:[[50,87]]
+};
+let aufstellungDaten={};   // Spieler-ID -> {p, r, start} fuer das Erklaerfenster
+
+function aufstellungStufe(r){
+  if(!r||!r.rang||!(r.vonWievielen>1))return {k:'',t:'ohne Ligavergleich'};
+  const a=Math.round(100*(r.vonWievielen-r.rang)/(r.vonWievielen-1));
+  return a>=60?{k:'au-gut',t:'obere Ligahälfte'}
+        :a>=35?{k:'au-mittel',t:'Mittelfeld der Liga'}
+              :{k:'au-schwach',t:'unteres Drittel'};
+}
+
+/* Kurzname wie auf einer Aufstellungsgrafik: der Nachname, samt
+   vorangestellten Namenszusaetzen ("van der Brempt", "de Jong"). */
+const NAMENSZUSATZ=['van','von','der','den','de','da','di','do','dos','das','du','le','la',
+  'del','della','ter','ten','al','el','ben','bin','mac','mc','st.'];
+function kurzname(name){
+  const w=String(name||'').trim().split(/\s+/);
+  if(w.length<2)return w[0]||'';
+  let i=w.length-1;
+  while(i>1&&NAMENSZUSATZ.indexOf(w[i-1].toLowerCase())>=0)i--;
+  return w.slice(i).join(' ');
+}
+
+function aufstellungProfil(id){
+  profilZurueck='kaderresult';
+  showProfile(id);
+}
+
+function aufstellungHTML(verein,ligaId,mitRang,kader){
+  const liga=(LIGEN.find(l=>l.id===ligaId)||{}).name||'';
+  const jePos={}; mitRang.forEach(r=>{jePos[r.pos]=r});
+  aufstellungDaten={};
+  const zahl=v=>Number(v||0).toLocaleString('de-DE');
+
+  /* ---- Luecken auf dem Platz. Die Startelf zaehlt streng je Position -
+     hat ein Kader drei ZM und keinen DM, bleibt der DM-Platz leer. Gemessen
+     traf das 416 von 629 Vereinen. Fuer das BILD rueckt deshalb der
+     meistgespielte Ersatz einer verwandten Position nach, sichtbar
+     gekennzeichnet (gestrichelter Ring, "ZM → DM"). Die Analyse selbst -
+     Raenge, Balken, Empfehlungen - rechnet weiter streng je Position. */
+  const VERWANDT={IV:['DM','LV','RV'],LV:['RV','IV','LA'],RV:['LV','IV','RA'],DM:['ZM','IV','OM'],
+    ZM:['DM','OM'],OM:['ZM','LA','RA','ST'],LA:['RA','OM','LV','ST'],RA:['LA','OM','RV','ST'],
+    ST:['OM','LA','RA']};
+  const benutzt={}, aufgerueckt={}, alsPos={};
+  mitRang.forEach(r=>r.start.forEach(p=>{benutzt[p.id]=1}));
+  ['IV','DM','ZM','LV','RV','OM','LA','RA','ST'].forEach(function(pos){
+    const soll=AUFSTELLUNG_PLAETZE[pos].length, ist=jePos[pos]?jePos[pos].start.length:0;
+    for(let n=ist;n<soll;n++){
+      let wahl=null;
+      for(const q of VERWANDT[pos]){
+        /* Die Bank ist nach Ligaminuten sortiert - wie die Startelf. */
+        const kand=((jePos[q]||{}).bank||[]).filter(p=>!benutzt[p.id]);
+        if(kand.length){wahl=kand[0];break;}
+      }
+      if(!wahl)break;
+      benutzt[wahl.id]=1; alsPos[wahl.id]=pos;
+      (aufgerueckt[pos]=aufgerueckt[pos]||[]).push(wahl);
+    }
+  });
+
+  /* ---- Platz */
+  const eng=!!(window.matchMedia&&window.matchMedia('(max-width: 600px)').matches);
+  const satz=eng?AUFSTELLUNG_PLAETZE_ENG:AUFSTELLUNG_PLAETZE;
+  const L=eng?120:105;   // Platzlaenge in Metern, passend zur aspect-ratio im CSS
+  let figuren='';
+  Object.keys(satz).forEach(function(pos){
+    const r=jePos[pos], plaetze=satz[pos];
+    const zahlStart=r?r.start.length:0;
+    plaetze.forEach(function(xy,i){
+      const ersatz=i>=zahlStart;
+      const p=ersatz?(aufgerueckt[pos]||[])[i-zahlStart]:r.start[i];
+      if(!p){
+        figuren+='<div class="au-leer" style="left:'+xy[0]+'%;top:'+xy[1]+'%">'
+          +'<span class="au-kreis">'+pos+'</span><span class="au-name">unbesetzt</span></div>';
+        return;
+      }
+      /* Aufgerueckt: kein Rang auf diesem Platz - die Position ist im
+         Kader gar nicht besetzt. Unter ihm steht, woher er kommt. */
+      const st=ersatz?{k:'au-ersatz',t:''}:aufstellungStufe(r);
+      const rang=ersatz?p.pos+' → '+pos:(r.rang?pos+' · '+r.rang+'./'+r.vonWievielen:pos+' · –');
+      const u=bildUrl(p);
+      const m=restmonate(p), leihe=istLeihe(p);
+      const zeichen=(leihe?'<i class="ti ti-arrow-back-up" aria-hidden="true"></i>':'')
+        +(!leihe&&m!==null&&m<=12?'<i class="ti ti-hourglass-low" aria-hidden="true"></i>':'');
+      figuren+='<button type="button" class="au-sp '+st.k+'" style="left:'+xy[0]+'%;top:'+xy[1]+'%" '
+        +'data-erkl="a:'+p.id+'" onclick="aufstellungProfil('+p.id+')" aria-label="'
+        +vglEsc(p.name+', '+(ersatz
+            ?(TM_POS_NAME[p.pos]||p.pos)+', aufgerückt als '+(TM_POS_NAME[pos]||pos)
+            :(TM_POS_NAME[pos]||pos)+', Position auf Platz '+(r.rang?r.rang+' von '+r.vonWievielen:'–')+' der Liga')
+          +', Note '+p.ln+'. Spielerakte öffnen')+'">'
+        +'<span class="au-kreis">'+vglEsc(p.ini||'')
+          +(u?'<img src="'+u+'" alt="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" onerror="this.remove()">':'')
+          +(p.number?'<span class="au-nr">'+p.number+'</span>':'')
+          +'<span class="au-note">'+p.ln+'</span></span>'
+        +'<span class="au-name">'+vglEsc(kurzname(p.name))+zeichen+'</span>'
+        +'<span class="au-pos">'+rang+'</span>'
+        +'</button>';
+    });
+  });
+  const clubId=(kader.find(p=>p.club_id)||{}).club_id;
+  const platz='<div class="au-platz" role="group" aria-label="Aufstellung '+vglEsc(verein)+'">'
+    /* Markierungen in Metern nach den Spielregeln: Strafraum 16,5 m tief
+       und 40,32 m breit, Torraum 5,5 x 18,32 m, Elfmeterpunkt 11 m,
+       Kreise 9,15 m. */
+    +'<svg class="au-linien" viewBox="0 0 68 '+L+'" preserveAspectRatio="none" aria-hidden="true">'
+      +'<rect x="1.5" y="1.5" width="65" height="'+(L-3)+'" vector-effect="non-scaling-stroke"/>'
+      +'<line x1="1.5" y1="'+(L/2)+'" x2="66.5" y2="'+(L/2)+'" vector-effect="non-scaling-stroke"/>'
+      +'<circle cx="34" cy="'+(L/2)+'" r="9.15" vector-effect="non-scaling-stroke"/>'
+      +'<rect x="13.84" y="1.5" width="40.32" height="16.5" vector-effect="non-scaling-stroke"/>'
+      +'<rect x="24.84" y="1.5" width="18.32" height="5.5" vector-effect="non-scaling-stroke"/>'
+      +'<path d="M26.69 18A9.15 9.15 0 0 0 41.31 18" vector-effect="non-scaling-stroke"/>'
+      +'<rect x="13.84" y="'+(L-18)+'" width="40.32" height="16.5" vector-effect="non-scaling-stroke"/>'
+      +'<rect x="24.84" y="'+(L-7)+'" width="18.32" height="5.5" vector-effect="non-scaling-stroke"/>'
+      +'<path d="M26.69 '+(L-18)+'A9.15 9.15 0 0 1 41.31 '+(L-18)+'" vector-effect="non-scaling-stroke"/>'
+      +'<circle class="au-punkt-l" cx="34" cy="'+(L/2)+'" r="0.55"/>'
+      +'<circle class="au-punkt-l" cx="34" cy="12.5" r="0.45"/>'
+      +'<circle class="au-punkt-l" cx="34" cy="'+(L-12.5)+'" r="0.45"/>'
+    +'</svg>'
+    +(clubId?'<img class="au-wappen" src="'+WAPPEN_BASIS+clubId+'.png" alt="" loading="lazy" '
+      +'referrerpolicy="no-referrer-when-downgrade" onerror="this.remove()">':'')
+    +'<span class="au-formation">4-2-3-1</span>'
+    +figuren+'</div>';
+
+  /* ---- Tiefe je Position: dieselben Spieler als Liste, mit Ersatz. Das
+     ist zugleich die Tabellenansicht zum Bild - jeder Wert ist hier ohne
+     Zeigen erreichbar. */
+  const zeile=(p,start)=>{
+    aufstellungDaten[p.id]={p:p,r:jePos[p.pos],start:start,als:alsPos[p.id]||null};
+    const u=bildUrl(p);
+    return '<button type="button" class="au-zeile'+(start?' au-start':'')+'" data-erkl="a:'+p.id+'" '
+      +'onclick="aufstellungProfil('+p.id+')">'
+      +'<span class="au-mini">'+vglEsc(p.ini||'')
+        +(u?'<img src="'+u+'" alt="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" onerror="this.remove()">':'')
+      +'</span>'
+      +'<span class="au-z-name">'+vglEsc(p.name)+(start?'<em>Startelf</em>'
+        :alsPos[p.id]?'<em class="au-als">als '+alsPos[p.id]+'</em>':'')+'</span>'
+      +'<span class="au-z-min">'+zahl(p.minuten)+'\'</span>'
+      +'<span class="au-z-note">'+p.ln+'</span></button>';
+  };
+  const tiefe=POS_REIHENFOLGE.map(function(pos){
+    const r=jePos[pos], st=aufstellungStufe(r);
+    const kopf='<div class="au-g-kopf'+(st.k?' '+st.k:'')+'"><span class="au-g-punkt"></span>'
+      +'<strong>'+(TM_POS_NAME[pos]||pos)+'</strong>'
+      +'<span class="au-rang">'+(r&&r.rang?'Platz '+r.rang+'/'+r.vonWievielen+' · Startelf '+r.note:'—')+'</span></div>';
+    if(!r)return '<div class="au-gruppe">'+kopf+'<div class="au-z-leer">Kein bewerteter Spieler im Kader.</div></div>';
+    return '<div class="au-gruppe">'+kopf
+      +r.start.map(p=>zeile(p,true)).join('')+r.bank.map(p=>zeile(p,false)).join('')+'</div>';
+  }).join('');
+
+  const umgerechnet=kader.some(p=>p.note_liga_id&&p.note_liga_id!==ligaId);
+  return '<div class="au-kopf"><span><strong>Startelf nach Ligaminuten '+vglEsc(dataSaison||'')+'</strong>'
+      +' · heutiger Kader '+vglEsc(dataSaisonAktuell||'')+'</span>'
+      +'<span>Zahl am Spieler: Liga-Note'+(umgerechnet?', auf das Niveau der '+vglEsc(liga)+' umgerechnet':'')+'</span></div>'
+    +'<div class="au-raster">'
+      +'<div>'+platz
+        +'<div class="legend au-legende">'
+          +'<div class="leg-item au-gut"><span class="leg-dot"></span>Position obere Ligahälfte</div>'
+          +'<div class="leg-item au-mittel"><span class="leg-dot"></span>Mittelfeld</div>'
+          +'<div class="leg-item au-schwach"><span class="leg-dot"></span>unteres Drittel</div>'
+          +(Object.keys(alsPos).length?'<div class="leg-item au-ersatz"><span class="leg-dot"></span>aufgerückt von verwandter Position</div>':'')
+          +'<div class="leg-item"><i class="ti ti-hourglass-low"></i>Vertrag ≤ 12 Monate</div>'
+          +'<div class="leg-item"><i class="ti ti-arrow-back-up"></i>Leihspieler</div>'
+        +'</div>'
+        +'<div class="au-hinweis">Aufstellungen führt die freie Quelle nicht. Gezeigt ist je Position, '
+          +'wer aus dem heutigen Kader '+vglEsc(dataSaison||'')+' die meisten Ligaminuten hatte — '
+          +'Neuzugänge mit ihren Minuten beim früheren Verein. <strong>Klick auf einen Spieler</strong> '
+          +'öffnet seine Akte.</div>'
+      +'</div>'
+      +'<div class="au-tiefe" aria-label="Tiefe je Position">'+tiefe+'</div>'
+    +'</div>';
+}
+
+/* Erklaerfenster ueber einem Spieler der Aufstellung (a:) */
+function erklAufstellung(id){
+  const d=aufstellungDaten[id];
+  if(!d)return '';
+  const p=d.p, r=d.r, st=aufstellungStufe(r);
+  const liga=(LIGEN.find(l=>l.id===kadVereinLiga)||{}).name||'';
+  const zahl=v=>Number(v||0).toLocaleString('de-DE');
+  return '<h6>'+vglEsc(p.name)+'</h6><dl>'
+    +erklZeile('Position',vglEsc(TM_POS_NAME[p.pos]||p.pos)+' · '+(d.start?'Startelf'
+      :d.als?'aufgestellt als '+vglEsc(TM_POS_NAME[d.als]||d.als):'Ersatz'))
+    +erklZeile('Note',p.ln+(p.ln_roh!==undefined
+      ?' — umgerechnet auf die '+vglEsc(liga)+', gemessen '+p.ln_roh+(p.note_liga?' in der '+vglEsc(p.note_liga):'')
+      :''))
+    +erklZeile('Spielzeit',zahl(p.minuten)+' Ligaminuten in '+(p.einsaetze||0)+' Einsätzen, '+vglEsc(dataSaison||''))
+    +erklZeile('Rang',r&&r.rang
+      ?'Startelf-Note '+r.note+' auf dieser Position — Platz '+r.rang+' von '+r.vonWievielen+' ('+st.t+')'
+      :'kein Ligavergleich')
+    +erklZeile('Vertrag',vertragText(p))
+    +'</dl><div class="erkl-fuss">'+(d.als
+      ?'Im Kader steht kein '+vglEsc(TM_POS_NAME[d.als]||d.als)+'. Für das Bild rückt der meistgespielte '
+        +'Ersatz einer verwandten Position nach; die Analyse rechnet weiter je Position. '
+      :'')+'Klick öffnet die Spielerakte.</div>';
 }
 
 /* ---------- Vereinskontext ----------------------------------------------
@@ -4603,6 +4934,7 @@ function erklZeigen(el){
     else if(art==='b')html=erklBereich(wert,false);
     else if(art==='u')html=erklBereich(wert,true);
     else if(art==='l')html=erklLeistung(wert);
+    else if(art==='a')html=erklAufstellung(+wert);
   }catch(e){html='';}
   const pop=erklPop();
   if(!html){erklWeg();return;}
@@ -5340,7 +5672,7 @@ function renderProfile(p,hasV,vN){
   const zurueck=profilZurueck||'ergebnisse';
   document.getElementById('profil-bk').onclick=()=>go(zurueck);
   document.getElementById('profil-bk').innerHTML='<i class="ti ti-arrow-left"></i> '
-    +(zurueck==='kader'?'Kader':'Ergebnisse');
+    +(zurueck==='kader'?'Kader':zurueck==='kaderresult'?'Kaderanalyse':'Ergebnisse');
   const rb=hasV?'<div class="report-bar"><div class="report-bar-info"><strong>Bericht generieren</strong>Spielerakte + Passungsanalyse für '+vN+'</div><button class="btn-report" onclick="openModal()"><i class="ti ti-file-text"></i> Bericht</button></div>':'<div class="report-bar"><div class="report-bar-info"><strong>Bericht generieren</strong>Spielerakte mit Stärken, Schwächen und Eigenschaften</div><button class="btn-report" onclick="openModal()"><i class="ti ti-file-text"></i> Bericht</button></div>';
   const flagsArr=flagsFuer(p);
   const tnCard=(hasV&&lastTN)
