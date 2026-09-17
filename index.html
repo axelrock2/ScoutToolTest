@@ -1039,8 +1039,8 @@ input[type=range]::-webkit-slider-thumb{box-shadow:none}
     <p id="modal-desc">Wähle den Umfang des Berichts.</p>
     <div id="modal-ctx"></div>
     <div class="report-options">
-      <div class="ro sel" id="ro-k" onclick="selRep('kompakt')"><h4><span class="ro-check"><i class="ti ti-check"></i></span> Kompakt</h4><p>Eine Seite — Kerninfos, Noten, Top-Flags und Scout-Fazit.</p></div>
-      <div class="ro" id="ro-a" onclick="selRep('ausfuehrlich')"><h4><span class="ro-check"><i class="ti ti-check"></i></span> Ausführlich</h4><p>Zwei bis drei Seiten — alle Parameter, Vergleichswerte und volle Matching-Analyse.</p></div>
+      <div class="ro sel" id="ro-k" onclick="selRep('kompakt')"><h4><span class="ro-check"><i class="ti ti-check"></i></span> Kompakt</h4><p>Eine bis zwei Seiten — Kerninfos, Noten, Leistungsdaten, Rollenprofil in einem Satz, Top-Flags und Scout-Fazit.</p></div>
+      <div class="ro" id="ro-a" onclick="selRep('ausfuehrlich')"><h4><span class="ro-check"><i class="ti ti-check"></i></span> Ausführlich</h4><p>Mehrere Seiten — Leistungsdaten, alle Parameter, Kennzahlenblöcke mit Rohwert und Percentil, Rollenprofil und volle Matching-Analyse.</p></div>
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal()">Abbrechen</button>
@@ -6156,6 +6156,76 @@ function openModal(){
 }
 function closeModal(){document.getElementById('modal').classList.remove('open')}
 function selRep(t){reportType=t;document.getElementById('ro-k').classList.toggle('sel',t==='kompakt');document.getElementById('ro-a').classList.toggle('sel',t==='ausfuehrlich')}
+/* ---------- Bericht: Leistungsdaten, Kennzahlen, Rollenprofil --------------
+   Dieselben Zahlen wie in der Akte, fuer Papier gesetzt: der Bericht ist eine
+   eigenstaendige Datei ohne die Farben und Schriften der Seite. Fehlt eine
+   Grundlage (keine Kennzahlen bis zur 3. Liga, Datei nicht geladen), faellt
+   der Abschnitt mit einem Satz weg, statt leer dazustehen. */
+function berichtLeistung(p){
+  if(!p.ld)return '';
+  const z=v=>Number(v||0).toLocaleString('de-DE');
+  const reihen=[{liga:p.note_liga||p.liga,club:p.note_club||p.club,sp:p.einsaetze,min:p.minuten,ld:p.ld,haupt:true}]
+    .concat((p.auch_in||[]).filter(a=>a.ld).map(a=>({liga:a.liga,club:a.club,sp:a.einsaetze,min:a.minuten,ld:a.ld})));
+  const zeile=(r,name,klasse)=>'<tr'+(klasse?' class="'+klasse+'"':'')+'><td>'+name+'</td><td>'+z(r.sp)+'</td><td>'
+    +(r.ld.ms==null?'–':z(r.ld.ms))+'</td><td>'+z(r.ld.t)+'</td><td>'+z(r.ld.v)+'</td><td>'+z(r.ld.g)+'</td><td>'
+    +z(r.ld.gr)+'</td><td>'+z(r.ld.r)+'</td><td>'+z(r.min)+"'</td></tr>";
+  let rumpf=reihen.map(r=>zeile(r,vglEsc(r.liga)+(reihen.length>1&&r.haupt?' (Grundlage der Note)':'')
+    +'<small>'+vglEsc(r.club)+'</small>')).join('');
+  if(reihen.length>1){
+    const s={sp:0,min:0,ld:{t:0,v:0,g:0,gr:0,r:0}};
+    reihen.forEach(r=>{s.sp+=r.sp||0;s.min+=r.min||0;['t','v','g','gr','r'].forEach(k=>{s.ld[k]+=r.ld[k]||0})});
+    rumpf+=zeile(s,'Gesamt','sum');
+  }
+  return '<h3>Leistungsdaten · Saison '+vglEsc(dataSaison||'')+'</h3>'
+    +'<table class="ldt"><thead><tr><th>Wettbewerb</th><th>Spiele</th><th>Mögliche Spiele</th><th>Tore</th>'
+    +'<th>Vorlagen</th><th>Gelb</th><th>Gelb-Rot</th><th>Rot</th><th>Minuten</th></tr></thead><tbody>'+rumpf+'</tbody></table>'
+    +'<p class="lhinw">Nur Ligaspiele; Mögliche Spiele = Ligaspiele der Mannschaft. Quelle: Transfermarkt.</p>';
+}
+function berichtKennzahlen(p){
+  if(!METRIK||!METRIK.werte)return '';
+  const v=METRIK.werte[p.id];
+  if(!v)return '<h3>Kennzahlen</h3><p style="font-size:9pt;color:#888">Keine Einzelkennzahlen — Sofascore führt '
+    +'Spielerstatistik nur bis zur 3. Liga.</p>';
+  const gruppe=(window.POSGRUPPE||{})[p.pos]||'ZM';
+  const ligaId=p.note_liga_id||p.liga_id, liga=p.note_liga||p.liga;
+  const vert=metrikVerteilung(ligaId,gruppe);
+  const bnamen={}; (METRIK.bereiche||[]).forEach(b=>{bnamen[b.id]=b.name});
+  const jeBereich={}; (METRIK.felder||[]).forEach(f=>{(jeBereich[f.b]||(jeBereich[f.b]=[])).push(f)});
+  const folge=(METRIK.bloecke||{})[gruppe]||(METRIK.bereiche||[]).map(b=>b.id);
+  let gruppe_n=0;
+  const bloecke=folge.map(function(bid){
+    const felder=(jeBereich[bid]||[]).filter(f=>v[f.k]!==undefined);
+    if(!felder.length)return '';
+    return '<div class="kzb"><h4>'+(bnamen[bid]||bid)+'</h4>'+felder.map(function(f){
+      const pct=metrikPercentil(v[f.k],vert[f.k],!!f.hoch);
+      if(vert[f.k])gruppe_n=Math.max(gruppe_n,vert[f.k].length);
+      const farbe=pct===null||f.neutral?'#B8C2CC':pct>=70?'#185FA5':pct<40?'#F0997B':'#9DC0E8';
+      return '<div class="kzr"><div class="kzn">'+f.n+'</div><div class="kzw">'+metrikWertText(f,v[f.k])+'</div>'
+        +'<div class="kzo"><div class="kzi" style="width:'+(pct===null?0:pct)+'%;background:'+farbe+'"></div></div>'
+        +'<div class="kzp">'+(pct===null?'–':pct)+'</div></div>';
+    }).join('')+'</div>';
+  }).join('');
+  return '<h3>Kennzahlen · Saison '+vglEsc(METRIK.saison||dataSaison||'')+'</h3>'
+    +'<p style="font-size:8.5pt;color:#666;margin:0 0 4px">Rohwert und Percentil'
+    +(gruppe_n>=5?' unter '+gruppe_n+' Spielern der Gruppe '+gruppe+' in der '+vglEsc(liga)+' (ab '
+      +(window.MIN_MINUTEN||450)+' Minuten)':'')+'. Grau: Mengenangabe ohne Wertung. Quelle: Sofascore.</p>'+bloecke;
+}
+function berichtRollen(p){
+  const r=rollenFuer(p);
+  if(!r.length)return '';
+  return '<h3>Rollenprofil</h3>'+r.map(x=>'<div class="rol"><b>'+x.name+'</b><span>'+x.beschreibung
+      +(x.dabei<x.gesamt?' · '+x.dabei+' von '+x.gesamt+' Kennzahlen':'')+'</span><i>'+x.wert+' %</i></div>').join('')
+    +'<p style="font-size:8pt;color:#888;margin-top:6px">Gewichteter Mittelwert der Percentile je Rolle. Beschreibt das '
+    +'Zahlenbild, nicht den Einsatz durch den Trainer.</p>';
+}
+function berichtRolleKurz(p){
+  const r=rollenFuer(p);
+  if(!r.length)return '';
+  const t=r[0].traeger.slice(0,3).map(x=>x.n+' ('+x.p+')').join(', ');
+  return '<p style="font-size:10pt;margin:0 0 12px"><b>Rollenprofil:</b> am ehesten '+r[0].name+' ('+r[0].wert
+    +' %)'+(t?', getragen von '+t:'')+'.</p>';
+}
+
 function downloadReport(){
   const p=activePlayer,btn=document.getElementById('btn-dl');
   btn.disabled=true;btn.innerHTML='<i class="ti ti-loader"></i> Erstellt...';
@@ -6166,8 +6236,10 @@ function downloadReport(){
   const datum=new Date().toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
   const _fl=flagsFuer(p);const st=_fl.filter(f=>f.c==='pos').map(f=>f.t),sw=_fl.filter(f=>f.c==='neg').map(f=>f.t),nu=_fl.filter(f=>f.c==='neu').map(f=>f.t);
   const tnRes=lastTN,ms=tnRes?tnRes.tn:null;
-  let h='<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;font-size:11pt;color:#1a1a1a;margin:0}.page{padding:40px 48px;max-width:800px;margin:0 auto}.header{border-bottom:2px solid #185FA5;padding-bottom:16px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-end}.header h1{font-size:18pt;font-weight:700;color:#185FA5;margin:0 0 4px}.header p{font-size:9pt;color:#666;margin:0}.hr{text-align:right;font-size:9pt;color:#666}.logo{font-size:14pt;font-weight:700;color:#185FA5}h2{font-size:12pt;font-weight:700;color:#185FA5;margin:22px 0 10px;padding-bottom:4px;border-bottom:0.5px solid #dde4f0}h3{font-size:11pt;font-weight:700;margin:14px 0 6px}.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}.si{background:#f0f5fb;border-radius:4px;padding:8px 10px}.sl{font-size:8pt;color:#666}.sv{font-size:11pt;font-weight:700}.ng{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}.nb{border:1px solid #dde4f0;border-radius:4px;padding:12px 14px}.nl{font-size:8pt;color:#666}.nv{font-size:22pt;font-weight:700;color:#185FA5}.ns{font-size:8pt;color:#888}.fi{display:flex;gap:8px;margin-bottom:6px;font-size:10pt}.fd{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:3px}.fd.p{background:#3B6D11}.fd.n{background:#A32D2D}.fd.u{background:#888}.fz{background:#e8f2fb;border-left:3px solid #185FA5;padding:12px 14px;font-size:10pt;color:#0C447C;line-height:1.6}.pr{display:flex;align-items:center;gap:10px;margin-bottom:8px}.pn{font-size:9pt;width:180px;flex-shrink:0}.po{flex:1;height:7px;background:#e8eef5;border-radius:4px;overflow:hidden}.pi2{height:100%}.pp{font-size:9pt;color:#666;width:28px;text-align:right}.mb{background:#f7fdf9;border:1px solid #c0ddb0;border-radius:4px;padding:14px 16px}.mt{font-size:10pt;font-weight:700;color:#3B6D11;margin-bottom:6px}.mx{font-size:10pt;line-height:1.6}.cb{display:inline-block;padding:3px 10px;border-radius:12px;font-size:9pt;font-weight:700}.cr{background:#FCEBEB;color:#A32D2D}.cy{background:#FAEEDA;color:#854F0B}.cg{background:#EAF3DE;color:#3B6D11}.cn{background:#EEF1F5;color:#555}.ub{display:inline-block;background:#E1F5EE;color:#0F6E56;padding:2px 8px;border-radius:10px;font-size:9pt;font-weight:700;margin-left:8px}.footer{border-top:0.5px solid #ddd;margin-top:32px;padding-top:10px;font-size:8pt;color:#999;display:flex;justify-content:space-between}@media print{body{print-color-adjust:exact;-webkit-print-color-adjust:exact}}</style></head><body><div class="page"><div class="header"><div><h1>'+p.name+'</h1><p>'+p.pos+' · '+p.club+' · '+p.liga+' · #'+p.number+'</p></div><div class="hr"><div class="logo">ScoutIQ</div><div>Erstellt am '+datum+'</div><div>'+(reportType==='kompakt'?'Kompaktbericht':'Ausführlicher Bericht')+'</div></div></div><h2>Spielereinschätzung</h2><div class="sg"><div class="si"><div class="sl">Alter</div><div class="sv">'+p.age+' J.</div></div><div class="si"><div class="sl">Fuß</div><div class="sv">'+p.foot+'</div></div><div class="si"><div class="sl">Größe</div><div class="sv">'+p.height+'</div></div><div class="si"><div class="sl">Marktwert</div><div class="sv">'+p.mv+' €</div></div></div><div style="margin-bottom:14px">Vertrag: <span class="cb '+(p.contract==='red'?'cr':p.contract==='yellow'?'cy':p.contract==='green'?'cg':'cn')+'">'+ctxt(p.contract)+'</span>'+(function(){const lh=leiheInfo(p);if(!lh)return '';return ' <span style="font-size:9pt;color:#555">· ausgeliehen'+(lh.von?' von '+lh.von:'')+(lh.bis?' bis '+dtm(lh.bis):'')+'; Vertrag beim Stammverein '+(lh.stamm?'bis '+dtm(lh.stamm):'unbekannt')+'</span>';})()+(p.underval?'<span class="ub">Unterbewertet</span>':'')+'</div><div class="ng"><div class="nb"><div class="nl">Liga-Note (LN)</div><div class="nv">'+p.ln+'</div><div class="ns">Percentil vs. alle '+p.pos+'</div></div><div class="nb"><div class="nl">Positions-Note (PN)</div><div class="nv">'+p.pn+'</div><div class="ns">Gewichtete Kernparameter</div></div></div>';
+  let h='<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;font-size:11pt;color:#1a1a1a;margin:0}.page{padding:40px 48px;max-width:800px;margin:0 auto}.header{border-bottom:2px solid #185FA5;padding-bottom:16px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-end}.header h1{font-size:18pt;font-weight:700;color:#185FA5;margin:0 0 4px}.header p{font-size:9pt;color:#666;margin:0}.hr{text-align:right;font-size:9pt;color:#666}.logo{font-size:14pt;font-weight:700;color:#185FA5}h2{font-size:12pt;font-weight:700;color:#185FA5;margin:22px 0 10px;padding-bottom:4px;border-bottom:0.5px solid #dde4f0}h3{font-size:11pt;font-weight:700;margin:14px 0 6px}.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}.si{background:#f0f5fb;border-radius:4px;padding:8px 10px}.sl{font-size:8pt;color:#666}.sv{font-size:11pt;font-weight:700}.ng{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}.nb{border:1px solid #dde4f0;border-radius:4px;padding:12px 14px}.nl{font-size:8pt;color:#666}.nv{font-size:22pt;font-weight:700;color:#185FA5}.ns{font-size:8pt;color:#888}.fi{display:flex;gap:8px;margin-bottom:6px;font-size:10pt}.fd{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:3px}.fd.p{background:#3B6D11}.fd.n{background:#A32D2D}.fd.u{background:#888}.fz{background:#e8f2fb;border-left:3px solid #185FA5;padding:12px 14px;font-size:10pt;color:#0C447C;line-height:1.6}.pr{display:flex;align-items:center;gap:10px;margin-bottom:8px}.pn{font-size:9pt;width:180px;flex-shrink:0}.po{flex:1;height:7px;background:#e8eef5;border-radius:4px;overflow:hidden}.pi2{height:100%}.pp{font-size:9pt;color:#666;width:28px;text-align:right}.mb{background:#f7fdf9;border:1px solid #c0ddb0;border-radius:4px;padding:14px 16px}.mt{font-size:10pt;font-weight:700;color:#3B6D11;margin-bottom:6px}.mx{font-size:10pt;line-height:1.6}.cb{display:inline-block;padding:3px 10px;border-radius:12px;font-size:9pt;font-weight:700}.cr{background:#FCEBEB;color:#A32D2D}.cy{background:#FAEEDA;color:#854F0B}.cg{background:#EAF3DE;color:#3B6D11}.cn{background:#EEF1F5;color:#555}.ub{display:inline-block;background:#E1F5EE;color:#0F6E56;padding:2px 8px;border-radius:10px;font-size:9pt;font-weight:700;margin-left:8px}.footer{border-top:0.5px solid #ddd;margin-top:32px;padding-top:10px;font-size:8pt;color:#999;display:flex;justify-content:space-between}.ldt{width:100%;border-collapse:collapse;font-size:9.5pt;margin:4px 0 12px}.ldt th{font-size:8pt;color:#666;font-weight:normal;text-align:right;padding:4px 6px;border-bottom:1px solid #dde4f0}.ldt td{text-align:right;padding:5px 6px;border-bottom:0.5px solid #eef1f5}.ldt th:first-child,.ldt td:first-child{text-align:left}.ldt td small{display:block;color:#888;font-size:8pt}.ldt tr.sum td{font-weight:700;background:#f5f8fc}.lhinw{font-size:8pt;color:#888;margin:-6px 0 12px}.kzb{break-inside:avoid;margin-bottom:8px}.kzb h4{font-size:9.5pt;margin:12px 0 5px;color:#185FA5}.kzr{display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:9pt}.kzn{width:210px;flex-shrink:0}.kzw{width:64px;text-align:right;color:#333;flex-shrink:0}.kzo{flex:1;height:6px;background:#e8eef5;border-radius:3px;overflow:hidden}.kzi{height:100%}.kzp{width:26px;text-align:right;color:#666;flex-shrink:0}.rol{display:flex;align-items:baseline;gap:8px;margin-bottom:5px;font-size:9.5pt}.rol b{width:210px;flex-shrink:0}.rol span{color:#666;font-size:8.5pt;flex:1}.rol i{font-style:normal;font-weight:700;color:#185FA5;width:40px;text-align:right}@media print{body{print-color-adjust:exact;-webkit-print-color-adjust:exact}}</style></head><body><div class="page"><div class="header"><div><h1>'+p.name+'</h1><p>'+p.pos+' · '+p.club+' · '+p.liga+' · #'+p.number+'</p></div><div class="hr"><div class="logo">ScoutIQ</div><div>Erstellt am '+datum+'</div><div>'+(reportType==='kompakt'?'Kompaktbericht':'Ausführlicher Bericht')+'</div></div></div><h2>Spielereinschätzung</h2><div class="sg"><div class="si"><div class="sl">Alter</div><div class="sv">'+p.age+' J.</div></div><div class="si"><div class="sl">Fuß</div><div class="sv">'+p.foot+'</div></div><div class="si"><div class="sl">Größe</div><div class="sv">'+p.height+'</div></div><div class="si"><div class="sl">Marktwert</div><div class="sv">'+p.mv+' €</div></div></div><div style="margin-bottom:14px">Vertrag: <span class="cb '+(p.contract==='red'?'cr':p.contract==='yellow'?'cy':p.contract==='green'?'cg':'cn')+'">'+ctxt(p.contract)+'</span>'+(function(){const lh=leiheInfo(p);if(!lh)return '';return ' <span style="font-size:9pt;color:#555">· ausgeliehen'+(lh.von?' von '+lh.von:'')+(lh.bis?' bis '+dtm(lh.bis):'')+'; Vertrag beim Stammverein '+(lh.stamm?'bis '+dtm(lh.stamm):'unbekannt')+'</span>';})()+(p.underval?'<span class="ub">Unterbewertet</span>':'')+'</div><div class="ng"><div class="nb"><div class="nl">Liga-Note (LN)</div><div class="nv">'+p.ln+'</div><div class="ns">Percentil vs. alle '+p.pos+'</div></div><div class="nb"><div class="nl">Positions-Note (PN)</div><div class="nv">'+p.pn+'</div><div class="ns">Gewichtete Kernparameter</div></div></div>';
+  h+=berichtLeistung(p)+(reportType==='ausfuehrlich'?'':berichtRolleKurz(p));
   if(reportType==='ausfuehrlich'){h+='<h3>Parameter-Percentile</h3>';p.params.forEach(pm=>{const c=pm.cat==='top'?'#185FA5':pm.cat==='low'?'#F0997B':'#9DC0E8';h+='<div class="pr"><div class="pn">'+pm.n+'</div><div class="po"><div class="pi2" style="width:'+pm.p+'%;background:'+c+'"></div></div><div class="pp">'+pm.p+'</div></div>'})}
+  if(reportType==='ausfuehrlich')h+=berichtKennzahlen(p)+berichtRollen(p);
   h+='<h3>Stärken</h3>';st.forEach(s=>h+='<div class="fi"><div class="fd p"></div><span>'+s+'</span></div>');if(!st.length)h+='<p style="font-size:10pt;color:#888">Keine herausragenden Stärken.</p>';
   h+='<h3>Schwächen</h3>';sw.forEach(s=>h+='<div class="fi"><div class="fd n"></div><span>'+s+'</span></div>');if(!sw.length)h+='<p style="font-size:10pt;color:#888">Keine signifikanten Schwächen.</p>';
   if(reportType==='ausfuehrlich'&&nu.length){h+='<h3>Weitere Charakteristika</h3>';nu.forEach(s=>h+='<div class="fi"><div class="fd u"></div><span>'+s+'</span></div>')}

@@ -1237,6 +1237,23 @@ und außer dem neuen Feld ist `players.json` unverändert — Noten,
 Kennzahlen, Datenstand. Die Datei wächst um 856 KB, komprimiert übertragen
 sind es rund 110 KB mehr.
 
+## Bericht zum Herunterladen
+
+Aus jeder Akte lässt sich ein Bericht als eigenständige HTML-Datei erzeugen,
+für Papier gesetzt. Seit dem 17.09.2026 enthält er auch, was die Akte
+inzwischen zeigt:
+
+| Abschnitt | Kompakt | Ausführlich |
+|---|---|---|
+| Leistungsdaten (wie oben, samt weiterer Mannschaften und Summe) | ja | ja |
+| Rollenprofil | beste Rolle in einem Satz, mit den drei tragenden Kennzahlen | alle Rollen mit Wert |
+| Kennzahlenblöcke mit Rohwert und Percentil | — | ja |
+
+Die Zahlen stammen aus denselben Funktionen wie die Akte, können also nicht
+von ihr abweichen. Fehlt eine Grundlage — für Spieler unterhalb der 3. Liga
+führt Sofascore keine Einzelkennzahlen —, steht dort ein Satz statt eines
+leeren Abschnitts.
+
 ## Verletzungshistorie
 
 Aus Transfermarkt, kostenlos: Art, Zeitraum, Ausfalltage und verpasste
