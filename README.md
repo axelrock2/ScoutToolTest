@@ -161,6 +161,59 @@ Die Trennung ist wichtig: Eine **erhobene** Körpergröße und eine
 **berechnete** Note sind zweierlei — und was gar nicht vorliegt, gehört
 ebenso benannt wie das Vorhandene.
 
+## Spielersuche auf einer Seite
+
+Filter und Treffer stehen seit dem 17.09.2026 auf **einer** Seite: links die
+Filter, rechts die Treffer, die sich bei jeder Änderung sofort neu ordnen —
+ohne „Suche starten" und ohne Seitenwechsel. Vorher lagen Filter und Treffer
+auf zwei Seiten, und die rechte Hälfte der Filterseite blieb leer.
+
+- **Trefferzahl live**, mit einer Zeile, was gerade gefiltert und wie
+  sortiert ist.
+- **Seltene Filter eingeklappt** (Marktwert, Zweikampfquote, Mindestnote,
+  Vertrag, Schalter). Daneben steht, wie viele davon gerade wirken — auch
+  der voreingestellte „Nur belastbare Stichprobe" zählt mit, er wirkt ja.
+- **Karten oder Tabelle.** Die Tabelle zeigt Foto, Name, Position, Verein
+  mit Wappen und Liga, Alter, umgerechnete Note, Liga-Note, Marktwert,
+  Vertragsende und Minuten; die Köpfe mit Sortierung sind anklickbar.
+- **Stückweise geladen**, je 60 Treffer; die nächste Portion kommt, sobald
+  das Listenende in Sicht ist. „Alle Stürmer" waren 1.624 Karten, ganz ohne
+  Filter über 12.000 — alle auf einmal machte die Seite träge.
+- **Zurück aus der Akte** führt an dieselbe Stelle der Liste, samt
+  nachgeladener Portionen — sofern sich an den Filtern nichts geändert hat.
+- **Namenssuche ohne Akzente und Umlaute:** „mueller", „muller" und „Müller"
+  finden dieselben Spieler, „oyarzabal" auch „Oyarzábal".
+
+### Sortiert nach umgerechneter Note
+
+Nach Liga-Note über mehrere Ligen hinweg sortiert stand Pascal Testroet
+(Regionalliga Südwest, 35 Jahre, Note 91) zwischen Haaland und Kane — ein
+Percentil gilt aber nur in seiner Liga. Voreingestellt ist deshalb die
+**umgerechnete Note**: dieselbe Umrechnung wie in der Kaderanalyse, je
+Niveaupunkt Abstand 0,55 Notenpunkte.
+
+- **Bezug** ist die stärkste Liga unter den Treffern — so wird nur nach unten
+  umgerechnet, und bei Treffern aus einer einzigen Liga ändert sich nichts.
+  Ist genau eine Liga gewählt, gilt deren Niveau.
+- **Sortiert** wird ohne Rundung und ohne die Kappung auf 1 bis 99, damit die
+  Reihenfolge stetig bleibt; angezeigt wird der gerundete Wert. Die
+  Reihenfolge hängt nicht vom Bezug ab — jede Note verschiebt sich um
+  denselben Betrag.
+- Die **Liga-Note bleibt sichtbar**, auf der Karte neben der umgerechneten,
+  in der Tabelle als eigene Spalte. Das Fenster über der Zahl rechnet vor,
+  wie sie entsteht.
+
+| Stürmer, alle Ligen | Liga-Note | umgerechnet | Platz vorher | Platz jetzt |
+|---|---|---|---|---|
+| Erling Haaland (Premier League) | 93 | 93 | 2 | 1 |
+| Harry Kane (Bundesliga) | 93 | 85 | 3 | 2 |
+| Pascal Testroet (Regionalliga Südwest) | 91 | 47 | 4 | 204 |
+
+**Geprüft, dass die übrigen Listen unverändert sind:** Vereins-Matching
+(960 und 17.721 Treffer), Kandidaten der Kaderanalyse (770), Vertragsausläufer
+(24 und 4.427) und Merkliste (250) zeigen nach dem Laden aller Portionen
+zeichengleich dieselben Karten wie vorher.
+
 ## Mehrere Ligen auf einmal
 
 Der Liga-Filter ist eine Mehrfachauswahl — in der Spielersuche wie bei den
@@ -175,8 +228,11 @@ Kästchen anzuhaken, nur um nichts einzuschränken.
 
 Eine Einschränkung, die dazugehört: Die *eingeordnete Note* rechnet eine
 Liga-Note auf ein Zielniveau um und braucht dafür **ein** Zielniveau. Bei
-mehreren gewählten Ligen gibt es keins — dann bleibt die Einordnung weg,
-statt sich eine der Ligen willkürlich herauszugreifen.
+mehreren gewählten Ligen gibt es keins — dann bleibt die Einordnung auf der
+Ergebnisseite weg, statt sich eine der Ligen willkürlich herauszugreifen. Die
+Spielersuche sortiert seit dem 17.09.2026 trotzdem vergleichbar: dort gilt die
+stärkste Liga unter den Treffern als Bezug (siehe *Sortiert nach umgerechneter
+Note*).
 
 ## Spielerfotos
 

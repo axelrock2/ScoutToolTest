@@ -515,6 +515,53 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 .ld-karte.rot{background:#D7263D}
 .ld-karte.gelbrot{background:linear-gradient(135deg,#F2C200 50%,#D7263D 50%)}
 .ld-kurz{display:none}
+/* ---- Spielersuche auf einer Seite -------------------------------------
+   Seltene Filter klappen ein; die Zahl daneben sagt, wie viele davon
+   gerade wirken, damit ein eingeklappter Filter nicht unbemerkt bleibt. */
+.mehr-filter{margin:4px 0 14px;border-top:1px solid var(--line);padding-top:12px}
+.mehr-filter summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-2);text-transform:uppercase;letter-spacing:1px;padding:4px 0 10px}
+.mehr-filter summary::-webkit-details-marker{display:none}
+.mehr-filter summary:before{content:'+';display:inline-block;width:12px;color:var(--lime);font-weight:700}
+.mehr-filter[open] summary:before{content:'–'}
+.mehr-filter summary:focus-visible{outline:1px solid var(--lime);outline-offset:3px;border-radius:4px}
+.mehr-zahl{margin-left:auto;color:var(--lime);letter-spacing:0.5px}
+.suche-reset{width:100%;display:flex;align-items:center;justify-content:center;gap:7px;padding:10px;border:1px solid var(--line);border-radius:9px;background:none;
+  font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-2);text-transform:uppercase;letter-spacing:1px;cursor:pointer}
+.suche-reset:hover{border-color:var(--line-bright);color:var(--ink)}
+.suche-treffer{min-width:0}
+.suche-steuer{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.suche-steuer .aw{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+/* Stueckweises Laden: die naechste Portion kommt, sobald das Listenende in
+   Sicht ist; der Knopf bleibt fuer Tastatur und falls der Beobachter fehlt. */
+.mehr-laden{display:flex;justify-content:center;padding:6px 0 18px}
+.mehr-laden button{padding:10px 18px;border:1px solid var(--line);border-radius:9px;background:var(--panel);font-family:'JetBrains Mono',monospace;font-size:11px;
+  color:var(--ink-2);text-transform:uppercase;letter-spacing:1px;cursor:pointer}
+.mehr-laden button:hover{border-color:var(--lime);color:var(--ink)}
+/* Tabellenansicht der Treffer */
+.st-wrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:13px;margin-bottom:12px}
+.st-tab{width:100%;border-collapse:collapse;font-size:12.5px;color:var(--ink)}
+.st-tab th{position:sticky;top:0;background:var(--panel-2);text-align:left;font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:400;color:var(--ink-3);
+  text-transform:uppercase;letter-spacing:1px;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+.st-tab th.zahl,.st-tab td.zahl{text-align:right}
+.st-tab th button{all:unset;cursor:pointer}
+.st-tab th button:hover,.st-tab th.aktiv button{color:var(--ink)}
+.st-tab th button:focus-visible{outline:1px solid var(--lime);outline-offset:2px}
+.st-tab td{padding:8px 12px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:middle}
+.st-tab tbody tr{cursor:pointer}
+.st-tab tbody tr:hover{background:rgba(127,127,127,0.07)}
+.st-tab tbody tr:focus-visible{outline:2px solid var(--lime);outline-offset:-2px}
+.st-tab td.zahl{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums}
+.st-sp{display:flex;align-items:center;gap:9px;min-width:170px}
+.st-sp .au-mini{flex-shrink:0}
+.st-sp b{font-weight:700}
+.st-sp .pos-tag{margin-left:2px}
+.st-verein{display:flex;align-items:center;gap:6px;color:var(--ink-2)}
+.st-verein .ph-wappen{width:15px;height:15px;object-fit:contain}
+.st-verein small{display:block;color:var(--ink-3);font-size:11px}
+.st-note{font-weight:700}
+.st-roh{color:var(--ink-3)}
+@media(max-width:920px){.suche-treffer{margin-top:4px}}
+
 /* ---- Aufstellung in der Kaderanalyse ----------------------------------
    Links der Platz in echten Massen (68 x 105 m, eigenes Tor unten), rechts
    die Tiefe je Position. Die rechte Spalte nimmt die Hoehe des Platzes an
@@ -1051,28 +1098,47 @@ input[type=range]::-webkit-slider-thumb{box-shadow:none}
   </div>
 </div>
 
+<!-- Spielersuche auf EINER Seite: Filter links, Treffer rechts, die sich bei
+     jeder Aenderung sofort neu ordnen. Frueher lagen Filter und Treffer auf
+     zwei Seiten, und die rechte Haelfte der Filterseite blieb leer. Die
+     Feld-IDs sind dieselben wie zuvor - Kaderanalyse und Ergebnisseite
+     lesen sie weiter mit. -->
 <div class="page" id="p-spielersuche">
   <button class="nav-back" onclick="go('home')"><i class="ti ti-arrow-left"></i> Terminal</button>
   <div class="two-col">
-    <div class="filter-panel">
+    <div class="filter-panel" id="suche-filter">
       <div class="panel-title"><span class="idx">//</span> Filter</div>
-      <div class="fg"><label>Name</label><input type="text" id="f-name" placeholder="z.B. Müller"></div>
-      <div class="fg"><label>Position</label><select id="f-pos"><option value="">Alle Positionen</option><option value="TW">TW</option><option value="IV">IV</option><option value="LV,RV">LV / RV</option><option value="DM">DM</option><option value="ZM">ZM</option><option value="OM,LA,RA">OM / Flügel</option><option value="ST">ST</option></select></div>
+      <div class="fg"><label for="f-name">Name</label><input type="search" id="f-name" placeholder="z.B. Müller" autocomplete="off" spellcheck="false"></div>
+      <div class="fg"><label for="f-pos">Position</label><select id="f-pos"><option value="">Alle Positionen</option><option value="TW">TW</option><option value="IV">IV</option><option value="LV,RV">LV / RV</option><option value="DM">DM</option><option value="ZM">ZM</option><option value="OM,LA,RA">OM / Flügel</option><option value="ST">ST</option></select></div>
       <div class="fg"><label>Ligen</label><div class="mehrfach" id="mf-f-liga"><button type="button" class="mehrfach-knopf" onclick="ligaAuswahlUmschalten('f-liga')">Alle Ligen</button></div></div>
-      <div class="fg"><label>Alter</label><div class="age-row"><input type="number" id="f-age-von" placeholder="von"><input type="number" id="f-age-bis" placeholder="bis"></div></div>
-      <div class="fg"><label>Max. Marktwert (Mio. €)</label><input type="number" id="f-mw" step="0.1" placeholder="z.B. 10"></div>
-      <div class="fg"><label title="Nur Spieler mit Zweikampfwerten von Sofascore (bis zur 3. Liga) und mindestens 40 Zweikämpfen - darunter wäre die Quote Zufall.">Min. Zweikampfquote (%)</label><input type="number" id="f-zk" step="1" min="0" max="100" placeholder="z.B. 55"></div>
-      <div class="fg"><label>Mindest-Liga-Note</label><select id="f-ln"><option value="">Keine</option><option value="60">60+</option><option value="65">65+</option><option value="70">70+</option><option value="75">75+</option><option value="80">80+</option></select></div>
-      <div class="fg"><label>Vertragsstatus</label><select id="f-vertrag"><option value="">Alle</option><option value="red">Läuft ab (rot)</option><option value="yellow">Kritisch (gelb)</option><option value="green">Stabil (grün)</option><option value="none">Ohne Angabe</option></select></div>
-      <div class="fg">
-        <div class="tr"><label>Nur Vertragsläufer</label><label class="tog"><input type="checkbox" id="f-auslaufend"><span class="tslider"></span></label></div>
-        <div class="tr"><label>Nur unterbewertete Spieler</label><label class="tog"><input type="checkbox" id="f-underval"><span class="tslider"></span></label></div>
-        <div class="tr"><label title="Blendet Spieler mit sehr wenig Saisonminuten aus">Nur belastbare Stichprobe</label><label class="tog"><input type="checkbox" id="f-belastbar" checked><span class="tslider"></span></label></div>
-        <div class="tr"><label title="Blendet Spieler mit 90+ Ausfalltagen in drei Jahren aus. Betrifft nur Spieler, für die eine Historie vorliegt.">Verletzungsanfällige ausblenden</label><label class="tog"><input type="checkbox" id="f-fit"><span class="tslider"></span></label></div>
-      </div>
-      <button class="btn-primary" onclick="go('ergebnisse','spielersuche')"><i class="ti ti-search"></i> Suche starten</button>
+      <div class="fg"><label for="f-age-von">Alter</label><div class="age-row"><input type="number" id="f-age-von" placeholder="von" aria-label="Alter von"><input type="number" id="f-age-bis" placeholder="bis" aria-label="Alter bis"></div></div>
+      <details class="mehr-filter" id="suche-mehr">
+        <summary>Weitere Filter<span class="mehr-zahl" id="suche-mehr-zahl"></span></summary>
+        <div class="fg"><label for="f-mw">Max. Marktwert (Mio. €)</label><input type="number" id="f-mw" step="0.1" placeholder="z.B. 10"></div>
+        <div class="fg"><label for="f-zk" title="Nur Spieler mit Zweikampfwerten von Sofascore (bis zur 3. Liga) und mindestens 40 Zweikämpfen - darunter wäre die Quote Zufall.">Min. Zweikampfquote (%)</label><input type="number" id="f-zk" step="1" min="0" max="100" placeholder="z.B. 55"></div>
+        <div class="fg"><label for="f-ln">Mindest-Liga-Note</label><select id="f-ln"><option value="">Keine</option><option value="60">60+</option><option value="65">65+</option><option value="70">70+</option><option value="75">75+</option><option value="80">80+</option></select></div>
+        <div class="fg"><label for="f-vertrag">Vertragsstatus</label><select id="f-vertrag"><option value="">Alle</option><option value="red">Läuft ab (rot)</option><option value="yellow">Kritisch (gelb)</option><option value="green">Stabil (grün)</option><option value="none">Ohne Angabe</option></select></div>
+        <div class="fg">
+          <div class="tr"><label for="f-auslaufend">Nur Vertragsläufer</label><label class="tog"><input type="checkbox" id="f-auslaufend"><span class="tslider"></span></label></div>
+          <div class="tr"><label for="f-underval">Nur unterbewertete Spieler</label><label class="tog"><input type="checkbox" id="f-underval"><span class="tslider"></span></label></div>
+          <div class="tr"><label for="f-belastbar" title="Blendet Spieler mit sehr wenig Saisonminuten aus">Nur belastbare Stichprobe</label><label class="tog"><input type="checkbox" id="f-belastbar" checked><span class="tslider"></span></label></div>
+          <div class="tr"><label for="f-fit" title="Blendet Spieler mit 90+ Ausfalltagen in drei Jahren aus. Betrifft nur Spieler, für die eine Historie vorliegt.">Verletzungsanfällige ausblenden</label><label class="tog"><input type="checkbox" id="f-fit"><span class="tslider"></span></label></div>
+        </div>
+      </details>
+      <button type="button" class="suche-reset" onclick="sucheZuruecksetzen()"><i class="ti ti-refresh"></i> Filter zurücksetzen</button>
     </div>
-    <div class="empty-panel"><i class="ti ti-radar-2"></i><p>Filter setzen · Suche starten</p></div>
+    <div class="suche-treffer">
+      <div class="res-header">
+        <div class="res-count" aria-live="polite"><strong id="s-anzahl">–</strong> Treffer<span class="filt" id="s-filt"></span></div>
+        <div class="suche-steuer">
+          <select class="sort-sel" id="s-sort" onchange="sucheZeichnen()" aria-label="Sortierung">
+            <option value="um">Note, umgerechnet ↓</option><option value="ln">Liga-Note ↓</option><option value="pn">Positions-Note ↓</option><option value="age">Alter ↑</option><option value="mv">Marktwert ↓</option><option value="vertrag">Vertragsende ↑</option><option value="zk">Zweikampfquote ↓</option>
+          </select>
+          <span class="aw" role="group" aria-label="Ansicht"><button type="button" class="aw-k an" data-ansicht="karten" aria-pressed="true" onclick="sucheAnsicht('karten')">Karten</button><button type="button" class="aw-k" data-ansicht="tabelle" aria-pressed="false" onclick="sucheAnsicht('tabelle')">Tabelle</button></span>
+        </div>
+      </div>
+      <div id="s-liste"><div class="empty-panel"><i class="ti ti-loader"></i><p>Spieler werden geladen …</p></div></div>
+    </div>
   </div>
 </div>
 
@@ -1160,7 +1226,7 @@ input[type=range]::-webkit-slider-thumb{box-shadow:none}
   <div class="results-wrap">
     <div class="res-header">
       <div class="res-count"><strong id="res-num">47</strong> Treffer<span class="filt" id="res-filt">Liga-Note 65+ · 2. Bundesliga · OM/Flügel</span></div>
-      <select class="sort-sel" id="f-sort" onchange="renderPlayers()"><option value="ln">Sortieren: Liga-Note ↓</option><option value="pn">Positions-Note ↓</option><option value="age">Alter ↑</option><option value="mv">Marktwert ↓</option><option value="vertrag">Vertragsende ↑</option><option value="zk">Zweikampfquote ↓</option></select>
+      <select class="sort-sel" id="f-sort" onchange="renderPlayers()"><option value="ln">Sortieren: Liga-Note ↓</option><option value="um">Note, umgerechnet ↓</option><option value="pn">Positions-Note ↓</option><option value="age">Alter ↑</option><option value="mv">Marktwert ↓</option><option value="vertrag">Vertragsende ↑</option><option value="zk">Zweikampfquote ↓</option></select>
     </div>
     <div id="player-list"></div>
   </div>
@@ -1296,6 +1362,8 @@ async function loadScoutData(){
     /* Falls der Nutzer schon auf einer Datenseite steht: neu zeichnen. */
     const akt=document.querySelector('.page.active');
     if(akt&&akt.id==='page-ergebnisse')renderPlayers();
+    /* Die Spielersuche zeigt Treffer, sobald die Daten da sind. */
+    if(akt&&akt.id==='p-spielersuche')sucheZeichnen();
   }catch(e){
     console.warn('data/players.json nicht geladen — Demo-Daten aktiv:',e);
     showDataStand(null);
@@ -1541,6 +1609,21 @@ function go(page,from){
   if(page==='vereinsmatching'){vmLiga=null;vmVerein=null;renderLigen('vm');resetPanels('vm');}
   if(page==='kaderanalyse'){kadLiga=null;kadVerein=null;renderLigen('kad');resetPanels('kad');}
   if(page==='auslaufer')fuelleAuslaufPanel();
+  /* Spielersuche: gleich die Treffer zeigen. Zurueck aus einer Akte bleibt
+     die Liste stehen, wie sie war - samt nachgeladener Portionen und
+     Scrollstand -, sofern sich an den Filtern nichts geaendert hat. */
+  if(page==='spielersuche'){
+    const liste=document.getElementById('s-liste');
+    const unveraendert=sucheSignatur!==null&&sucheSignatur===sucheZustand()
+      &&liste&&liste.querySelector('.pcard,.st-tab');
+    if(unveraendert)fromPage='spielersuche';
+    else sucheZeichnen();
+    if(sucheRueckScroll!==null){
+      const y=unveraendert?sucheRueckScroll:0;
+      sucheRueckScroll=null;
+      requestAnimationFrame(()=>window.scrollTo({top:y,behavior:'instant'}));
+    }
+  }
   if(page==='ordner')renderOrdnerListe();
   if(page==='kader'&&kaderAnsicht.verein)renderKader();
 }
@@ -2176,10 +2259,26 @@ function leseFilter(){
 
 /* Wendet die Filter auf PLAYERS an. Frueher wurde hier die komplette Liste
    ausgegeben - deshalb zeigte jede Suche dieselben Spieler. */
+/* Namenssuche ohne Ruecksicht auf Akzente und Umlaute: "muller",
+   "mueller" und "Müller" finden denselben Spieler, "Oyarzabal" auch
+   "Oyarzábal". Die Suchform eines Namens wird einmal gebildet und am
+   Spieler gemerkt. */
+function suchForm(text){
+  return String(text||'').toLowerCase()
+    .replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss')
+    .normalize('NFD').replace(/[̀-ͯ]/g,'');
+}
+function nameTrifft(p,frage){
+  if(p._such===undefined){
+    const n=String(p.name||'').toLowerCase();
+    p._such=suchForm(n)+'|'+n.normalize('NFD').replace(/[̀-ͯ]/g,'');
+  }
+  return p._such.includes(frage)||p._such.includes(suchForm(frage));
+}
 function filterPlayers(f){
   const posListe=f.pos?f.pos.split(','):null;
   return PLAYERS.filter(p=>{
-    if(f.name&&!p.name.toLowerCase().includes(f.name))return false;
+    if(f.name&&!nameTrifft(p,f.name))return false;
     if(posListe&&!posListe.includes(p.pos))return false;
     if(f.ligen.length&&!f.ligen.includes(p.liga_id))return false;
     if(!isNaN(f.ageVon)&&p.age<f.ageVon)return false;
@@ -2209,6 +2308,9 @@ function sortPlayers(liste,art){
   if(art==='age')kopie.sort((a,b)=>a.age-b.age||b.ln-a.ln);
   else if(art==='mv')kopie.sort((a,b)=>(b.mv_eur??0)-(a.mv_eur??0));
   else if(art==='pn')kopie.sort((a,b)=>b.pn-a.pn);
+  /* Umgerechnete Note (siehe umgerechnet): die Reihenfolge haengt nicht vom
+     Bezugsniveau ab, also genuegt irgendeines. */
+  else if(art==='um')kopie.sort((a,b)=>umgerechnet(b,100)-umgerechnet(a,100)||b.ln-a.ln);
   /* Vertragsende aufsteigend: das naechste zuerst. Spieler ohne Datum
      ans Ende, sonst stuenden die Unbekannten vor den Auslaeufern. */
   /* Zweikampfquote absteigend; ohne belastbare Quote ans Ende - sonst
@@ -2335,6 +2437,9 @@ function ligaWahlStufe(feld,stufe,an){
 function ligaWahlGeaendert(feld){
   if(feld==='a-liga'&&typeof aktualisiereFensterZahlen==='function')
     aktualisiereFensterZahlen();
+  /* Die Spielersuche zeigt ihre Treffer live - auch die Ligawahl zaehlt. */
+  const seite=document.getElementById('p-spielersuche');
+  if(feld==='f-liga'&&seite&&seite.classList.contains('active'))sucheZeichnen();
 }
 
 /* Ein Auf- und Zuklappen fuer alle Mehrfachfelder. Welcher Zeichner
@@ -2876,8 +2981,57 @@ function eingeordneteNote(p,referenzNiveau){
           diff:diff, eigen:eigen};
 }
 
-function renderPlayers(){
+/* Wohin eine Trefferliste zeichnet. Die Ergebnisseite dient Matching,
+   Auslaeufern, Merkliste und den Kandidaten der Kaderanalyse; die
+   Spielersuche zeichnet in ihre eigene Seite - dieselbe Liste, dieselben
+   Karten, nur ohne Seitenwechsel. */
+const ZIEL_ERGEBNIS={schluessel:'e',liste:'player-list',anzahl:'res-num',filt:'res-filt',sort:'f-sort'};
+const ZIEL_SUCHE={schluessel:'s',liste:'s-liste',anzahl:'s-anzahl',filt:'s-filt',sort:'s-sort',suche:true};
+/* Stueckweise zeichnen: "alle Stuermer" waren 1.624 Karten, ganz ohne
+   Filter rund 8.000 - alle auf einmal machte die Seite traege. */
+const LISTE_PORTION=60;
+const LISTEN={};
+const MEHR_BEOBACHTER={};
+let sucheAnsichtWert='karten';
+
+function spielerNiveau(p){
+  return (typeof p.niveau==='number')?p.niveau:niveauVonLiga(p.liga_id);
+}
+/* Note auf ein gemeinsames Niveau umgerechnet - dieselbe Formel wie
+   eingeordneteNote(): je Niveaupunkt Abstand 0,55 Notenpunkte. Zum
+   Sortieren ohne Schwelle und ohne Kappung, damit die Reihenfolge stetig
+   bleibt; angezeigt wird der gerundete, auf 1 bis 99 begrenzte Wert. Die
+   Reihenfolge haengt nicht vom Bezugsniveau ab - jede Note verschiebt sich
+   um denselben Betrag. */
+function umgerechnet(p,ref){
+  return p.ln-NIVEAU_FAKTOR*(ref-spielerNiveau(p));
+}
+function umgerechnetAnzeige(p,ref){
+  return Math.max(1,Math.min(99,Math.round(umgerechnet(p,ref))));
+}
+function hoechstesNiveau(liste){
+  return liste.reduce((m,e)=>Math.max(m,spielerNiveau(e.p||e)),0);
+}
+function niveauName(n){
+  const ligen=LIGEN.filter(l=>l.niveau===n);
+  if(!ligen.length)return 'Niveau '+n;
+  return 'das Niveau der '+ligen[0].name+(ligen.length>1?' u. a.':'');
+}
+function umTitel(p,ref,um){
+  const eigen=spielerNiveau(p);
+  if(eigen===ref)return 'Liga-Note '+p.ln+' — schon auf dem Bezugsniveau, keine Umrechnung.';
+  return 'Liga-Note '+p.ln+' in der '+(p.note_liga||p.liga)+' (Niveau '+eigen+'), umgerechnet auf '
+    +niveauName(ref)+' (Niveau '+ref+'): '+p.ln+' '+(ref>eigen?'−':'+')+' 0,55 × '+Math.abs(ref-eigen)
+    +' ≈ '+um+'. Eine Schätzung — gemessen ist nur die Liga-Note.';
+}
+
+function renderPlayers(ziel){
+  ziel=ziel||ZIEL_ERGEBNIS;
   const f=leseFilter();
+  /* Jede Liste hat ihre eigene Sortierung - die Spielersuche ihre, die
+     Ergebnisseite die ihre. */
+  const sortFeld=document.getElementById(ziel.sort);
+  if(sortFeld&&sortFeld.value)f.sort=sortFeld.value;
   const verein=aktiverVerein();          // Bezugsverein, falls einer gewaehlt ist
   let treffer=sortPlayers(filterPlayers(f),f.sort);
   let hinweis=filterText(f);
@@ -3012,8 +3166,14 @@ function renderPlayers(){
     hinweis+=' · erreichbar für '+verein.name+grenzText;
   }
 
-  const num=document.getElementById('res-num');
-  if(num)num.textContent=treffer.length;
+  const num=document.getElementById(ziel.anzahl);
+  if(num)num.textContent=ziel.suche?treffer.length.toLocaleString('de-DE'):treffer.length;
+
+  /* Umgerechnete Note: Bezug ist die Liga des Vereins oder die eine
+     gewaehlte Liga - sonst die staerkste Liga unter den Treffern, damit
+     nur nach unten umgerechnet wird. Im Matching zaehlt die Passung. */
+  const umRef=(f.sort==='um'&&fromPage!=='vereinsmatching'&&treffer.length)
+    ?(refNiv!==null?refNiv:hoechstesNiveau(treffer)):null;
 
   /* Spannt das Ergebnis mehrere Spielklassen, sind die Noten nicht direkt
      vergleichbar - Percentile gelten je Liga. Das gehoert dazugesagt,
@@ -3027,12 +3187,18 @@ function renderPlayers(){
   const stufen=new Set(treffer.map(e=>{const q=e.p||e;return q.note_stufe||q.stufe;})
                                .filter(x=>x));
   const mischung=(stufen.size>1&&!verein)
-    ? ' — Achtung: Treffer aus '+stufen.size+' Spielklassen, Noten gelten je Liga'
+    ? (umRef!==null
+        ? ' — Noten aus '+stufen.size+' Spielklassen, umgerechnet auf '+niveauName(umRef)
+        : ' — Achtung: Treffer aus '+stufen.size+' Spielklassen, Noten gelten je Liga')
     : '';
-  const filt=document.getElementById('res-filt');
+  const filt=document.getElementById(ziel.filt);
   if(filt){
     filt.textContent=hinweis+mischung;
-    filt.title=mischung
+    filt.title=mischung&&umRef!==null
+      ? 'Ein Percentil vergleicht immer nur innerhalb derselben Liga. Sortiert wird deshalb nach '
+        +'der Note, umgerechnet auf ein gemeinsames Niveau: je Niveaupunkt Abstand 0,55 Notenpunkte '
+        +'(dieselbe Umrechnung wie in der Kaderanalyse). Eine Schätzung - gemessen ist nur die Liga-Note.'
+      : mischung
       ? 'Ein Percentil vergleicht immer nur innerhalb derselben Liga. '
         +'Für eine Umrechnung auf ein Zielniveau eine Liga wählen oder das '
         +'Vereins-Matching nutzen — dort steht die eingeordnete Note auf der Karte.'
@@ -3040,7 +3206,7 @@ function renderPlayers(){
   }
 
   if(!treffer.length){
-    document.getElementById('player-list').innerHTML=
+    document.getElementById(ziel.liste).innerHTML=
       '<div class="empty-panel"><i class="ti ti-mood-empty"></i>'+
       '<p>Kein Spieler passt zu diesen Filtern</p></div>';
     return;
@@ -3049,10 +3215,34 @@ function renderPlayers(){
      sonst die gefilterte Liga. Ohne Bezugspunkt keine Einordnung - sie
      waere sonst willkuerlich. */
   /* Im Matching-Modus enthaelt treffer Paare {p,tn}, sonst reine Spieler. */
-  const karten=treffer.map(e=>{
+  const ctx={refNiv:refNiv,verein:verein,umRef:umRef,sort:f.sort,
+             auslaufModus:fromPage==='auslaufer',
+             klick:ziel.suche?'sucheProfil':'showProfile'};
+
+  /* In der Auslaeufer-Suche nach Art des Vertragsendes trennen.
+     Ein Leihende ist kein Vertragsende - dort laeuft der Vertrag beim
+     Stammverein weiter -, und mit gezogener Verlaengerungsoption wird
+     niemand frei. Beides in eine Liste zu werfen hiesse, drei verschiedene
+     Sachverhalte als einen auszugeben. Die Abschnitte brauchen alle Karten
+     auf einmal. */
+  if(fromPage==='auslaufer'){
+    const karten=treffer.map(e=>karteHTML(e,ctx));
+    document.getElementById(ziel.liste).innerHTML=auslaufGruppiert(treffer,karten);
+    return;
+  }
+  LISTEN[ziel.schluessel]={treffer:treffer,ctx:ctx,ziel:ziel,gezeigt:0,
+    ansicht:ziel.suche?sucheAnsichtWert:'karten'};
+  listeZeichnen(ziel.schluessel,true);
+}
+
+function karteHTML(e,ctx){
+  const refNiv=ctx.refNiv, verein=ctx.verein;
     const p=e.p||e, tn=e.tn||null;
+    /* Sortiert nach umgerechneter Note: sie steht vorn auf der Karte,
+       die Liga-Note daneben. Die blaue Plakette waere dann doppelt. */
+    const um=(ctx.umRef!==null&&ctx.umRef!==undefined&&!tn)?umgerechnetAnzeige(p,ctx.umRef):null;
     const ein=eingeordneteNote(p,refNiv);
-    const einBadge=ein
+    const einBadge=(ein&&um===null)
       ? '<span class="badge" style="border-color:rgba(77,166,255,0.4);color:var(--blue)" '
         +'title="Note '+p.ln+' gilt innerhalb '+p.liga+' (Niveau '+ein.eigen+'). '
         +'Auf das Niveau der Zielliga umgerechnet ergibt das rund '+ein.wert
@@ -3125,20 +3315,151 @@ function renderPlayers(){
     const note=tn
       ? '<div class="score-cap primary"'+passTitel+'><div class="scl">Passung</div><div class="scv">'+tn.tn+'</div><div class="scbar" style="width:'+tn.tn+'%"></div></div>'
         +'<div class="score-cap"><div class="scl">LN</div><div class="scv">'+p.ln+'</div><div class="scbar" style="width:'+p.ln+'%;background:var(--blue)"></div></div>'
+      : um!==null
+      ? '<div class="score-cap primary" title="'+umTitel(p,ctx.umRef,um)+'"><div class="scl">≈ Note</div><div class="scv">'+um+'</div><div class="scbar" style="width:'+um+'%"></div></div>'
+        +'<div class="score-cap"><div class="scl">LN</div><div class="scv">'+p.ln+'</div><div class="scbar" style="width:'+p.ln+'%;background:var(--blue)"></div></div>'
       : '<div class="score-cap primary"><div class="scl">LN</div><div class="scv">'+p.ln+'</div><div class="scbar" style="width:'+p.ln+'%"></div></div>'
         +'<div class="score-cap"><div class="scl">PN</div><div class="scv">'+p.pn+'</div><div class="scbar" style="width:'+p.pn+'%;background:var(--blue)"></div></div>';
-    return '<div class="pcard" onclick="showProfile('+p.id+')"><div class="av">'+p.ini+trefferBild(p)+(p.number?'<span class="num">'+p.number+'</span>':'')+'</div><div class="pi"><h4><a href="'+tmUrl(p)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Profil auf transfermarkt.de öffnen" class="tm-link">'+p.name+'<i class="ti ti-external-link"></i></a></h4><div class="meta"><span class="pos-tag">'+p.pos+'</span><span>'+wappenImg(p)+p.club+'</span><span>'+p.liga+'</span><span>'+p.age+' J.</span></div><div class="badges">'+cbadge(p.contract)+'<span class="badge b-blue">'+p.mv+' €</span>'+(p.underval?'<span class="badge b-teal"><i class="ti ti-trending-up" style="font-size:10px"></i> Unterbewertet</span>':'')+auslaufBadge(p,fromPage==='auslaufer')+bewBadge+verlBadge+wegBadge+herkunftBadge+einBadge+duenn+luecken+'</div></div><div class="scores">'+note+'</div></div>';
-  });
+    return '<div class="pcard" onclick="'+ctx.klick+'('+p.id+')"><div class="av">'+p.ini+trefferBild(p)+(p.number?'<span class="num">'+p.number+'</span>':'')+'</div><div class="pi"><h4><a href="'+tmUrl(p)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Profil auf transfermarkt.de öffnen" class="tm-link">'+p.name+'<i class="ti ti-external-link"></i></a></h4><div class="meta"><span class="pos-tag">'+p.pos+'</span><span>'+wappenImg(p)+p.club+'</span><span>'+p.liga+'</span><span>'+p.age+' J.</span></div><div class="badges">'+cbadge(p.contract)+'<span class="badge b-blue">'+p.mv+' €</span>'+(p.underval?'<span class="badge b-teal"><i class="ti ti-trending-up" style="font-size:10px"></i> Unterbewertet</span>':'')+auslaufBadge(p,ctx.auslaufModus)+bewBadge+verlBadge+wegBadge+herkunftBadge+einBadge+duenn+luecken+'</div></div><div class="scores">'+note+'</div></div>';
+}
 
-  /* In der Auslaeufer-Suche nach Art des Vertragsendes trennen.
-     Ein Leihende ist kein Vertragsende - dort laeuft der Vertrag beim
-     Stammverein weiter -, und mit gezogener Verlaengerungsoption wird
-     niemand frei. Beides in eine Liste zu werfen hiesse, drei verschiedene
-     Sachverhalte als einen auszugeben. */
-  document.getElementById('player-list').innerHTML=
-    fromPage==='auslaufer'
-      ? auslaufGruppiert(treffer,karten)
-      : karten.join('');
+/* Naechste Portion zeichnen - Karten oder Tabellenzeilen. */
+function listeZeichnen(schluessel,neu){
+  const z=LISTEN[schluessel];
+  const el=z&&document.getElementById(z.ziel.liste);
+  if(!el)return;
+  const bis=Math.min(z.treffer.length,z.gezeigt+LISTE_PORTION);
+  const teil=z.treffer.slice(z.gezeigt,bis);
+  const alt=el.querySelector(':scope > .mehr-laden');
+  if(alt)alt.remove();
+  if(z.ansicht==='tabelle'){
+    const zeilen=teil.map(e=>tabellenZeileHTML(e,z.ctx)).join('');
+    if(neu||!el.querySelector('.st-tab tbody'))
+      el.innerHTML='<div class="st-wrap"><table class="st-tab">'+tabellenKopfHTML(z.ctx)
+        +'<tbody>'+zeilen+'</tbody></table></div>';
+    else el.querySelector('.st-tab tbody').insertAdjacentHTML('beforeend',zeilen);
+  }else{
+    const karten=teil.map(e=>karteHTML(e,z.ctx)).join('');
+    if(neu)el.innerHTML=karten;
+    else el.insertAdjacentHTML('beforeend',karten);
+  }
+  z.gezeigt=bis;
+  if(MEHR_BEOBACHTER[schluessel]){MEHR_BEOBACHTER[schluessel].disconnect();delete MEHR_BEOBACHTER[schluessel];}
+  const rest=z.treffer.length-z.gezeigt;
+  if(rest>0){
+    el.insertAdjacentHTML('beforeend','<div class="mehr-laden"><button type="button" onclick="listeZeichnen(\''
+      +schluessel+'\',false)">Weitere '+Math.min(LISTE_PORTION,rest)+' von '
+      +rest.toLocaleString('de-DE')+' laden</button></div>');
+    /* Die naechste Portion kommt, sobald das Listenende in Sicht ist. */
+    if('IntersectionObserver' in window){
+      const knopf=el.querySelector(':scope > .mehr-laden');
+      const b=new IntersectionObserver(function(eintraege){
+        if(eintraege.some(x=>x.isIntersecting)){b.disconnect();listeZeichnen(schluessel,false);}
+      },{rootMargin:'700px 0px'});
+      b.observe(knopf);
+      MEHR_BEOBACHTER[schluessel]=b;
+    }
+  }
+}
+
+/* ---------- Spielersuche: Steuerung ----------------------------------------
+   Jede Aenderung an einem Filter zeichnet die Treffer neu - kurz verzoegert,
+   damit beim Tippen eines Namens nicht jeder Buchstabe eine Liste baut. */
+let sucheSignatur=null;      // Filterstand der gezeichneten Liste
+let sucheRueckScroll=null;   // Scrollstand beim Oeffnen einer Akte
+
+function sucheZustand(){
+  const s=document.getElementById('s-sort');
+  return JSON.stringify([leseFilter(),s?s.value:'',sucheAnsichtWert]);
+}
+function sucheZeichnen(){
+  if(!PLAYERS||!PLAYERS.length)return;
+  fromPage='spielersuche';
+  renderPlayers(ZIEL_SUCHE);
+  sucheSignatur=sucheZustand();
+  sucheMehrZahl();
+}
+/* Wie viele der eingeklappten Filter wirken gerade? "Nur belastbare
+   Stichprobe" ist voreingestellt und zaehlt mit - er wirkt ja. */
+function sucheMehrZahl(){
+  const el=document.getElementById('suche-mehr-zahl');
+  if(!el)return;
+  const wert=id=>(document.getElementById(id)||{}).value;
+  const an=id=>!!(document.getElementById(id)||{}).checked;
+  const n=['f-mw','f-zk','f-ln','f-vertrag'].filter(id=>wert(id)).length
+    +['f-auslaufend','f-underval','f-belastbar','f-fit'].filter(an).length;
+  el.textContent=n?n+' aktiv':'';
+}
+function sucheProfil(id){
+  sucheRueckScroll=window.scrollY;
+  profilZurueck='spielersuche';
+  showProfile(id);
+}
+function sucheAnsicht(art){
+  if(art===sucheAnsichtWert)return;
+  sucheAnsichtWert=art;
+  document.querySelectorAll('.suche-steuer .aw-k').forEach(function(k){
+    const an=k.getAttribute('data-ansicht')===art;
+    k.classList.toggle('an',an); k.setAttribute('aria-pressed',an);
+  });
+  sucheZeichnen();
+}
+function sucheSortieren(art){
+  const s=document.getElementById('s-sort');
+  if(s)s.value=art;
+  sucheZeichnen();
+}
+function sucheZuruecksetzen(){
+  ['f-name','f-age-von','f-age-bis','f-mw','f-zk','f-ln','f-vertrag','f-pos'].forEach(function(id){
+    const el=document.getElementById(id); if(el)el.value='';
+  });
+  ['f-auslaufend','f-underval','f-fit'].forEach(function(id){
+    const el=document.getElementById(id); if(el)el.checked=false;
+  });
+  const b=document.getElementById('f-belastbar'); if(b)b.checked=true;
+  LIGA_WAHL['f-liga'].clear();
+  zeichneLigaAuswahl('f-liga');
+  const s=document.getElementById('s-sort'); if(s)s.value='um';
+  sucheZeichnen();
+}
+(function(){
+  const panel=document.getElementById('suche-filter');
+  if(!panel)return;
+  let warte=null;
+  const los=function(){clearTimeout(warte);warte=setTimeout(sucheZeichnen,120);};
+  panel.addEventListener('input',los);
+  panel.addEventListener('change',los);
+})();
+
+/* Tabellenansicht der Spielersuche. Die Koepfe mit Sortierung sind Knoepfe. */
+function tabellenKopfHTML(ctx){
+  const th=(text,sort,zahl,pfeil)=>'<th class="'+(zahl?'zahl':'')+(sort&&ctx.sort===sort?' aktiv':'')+'"'
+    +(sort&&ctx.sort===sort?' aria-sort="'+(pfeil==='↑'?'ascending':'descending')+'"':'')+'>'
+    +(sort?'<button type="button" onclick="sucheSortieren(\''+sort+'\')">'+text
+      +(ctx.sort===sort?' '+pfeil:'')+'</button>':text)+'</th>';
+  return '<thead><tr>'+th('Spieler')+th('Verein · Liga')+th('Alter','age',true,'↑')
+    +(ctx.umRef!==null&&ctx.umRef!==undefined?th('≈ Note','um',true,'↓'):'')
+    +th('Liga-Note','ln',true,'↓')+th('Marktwert','mv',true,'↓')
+    +th('Vertrag bis','vertrag',true,'↑')+th('Minuten',null,true)+'</tr></thead>';
+}
+function tabellenZeileHTML(e,ctx){
+  const p=e.p||e;
+  const u=bildUrl(p);
+  const um=(ctx.umRef!==null&&ctx.umRef!==undefined)?umgerechnetAnzeige(p,ctx.umRef):null;
+  const ende=vertragsEnde(p);
+  return '<tr tabindex="0" onclick="'+ctx.klick+'('+p.id+')" onkeydown="if(event.key===\'Enter\')'
+      +ctx.klick+'('+p.id+')">'
+    +'<td><div class="st-sp"><span class="au-mini">'+vglEsc(p.ini||'')
+      +(u?'<img src="'+u+'" alt="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" onerror="this.remove()">':'')
+      +'</span><b>'+vglEsc(p.name)+'</b><span class="pos-tag">'+p.pos+'</span></div></td>'
+    +'<td><div class="st-verein">'+wappenImg(p)+'<span>'+vglEsc(p.club)+'<small>'+vglEsc(p.liga)
+      +'</small></span></div></td>'
+    +'<td class="zahl">'+p.age+'</td>'
+    +(um!==null?'<td class="zahl st-note" title="'+umTitel(p,ctx.umRef,um)+'">'+um+'</td>':'')
+    +'<td class="zahl'+(um===null?' st-note':' st-roh')+'">'+p.ln+'</td>'
+    +'<td class="zahl">'+(p.mv_eur?p.mv+' €':'–')+'</td>'
+    +'<td class="zahl">'+(ende?dtm(ende):'–')+'</td>'
+    +'<td class="zahl">'+Number(p.minuten||0).toLocaleString('de-DE')+'</td></tr>';
 }
 
 const AUSLAUF_GRUPPEN=[
@@ -5672,7 +5993,8 @@ function renderProfile(p,hasV,vN){
   const zurueck=profilZurueck||'ergebnisse';
   document.getElementById('profil-bk').onclick=()=>go(zurueck);
   document.getElementById('profil-bk').innerHTML='<i class="ti ti-arrow-left"></i> '
-    +(zurueck==='kader'?'Kader':zurueck==='kaderresult'?'Kaderanalyse':'Ergebnisse');
+    +(zurueck==='kader'?'Kader':zurueck==='kaderresult'?'Kaderanalyse'
+      :zurueck==='spielersuche'?'Spielersuche':'Ergebnisse');
   const rb=hasV?'<div class="report-bar"><div class="report-bar-info"><strong>Bericht generieren</strong>Spielerakte + Passungsanalyse für '+vN+'</div><button class="btn-report" onclick="openModal()"><i class="ti ti-file-text"></i> Bericht</button></div>':'<div class="report-bar"><div class="report-bar-info"><strong>Bericht generieren</strong>Spielerakte mit Stärken, Schwächen und Eigenschaften</div><button class="btn-report" onclick="openModal()"><i class="ti ti-file-text"></i> Bericht</button></div>';
   const flagsArr=flagsFuer(p);
   const tnCard=(hasV&&lastTN)
