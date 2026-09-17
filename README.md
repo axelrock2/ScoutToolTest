@@ -869,14 +869,16 @@ Kommt der Verein aus dem Suchweg (Vereins-Matching, Kaderanalyse), ist er
 in der Akte **nicht** umzustellen: dort gehört er zur Suche. Die Leiste
 sagt das dann auch.
 
-Das **Stilprofil** (70 % der Team-Note) lässt sich weiterhin nur im
-Vereins-Matching einstellen; die Leiste nennt den aktuellen Stand, damit
-die Zahl nicht überinterpretiert wird.
+Das **Stilprofil** gewichtet den Stil, der seit dem 17.09.2026 45 % der
+Team-Note ausmacht (siehe *Vereins-Matching: Passung aus Kennzahlen*). Wird
+in der Akte ein Verein gewählt, gilt dessen aus der Startelf abgeleiteter
+Stil; im Vereins-Matching eingestellte Werte gelten für denselben Verein. Die
+Leiste nennt Stand und Herkunft, damit die Zahl nicht überinterpretiert wird.
 
 ### Ein Fehler, den das freigelegt hat
 
 `KPOS` trägt die Kaderwerte des Bezugsvereins und wird von
-`bedarfNoteFor()` gelesen — dem Kaderbedarf, 20 % der Team-Note. Gesetzt
+`bedarfNoteFor()` gelesen — dem Kaderbedarf (damals 20 %, heute 15 % der Team-Note). Gesetzt
 wurde es aber **nur** von der Kaderanalyse. Das Vereins-Matching rechnete
 deshalb gegen das eingebaute Demo-Array (mit Positionskürzeln wie `IV L`
 und `ZM R`, die es in den echten Daten gar nicht gibt) oder — nach einem
@@ -885,6 +887,78 @@ gegen den Kader von ETSV Hamburg gehalten.
 
 `setzeKPOS()` setzt die Werte jetzt an jeder Stelle, die sie braucht,
 statt sich auf einen früheren Aufruf zu verlassen.
+
+## Vereins-Matching: Passung aus Kennzahlen (freigegeben am 17.09.2026)
+
+Die Passung unterschied Spieler kaum. Vier der fünf Stil-Dimensionen hatten
+keine Daten — das Modell stammte aus der Zeit vor den Sofascore-Kennzahlen —,
+und neutral bei 50 angesetzte Lücken machen alle gleich. Bei
+Kaiserslautern lagen die ersten fünf Innenverteidiger gleichauf bei 74,
+darunter einer mit 187 Minuten.
+
+**Stil aus Kennzahlen.** Jede Dimension ist ein gewichtetes Mittel aus
+Percentilen (je Liga der Note und Positionsgruppe, wie in den
+Kennzahlenblöcken); jede Kennzahl steht in genau einer Dimension, sonst
+messen zwei Dimensionen dasselbe:
+
+| Dimension | Kennzahlen (Gewicht) |
+|---|---|
+| Pressing | Ballgewinne im Angriffsdrittel / 90 (2), Tacklings / 90 (1) |
+| Ballbesitz | Passquote (2), Ballverluste je 100 Kontakte (1) |
+| Konter | Dribblings gewonnen / 90 (2), lange Bälle angekommen / 90 (1) |
+| Aufbau | Pässe im letzten Drittel / 90 (2), Pässe angekommen / 90 (1) |
+| Standards | Kopfballduelle (1), Kopfbälle gewonnen / 90 (1), Flanken angekommen / 90 (1) |
+
+Gemessen an allen Spielern ab 450 Minuten mit Sofascore-Kennzahlen, bei
+neutralem Stilprofil (Stilanteil der Team-Note):
+
+| Gruppe | verschiedene Werte | Streuung | Datenlücken je Spieler |
+|---|---|---|---|
+| Innenverteidiger | 17 → 69 | 5,4 → 12,3 | 4 → 0 |
+| Außenverteidiger | 20 → 67 | 5,7 → 12,6 | 4 → 0 |
+| Zentrales Mittelfeld | 19 → 65 | 5,7 → 12,4 | 4 → 0 |
+| Offensive | 38 → 70 | 8,6 → 13,2 | 3 → 0 |
+| Stürmer | 39 → 69 | 8,4 → 13,8 | 3 → 0 |
+| Torhüter | 21 → 44 | 5,2 → 9,3 | 4,2 → 2 |
+
+Torhüter haben weiter zwei Lücken: Pressing und Standards führt Sofascore für
+sie nicht.
+
+**Der Stil des Vereins** wird aus seiner Startelf abgeleitet: je Dimension
+das Mittel der Spieler, dann der Rang unter den Vereinen der Liga, in fünf
+gleich große Stufen geteilt (1 am schwächsten, 5 am stärksten ausgeprägt).
+Ein Stil ist also immer relativ zur eigenen Liga. Die Regler im Matching
+sind damit vorbelegt und bleiben verstellbar. Beispiele Bundesliga: Union
+Berlin Ballbesitz 1 und Standards 4, Bayern und Leverkusen Ballbesitz 5.
+Nicht alles überzeugt — Mainz landet beim Pressing auf 1; der Stil aus Zahlen
+ist ein Vorschlag, kein Befund über den Trainer.
+
+**Stil allein genügt nicht.** Reiner Stil ignoriert die Qualität: beim
+Stürmer hing der Stilwert überhaupt nicht mit der Liga-Note zusammen
+(Korrelation 0,01), und für Union Berlin stand ein Stürmer mit Liga-Note 14
+unter den ersten fünf. Freigegeben ist deshalb die Mischung:
+
+| Teil der Team-Note | vorher | jetzt |
+|---|---|---|
+| Stil | 70 % | 45 % |
+| Leistung (Liga-Note) | — | 30 % |
+| Kaderbedarf | 20 % | 15 % |
+| Formation | 10 % | 10 % |
+
+Top 20 der Stürmer für Kaiserslautern mit der Mischung statt reinem Stil:
+Liga-Note im Schnitt 75 statt 50, der schwächste 59 statt 19.
+
+**Nur ab 450 Minuten, nur erreichbar.** Das Matching zeigt nur noch Spieler
+mit belastbarer Spielzeit. Ist kein Budget eingetragen, gilt dieselbe
+Grenze wie bei den Kandidaten der Kaderanalyse: das Anderthalbfache des
+teuersten eigenen Spielers, sofern genug Marktwerte vorliegen. Für Union
+Berlin standen sonst Kane und Haaland oben; mit der Grenze (30 Mio. €) sind
+es Waldschmidt, Krstović und Watkins.
+
+**Ohne Sofascore-Kennzahlen** (Spieler und Vereine unterhalb der 3. Liga)
+rechnet der Stil wie bisher über die Notenparameter, mit Datenlücken, die auf
+der Karte stehen; ein Vereinsstil lässt sich dort nicht ableiten, die Regler
+stehen neutral.
 
 ## Merkliste
 
@@ -1443,10 +1517,11 @@ Innenverteidiger nur über Einsatzanteil und Disziplin. Das ist eine echte
 Grenze des Werkzeugs, keine Ungenauigkeit — und sie wird im Profil
 ausgewiesen statt kaschiert.
 
-Dieselbe Ehrlichkeit gilt beim Vereins-Matching: die Stil-Dimensionen
-*Pressing* und *Aufbau* lassen sich ohne Ereignisdaten nicht seriös
-berechnen und werden als **Datenlücke** ausgewiesen statt mit einer
-erfundenen Zahl gefüllt.
+Dieselbe Ehrlichkeit gilt beim Vereins-Matching: Wo keine Sofascore-Kennzahlen
+vorliegen (unterhalb der 3. Liga), lassen sich *Pressing*, *Aufbau* und
+*Standards* nicht berechnen und werden als **Datenlücke** ausgewiesen statt mit
+einer erfundenen Zahl gefüllt. Bis zur 3. Liga kommen alle fünf
+Stil-Dimensionen seit dem 17.09.2026 aus Kennzahlen.
 
 ### Datenlage im deutschen Unterbau
 

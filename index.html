@@ -1437,9 +1437,34 @@ async function apiGet(path){
   catch(e){console.warn('API nicht erreichbar:',e);return null;}
 }
 
-/* ---------- Team-Note (identische Logik wie compute_grades.py) ---------- */
-const TN_W={stil:0.70,bedarf:0.20,formation:0.10};
-/* Zuordnung Stil-Dimension -> Kennzahl.
+/* ---------- Team-Note ------------------------------------------------------
+   Freigegeben am 17.09.2026 nach gemessener Wirkung (README, "Passung aus
+   Kennzahlen"):
+     45 % Stil       die fuenf Stil-Dimensionen aus Sofascore-Kennzahlen,
+                     gewichtet mit dem Stilprofil des Vereins
+     30 % Leistung   die Liga-Note
+     15 % Kaderbedarf auf der Position
+     10 % Formationseignung
+   Vorher 70 % Stil, 20 % Bedarf, 10 % Formation - bei vier von fuenf
+   Stil-Dimensionen ohne Daten. Innenverteidiger hatten 13 verschiedene
+   Passungswerte fuer 2.464 Spieler. Reiner Stil ohne Leistung haette
+   Stuermer mit Liga-Note 14 unter die ersten fuenf gebracht. */
+const TN_W={stil:0.45,leistung:0.30,bedarf:0.15,formation:0.10};
+/* Stil-Dimension -> Sofascore-Kennzahlen mit Gewicht. Jede Kennzahl steht in
+   genau einer Dimension - sonst messen zwei Dimensionen dasselbe, und
+   gegensaetzliche Stilprofile ergaeben dieselbe Rangfolge. Percentile wie in
+   den Kennzahlenbloecken: je Liga der Note und Positionsgruppe. */
+const STIL_KENNZAHLEN={
+  pressing:[['bg390',2],['tkl90',1]],          // Ballgewinne im Angriffsdrittel, Tacklings
+  ballbesitz:[['pq',2],['bv100',1]],           // Passquote, Ballverluste je 100 Kontakte
+  konter:[['dr90',2],['la90',1]],              // gewonnene Dribblings, lange Baelle
+  aufbau:[['pd90',2],['pa90',1]],              // Paesse im letzten Drittel, angekommene Paesse
+  standards:[['kq',1],['kg90',1],['fa90',1]]   // Kopfballduelle, Kopfbaelle, Flanken
+};
+/* Rueckfall fuer Spieler OHNE Sofascore-Kennzahlen (unterhalb der 3. Liga):
+   so rechnete die Team-Note bis zum 17.09.2026 fuer alle.
+
+   Zuordnung Stil-Dimension -> Kennzahl.
    Die Namen muessen zu den params aus compute_grades.py passen.
 
    Bewusste Luecken: 'pressing' und 'aufbau' lassen sich aus frei
@@ -1492,24 +1517,128 @@ function bedarfNoteFor(pos){
   if(!vals.length)return null;
   return Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
 }
+/* Stil-Dimensionen eines Spielers aus seinen Kennzahl-Percentilen, je 0 bis
+   100. null, wenn fuer ihn keine Sofascore-Kennzahlen vorliegen. */
+let STIL_FELDER=null;
+function stilDimensionen(p){
+  if(!METRIK||!METRIK.werte)return null;
+  const v=METRIK.werte[p.id];
+  if(!v)return null;
+  if(!STIL_FELDER){STIL_FELDER={};(METRIK.felder||[]).forEach(f=>{STIL_FELDER[f.k]=f});}
+  const gruppe=(window.POSGRUPPE||{})[p.pos]||'ZM';
+  const vert=metrikVerteilung(p.note_liga_id||p.liga_id,gruppe);
+  const out={};
+  for(const d in STIL_KENNZAHLEN){
+    let summe=0,gew=0;
+    STIL_KENNZAHLEN[d].forEach(function(paar){
+      const k=paar[0], f=STIL_FELDER[k];
+      if(!f||v[k]===undefined)return;
+      const pct=metrikPercentil(v[k],vert[k],!!f.hoch);
+      if(pct===null)return;
+      summe+=pct*paar[1]; gew+=paar[1];
+    });
+    out[d]=gew?summe/gew:null;
+  }
+  return out;
+}
+
+/* Stil eines Vereins, abgeleitet aus seiner Startelf: je Dimension das Mittel
+   der Spieler (mindestens fuenf mit Wert), dann der Rang unter den Vereinen
+   seiner Liga, in fuenf gleich grosse Stufen geteilt - 1 am wenigsten, 5 am
+   staerksten ausgepraegt. Ein Stil ist also immer relativ zur eigenen Liga.
+   null, wo das nicht geht (Ligen ohne Sofascore-Kennzahlen). */
+const VEREINSSTIL={};
+function vereinsStil(verein,ligaId){
+  if(!METRIK||!METRIK.werte||!verein||!ligaId)return null;
+  if(!VEREINSSTIL[ligaId]){
+    const l=LIGEN.find(x=>x.id===ligaId);
+    const roh={};
+    ((l&&l.vereine)||[]).forEach(function(v){
+      const je=startelfJePosition(kaderEingeordnet(v,ligaId));
+      const dims=Object.values(je).flatMap(x=>x.start).map(stilDimensionen).filter(Boolean);
+      const m={};
+      for(const d in STIL_KENNZAHLEN){
+        const w=dims.map(x=>x[d]).filter(x=>x!==null&&x!==undefined);
+        m[d]=w.length>=5?w.reduce((a,b)=>a+b,0)/w.length:null;
+      }
+      roh[v]=m;
+    });
+    const stile={};
+    for(const v in roh)stile[v]={};
+    for(const d in STIL_KENNZAHLEN){
+      const mit=Object.keys(roh).filter(v=>roh[v][d]!==null).sort((a,b)=>roh[a][d]-roh[b][d]);
+      if(mit.length<5)continue;               // zu wenige Vereine fuer einen Rang
+      mit.forEach((v,i)=>{stile[v][d]=1+Math.floor(5*i/mit.length);});
+    }
+    VEREINSSTIL[ligaId]=stile;
+  }
+  const s=VEREINSSTIL[ligaId][verein];
+  return (s&&Object.keys(s).length===5)?s:null;
+}
+
+/* Zu welchem Verein das eingestellte Stilprofil gehoert, und woher es kommt:
+   'regler' (im Vereins-Matching eingestellt), 'abgeleitet' (aus der Startelf)
+   oder 'neutral'. Oeffnet man eine Akte fuer einen anderen Verein, gilt
+   dessen Stil - nicht der zuletzt fuer irgendeinen Verein eingestellte. */
+let stilVerein=null;
+const STIL_NEUTRAL={pressing:3,ballbesitz:3,konter:3,aufbau:3,standards:3};
+function stilFuer(bezug){
+  if(!bezug)return;
+  const gleich=stilVerein&&stilVerein.name===bezug.name&&stilVerein.liga===bezug.liga;
+  if(gleich&&stilVerein.herkunft!=='neutral')return;
+  const s=vereinsStil(bezug.name,bezug.liga);
+  if(gleich&&!s)return;
+  styleProfile=s?Object.assign({},s):Object.assign({},STIL_NEUTRAL);
+  stilVerein={name:bezug.name,liga:bezug.liga,herkunft:s?'abgeleitet':'neutral'};
+}
+
 function computeTN(p){
-  const map=TN_MAP[tnKey(p.pos)]||TN_MAP.OM;
-  const pct={};p.params.forEach(pm=>pct[pm.n]=pm.p);
   const tot=Object.values(styleProfile).reduce((a,b)=>a+b,0)||1;
+  const kz=stilDimensionen(p);
   let stil=0;const dims={};const gaps=[];
-  for(const d in styleProfile){
-    const vals=(map[d]||[]).map(l=>pctLookup(pct,l)).filter(v=>v!==undefined);
-    let s;
-    if(vals.length){s=vals.reduce((a,b)=>a+b,0)/vals.length;}
-    else{s=50;gaps.push(d);}
-    dims[d]=Math.round(s);
-    stil+=styleProfile[d]/tot*s;
+  if(kz){
+    for(const d in styleProfile){
+      let s=kz[d];
+      if(s===null||s===undefined){s=50;gaps.push(d);}
+      dims[d]=Math.round(s);
+      stil+=styleProfile[d]/tot*s;
+    }
+  }else{
+    const map=TN_MAP[tnKey(p.pos)]||TN_MAP.OM;
+    const pct={};p.params.forEach(pm=>pct[pm.n]=pm.p);
+    for(const d in styleProfile){
+      const vals=(map[d]||[]).map(l=>pctLookup(pct,l)).filter(v=>v!==undefined);
+      let s;
+      if(vals.length){s=vals.reduce((a,b)=>a+b,0)/vals.length;}
+      else{s=50;gaps.push(d);}
+      dims[d]=Math.round(s);
+      stil+=styleProfile[d]/tot*s;
+    }
   }
   const sq=bedarfNoteFor(p.pos);
   const bedarf=sq===null?50:(sq<60?100:sq<70?70:40);
   const ff=(FORM_FIT[chosenFormation]||{})[tnKey(p.pos)]??80;
-  return {tn:Math.round(TN_W.stil*stil+TN_W.bedarf*bedarf+TN_W.formation*ff),
-          stil:Math.round(stil),dims,bedarf,formfit:ff,gaps};
+  return {tn:Math.round(TN_W.stil*stil+TN_W.leistung*p.ln+TN_W.bedarf*bedarf+TN_W.formation*ff),
+          stil:Math.round(stil),leistung:p.ln,dims,bedarf,formfit:ff,gaps,
+          quelle:kz?'kennzahlen':'noten'};
+}
+/* Regler im Vereins-Matching mit dem abgeleiteten Stil vorbelegen. Sie
+   bleiben verstellbar - der Stil aus Zahlen ist ein Vorschlag, kein Befund
+   ueber den Trainer. */
+function stilReglerVorbelegen(verein,ligaId){
+  metrikenLaden().then(function(){
+    if(vmVerein!==verein)return;                 // inzwischen anderer Verein gewaehlt
+    const s=vereinsStil(verein,ligaId);
+    ['pressing','ballbesitz','konter','aufbau','standards'].forEach(function(d,i){
+      const wert=s?s[d]:3, regler=document.getElementById('si'+i), zahl=document.getElementById('sv'+i);
+      if(regler)regler.value=wert;
+      if(zahl)zahl.textContent=wert;
+    });
+    const h=document.getElementById('vm-stil-herkunft');
+    if(h)h.textContent=s
+      ? 'Vorbelegt aus der Startelf: Rang des Vereins in seiner Liga, 1 = am schwächsten, 5 = am stärksten ausgeprägt. Verstellbar.'
+      : 'Für diese Liga lässt sich kein Stil ableiten (keine Sofascore-Kennzahlen) — neutral vorbelegt, bitte selbst einstellen.';
+  });
 }
 function startMatching(){
   styleProfile={
@@ -1519,10 +1648,12 @@ function startMatching(){
     aufbau:+document.getElementById('sv3').textContent,
     standards:+document.getElementById('sv4').textContent
   };
+  stilVerein={name:vmVerein,liga:vmVereinLiga,herkunft:'regler'};
   const f=document.getElementById('vm-formation');
   if(f)chosenFormation=f.value;
   setzeKPOS(vmVerein,vmVereinLiga);
-  go('ergebnisse','vereinsmatching');
+  /* Die Passung braucht die Kennzahlen - erst laden, dann zeichnen. */
+  metrikenLaden().then(function(){go('ergebnisse','vereinsmatching');});
 }
 
 /* ---------- Anzeige-Bausteine (Ringe, Radar, Passungs-Panel) ---------- */
@@ -1574,13 +1705,23 @@ function radarSVG(params,vgl){
   return '<svg viewBox="0 0 260 250" role="img" aria-label="Parameter-Radar">'+g+'</svg>';
 }
 const DIM_NAME={pressing:'Pressing',ballbesitz:'Ballbesitz',konter:'Konter',aufbau:'Aufbau von hinten',standards:'Standardsituationen'};
+function stilHerkunftText(){
+  const h=stilVerein&&stilVerein.herkunft;
+  return h==='regler'?'ist im Vereins-Matching eingestellt'
+    :h==='abgeleitet'?'ist aus der Startelf von '+stilVerein.name.replace(/</g,'&lt;')+' abgeleitet (Rang in der Liga, 1 bis 5)'
+    :'ist neutral — für diese Liga lässt sich kein Stil ableiten';
+}
 function tnSection(tn,vN){
   let rows='';
   for(const d in tn.dims){
     rows+='<div class="param-row"><div class="param-name">'+DIM_NAME[d]+' <span style="color:var(--ink-3)">('+styleProfile[d]+'/5)</span></div><div class="bar-wrap"><div class="bar" style="width:'+tn.dims[d]+'%;background:var(--blue)"></div></div><div class="pct">'+tn.dims[d]+'</div></div>';
   }
   const gaps=tn.gaps&&tn.gaps.length?'<div class="flag" style="margin-top:12px"><div class="fdot neu"></div><span>Datenlücke: '+tn.gaps.map(g=>DIM_NAME[g]).join(', ')+' — mangels Messwerten neutral (50) angesetzt.</span></div>':'';
-  return '<div class="sec"><div class="sec-title">Passungsanalyse · '+vN+'</div><div style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink-2);margin-bottom:16px;text-transform:uppercase;letter-spacing:1px">Team-Note '+tn.tn+' = Stil '+tn.stil+' (70%) · Kaderbedarf '+tn.bedarf+' (20%) · Formation '+tn.formfit+' (10%)</div>'+rows+gaps+'</div>';
+  return '<div class="sec"><div class="sec-title">Passungsanalyse · '+vN+'</div><div style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink-2);margin-bottom:16px;text-transform:uppercase;letter-spacing:1px">Team-Note '+tn.tn+' = Stil '+tn.stil+' (45 %) · Leistung '+tn.leistung+' (30 %) · Kaderbedarf '+tn.bedarf+' (15 %) · Formation '+tn.formfit+' (10 %)</div>'
+    +'<div class="param-erklaerung" style="margin-top:-6px">'+(tn.quelle==='kennzahlen'
+      ?'Stil aus Sofascore-Kennzahlen (Percentile in seiner Liga und Position); '
+      :'Stil aus den Notenparametern — für ihn liegen keine Sofascore-Kennzahlen vor; ')
+    +'Leistung ist die Liga-Note. Das Stilprofil in Klammern '+stilHerkunftText()+'.</div>'+rows+gaps+'</div>';
 }
 function contractColorFromDate(d){
   if(!d)return 'none';
@@ -1605,7 +1746,7 @@ function go(page,from){
   const lbl={home:'TERMINAL // START',spielersuche:'SPIELERSUCHE',vereinsmatching:'VEREINS-MATCHING',kaderanalyse:'KADERANALYSE',kaderresult:'KADER // REPORT',ergebnisse:'TREFFER',profil:'SPIELERAKTE',auslaufer:'VERTRAGSAUSLÄUFER',ordner:'MERKLISTE',kader:'KADER'};
   document.getElementById('bc').innerHTML='<span class="dot"></span> '+(lbl[page]||page);
   if(page==='ergebnisse'){document.getElementById('ergebnis-bk').onclick=()=>go(fromPage);renderPlayers();}
-  if(page==='kaderresult')renderKadResult();
+  if(page==='kaderresult'){renderKadResult();metrikenLaden();}
   if(page==='vereinsmatching'){vmLiga=null;vmVerein=null;renderLigen('vm');resetPanels('vm');}
   if(page==='kaderanalyse'){kadLiga=null;kadVerein=null;renderLigen('kad');resetPanels('kad');}
   if(page==='auslaufer')fuelleAuslaufPanel();
@@ -1667,10 +1808,11 @@ function pickVerein(px,name,lid){
       '<option value="tiefer">Auch deutlich tiefere Ligen</option>'+
       '<option value="alle">Alle Ligen</option>'+
       '</select></div>'+
-    '<div class="fg"><label>Spielstil-Profil</label><div style="margin-top:8px">'+['Pressing','Ballbesitz','Konter','Aufbau hinten','Standards'].map((s,i)=>'<div class="slider-row"><div class="srl"><span>'+s+'</span><span class="srv" id="sv'+i+'">3</span></div><input type="range" min="1" max="5" value="3" oninput="document.getElementById(\'sv'+i+'\').textContent=this.value"></div>').join('')+'</div></div>'+
+    '<div class="fg"><label>Spielstil-Profil</label><div style="margin-top:8px">'+['Pressing','Ballbesitz','Konter','Aufbau hinten','Standards'].map((s,i)=>'<div class="slider-row"><div class="srl"><span>'+s+'</span><span class="srv" id="sv'+i+'">3</span></div><input type="range" min="1" max="5" value="3" id="si'+i+'" aria-label="'+s+'" oninput="document.getElementById(\'sv'+i+'\').textContent=this.value"></div>').join('')+'<div class="pf-hinweis" id="vm-stil-herkunft" style="margin-top:4px">Stil wird aus der Startelf abgeleitet …</div></div></div>'+
     '<div class="fg"><label>Max. Alter</label><input type="number" id="vm-alter" placeholder="z.B. 27"></div>'+
     '<div class="fg"><label>Max. Marktwert (Mio. €)</label><input type="number" id="vm-budget" step="0.1" placeholder="ohne Grenze"></div>'+
     '<button class="btn-primary" onclick="startMatching()"><i class="ti ti-arrows-shuffle"></i> Matching starten</button>';
+    stilReglerVorbelegen(name,lid);
   }else{
     document.getElementById('kad-opt-panel').innerHTML='<div class="panel-title"><span class="idx">03</span> Analyse</div>'+
     '<div class="sel-info"><div class="sl">Ausgewählt</div><div class="sn">'+name+'</div><div class="sm">'+l.name+' · '+l.land+'</div></div>'+
@@ -3080,6 +3222,20 @@ function renderPlayers(ziel){
     const budget=parseFloat((document.getElementById('vm-budget')||{}).value);
     if(!isNaN(budget))
       treffer=treffer.filter(p=>!p.mv_eur||p.mv_eur<=budget*1e6);
+    /* Ohne eingetragenes Budget dieselbe Grenze wie bei den Kandidaten der
+       Kaderanalyse: das Anderthalbfache des teuersten eigenen Spielers - nur
+       wenn genug Marktwerte vorliegen (in den Oberligen fehlen sie). Gemessen:
+       fuer Union Berlin standen sonst Kane und Haaland oben. Freigegeben am
+       17.09.2026. */
+    let autoGrenze=null;
+    if(isNaN(budget)&&vmVerein){
+      const kaderV=kaderHeute(vmVerein), eigene=kaderV.filter(x=>x.mv_eur).map(x=>x.mv_eur);
+      if(eigene.length>=Math.max(3,kaderV.length/3))autoGrenze=Math.max(...eigene)*1.5;
+      if(autoGrenze)treffer=treffer.filter(p=>!p.mv_eur||p.mv_eur<=autoGrenze);
+    }
+    /* Nur Spieler ab der Mindestspielzeit: ihre Percentile beruhen sonst auf
+       einer duennen Stichprobe. Vorher standen Spieler mit 187 Minuten oben. */
+    treffer=treffer.filter(p=>p.belastbar!==false);
     /* Passung um das Liganiveau bereinigen. Ohne das schlaegt ein
        Regionalliga-Torjaeger einen soliden Bundesligaspieler, weil beide
        Percentile aus ihrer eigenen Liga stammen und die Rangfolge sie
@@ -3100,7 +3256,11 @@ function renderPlayers(ziel){
     hinweis='Passung zu '+(vmVerein||'Profil')+' · '+chosenFormation
       +(wunsch?' · '+wunsch:'')
       +(!isNaN(alterMax)?' · bis '+alterMax+' J.':'')
-      +(!isNaN(budget)?' · max. '+budget+' Mio. €':'')
+      +(!isNaN(budget)?' · max. '+budget+' Mio. €'
+        :autoGrenze?' · erreichbar bis '+(autoGrenze>=1e6
+          ?(autoGrenze/1e6).toFixed(1).replace('.',',')+' Mio. €'
+          :Math.round(autoGrenze/1000)+' Tsd. €'):'')
+      +' · ab '+(window.MIN_MINUTEN||450)+' Min.'
       +(stil.length?' · Schwerpunkt '+stil.join('/'):'')
       +' · '+radText;
   }
@@ -3260,8 +3420,10 @@ function karteHTML(e,ctx){
           +bew.schnitt+' auf '+bew.neu+'.':'')+'">'+bew.rolle
         +(bew.delta>0?' (+'+bew.delta+')':'')+'</span>' : '';
     const luecken=tn&&tn.gaps.length
-      ? '<span class="badge" style="border-color:var(--line-bright);color:var(--ink-3)" title="Ohne Ereignisdaten nicht berechenbar: '
-        +tn.gaps.join(', ')+'">'+tn.gaps.length+' Datenlücken</span>' : '';
+      ? '<span class="badge" style="border-color:var(--line-bright);color:var(--ink-3)" title="'+(tn.quelle==='kennzahlen'
+          ?'Für diese Position nicht gemessen: '
+          :'Keine Sofascore-Kennzahlen (unterhalb der 3. Liga) — Stil aus den Notenparametern, ohne Daten: ')
+        +tn.gaps.join(', ')+' — neutral mit 50 angesetzt.">'+tn.gaps.length+' Datenlücken</span>' : '';
     /* Spieler mit wenig Einsatzzeit werden gezeigt, aber gekennzeichnet -
        ihre Percentile beruhen auf einer duennen Stichprobe. */
     /* Verein aus der Saison 2025/26 - steht der Spieler dort heute nicht
@@ -5804,9 +5966,10 @@ function passungsLeiste(p){
         '<button type="button" class="pf-weg" onclick="profilVereinSetzen(\'\')">Aufheben</button>'
       : '')+
     (bezug
-      ? '<div class="pf-hinweis">Das Stilprofil steht auf '+stilText()+'. '+
-        'Es wiegt 70 % der Team-Note und lässt sich nur im Vereins-Matching '+
-        'einstellen — dort gewählte Werte gelten auch hier.</div>'
+      ? '<div class="pf-hinweis">Das Stilprofil steht auf '+stilText()+' und '+stilHerkunftText()+'. '+
+        'Es gewichtet den Stil, der 45 % der Team-Note ausmacht (Liga-Note 30 %, Kaderbedarf 15 %, '+
+        'Formation 10 %). Verstellen lässt es sich im Vereins-Matching; dort eingestellte Werte gelten '+
+        'hier für denselben Verein.</div>'
       : '<div class="pf-hinweis">Rechnet die Team-Note für diesen Spieler bei '+
         'einem beliebigen Verein: Kaderbedarf auf seiner Position, '+
         'Formationseignung und Stilprofil.</div>')+
@@ -5984,7 +6147,7 @@ function showProfile(id){
   const vN=bezug?bezug.name:null;
   /* KPOS traegt die Kaderwerte des Bezugsvereins - ohne dieses Setzen
      rechnete der Kaderbedarf gegen einen fremden Kader. */
-  if(hasV)setzeKPOS(bezug.name,bezug.liga);
+  if(hasV){setzeKPOS(bezug.name,bezug.liga);stilFuer(bezug);}
   lastTN=hasV?computeTN(p):null;
   renderProfile(p,hasV,vN);
 }
@@ -6142,6 +6305,12 @@ function renderProfile(p,hasV,vN){
     if(ziel)ziel.innerHTML=metrikAbschnitt(p);
     const rl=document.getElementById('rollen-block');
     if(rl)rl.innerHTML=rollenAbschnitt(p);
+    /* Die Team-Note braucht die Kennzahlen. Waren sie beim Zeichnen noch
+       nicht geladen, rechnete sie mit dem Rueckfall - dann einmal neu. */
+    if(hasV&&lastTN&&lastTN.quelle!=='kennzahlen'&&METRIK&&METRIK.werte&&METRIK.werte[p.id]){
+      showProfile(p.id);
+      return;
+    }
     const vgl=document.getElementById('vergleich-block');
     if(vgl&&vergleichId)vgl.innerHTML=vergleichAbschnitt(p);
   });
@@ -6249,7 +6418,7 @@ function downloadReport(){
     const sorted=Object.entries(tnRes.dims).sort((a,b)=>b[1]-a[1]);
     const best=sorted[0],worst=sorted[sorted.length-1];
     h+='<h2>Passungsanalyse: '+vN+'</h2>';
-    h+='<div class="mb"><div class="mt">Team-Note: '+ms+'/100 · '+vN+(vLn?' ('+vLn+')':'')+'</div><div class="mx">Zusammensetzung: Stilpassung '+tnRes.stil+' (Gewicht 70%), Kaderbedarf auf der Position '+tnRes.bedarf+' (20%), Formationspassung '+tnRes.formfit+' (10%). Hinterlegtes Vereinsprofil: '+Object.entries(styleProfile).map(([k,v])=>dn[k]+' '+v+'/5').join(', ')+'.</div></div>';
+    h+='<div class="mb"><div class="mt">Team-Note: '+ms+'/100 · '+vN+(vLn?' ('+vLn+')':'')+'</div><div class="mx">Zusammensetzung: Stilpassung '+tnRes.stil+' (Gewicht 45 %), Leistung (Liga-Note) '+tnRes.leistung+' (30 %), Kaderbedarf auf der Position '+tnRes.bedarf+' (15 %), Formationspassung '+tnRes.formfit+' (10 %). Stil '+(tnRes.quelle==='kennzahlen'?'aus Sofascore-Kennzahlen':'aus den Notenparametern (keine Sofascore-Kennzahlen)')+'. Hinterlegtes Vereinsprofil ('+(stilVerein&&stilVerein.herkunft==='abgeleitet'?'aus der Startelf abgeleitet':stilVerein&&stilVerein.herkunft==='regler'?'im Matching eingestellt':'neutral')+'): '+Object.entries(styleProfile).map(([k,v])=>dn[k]+' '+v+'/5').join(', ')+'.</div></div>';
     if(reportType==='ausfuehrlich'){
       h+='<h3>Stilpassung je Dimension</h3>';
       for(const d in tnRes.dims){h+='<div class="pr"><div class="pn">'+dn[d]+' ('+styleProfile[d]+'/5)</div><div class="po"><div class="pi2" style="width:'+tnRes.dims[d]+'%;background:#185FA5"></div></div><div class="pp">'+tnRes.dims[d]+'</div></div>';}
