@@ -649,6 +649,66 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
   .au-nr{font-size:8px;min-width:15px;height:14px;line-height:12px;left:-8px;top:-4px;padding:0 3px}
 }
 @media(prefers-reduced-motion:reduce){.au-kreis{transition:none}}
+/* ---- Top-Team der Liga. Platz, Kreise, Namen und Liste kommen von der
+   Aufstellung; neu sind die Schalter, der Ersatz unter jedem Spieler und
+   die Karte in der Vereinsauswahl. */
+.tt-karte{grid-column:1/-1;border-style:dashed;border-color:var(--line-bright)}
+.tt-karte .vc-icon{font-size:17px;color:var(--lime)}
+.tt-karte-sub{display:block;margin-top:3px;font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:400;letter-spacing:0.8px;text-transform:uppercase;color:var(--ink-2)}
+.tt-panel-text{font-size:12.5px;line-height:1.55;color:var(--ink-2);margin:0 0 16px}
+.tt-steuer{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px 32px;align-items:start}
+.tt-wahl-titel{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-2);text-transform:uppercase;letter-spacing:1px;margin-bottom:9px}
+.tt-wahl{display:flex;flex-wrap:wrap;gap:8px}
+.tt-k{background:none;border:1px solid var(--line-bright);border-radius:999px;padding:7px 13px;font-family:'Archivo',sans-serif;font-size:12.5px;font-weight:600;line-height:1.25;color:var(--ink-2);cursor:pointer;transition:border-color .15s ease,color .15s ease}
+.tt-k:hover{color:var(--ink);border-color:var(--ink-3)}
+.tt-k.an{background:var(--lime);border-color:var(--lime);color:var(--pitch);cursor:default}
+.tt-k:focus-visible{outline:2px solid var(--lime);outline-offset:2px}
+.tt-k.tt-f{font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:0.5px;padding:7px 12px}
+.tt-warnung{margin:-4px 0 16px;padding:10px 14px;border:1px solid var(--line-bright);border-radius:10px;background:var(--pitch-2);font-size:12.5px;line-height:1.5;color:var(--ink-2)}
+.tt-warnung p{display:flex;gap:8px}
+.tt-warnung p+p{margin-top:6px}
+.tt-warnung i{color:var(--amber);font-size:15px;flex-shrink:0;margin-top:1px}
+.tt-platz{--au-d:52px}
+.tt-slot{position:absolute;transform:translate(-50%,calc(var(--au-d) / -2 - 4px));display:flex;flex-direction:column;align-items:center;z-index:1}
+.tt-slot:hover,.tt-slot:focus-within{z-index:3}
+.tt-sp{display:flex;flex-direction:column;align-items:center;background:none;border:0;padding:4px;margin:0;font:inherit;color:inherit;border-radius:12px;cursor:pointer}
+.tt-sp:hover .au-kreis,.tt-sp:focus-visible .au-kreis{transform:translateY(-2px)}
+.tt-sp:focus-visible{outline:2px solid var(--lime);outline-offset:2px}
+.tt-slot .au-name{max-width:104px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tt-marke{left:-12px;white-space:nowrap}
+.tt-ers{display:inline-flex;align-items:center;gap:5px;max-width:104px;margin-top:1px;padding:2px 7px 2px 5px;border:1px solid var(--line-bright);border-radius:7px;background:var(--panel-2);color:var(--ink-2);font-family:'Archivo',sans-serif;font-size:10.5px;line-height:1.3;white-space:nowrap;cursor:pointer}
+.tt-ers:hover{color:var(--ink);border-color:var(--ink-3)}
+.tt-ers:focus-visible{outline:2px solid var(--lime);outline-offset:1px}
+.tt-ers-als{border-style:dashed}
+.tt-ers-e{font-family:'JetBrains Mono',monospace;font-size:8.5px;font-weight:700;color:var(--ink-2);padding-right:4px;border-right:1px solid var(--line-bright)}
+.tt-ers-n{overflow:hidden;text-overflow:ellipsis}
+.tt-ers b{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--ink)}
+.tt-ers-leer{cursor:default;border-style:dashed;background:transparent;color:var(--ink-2)}
+.tt-leer{display:flex;flex-direction:column;align-items:center;padding:4px}
+.tt-leer .au-kreis{background:transparent;box-shadow:none;border:1.5px dashed var(--au-linie);color:var(--ink-3);font-size:11px}
+.tt-leer .au-name{background:transparent;box-shadow:none;color:var(--ink-3);font-weight:400}
+.tt-leg-e{border:1px solid var(--line-bright);border-radius:4px;padding:0 4px;letter-spacing:0}
+.tt-verein{display:flex;align-items:center;gap:5px;margin-top:1px;font-size:11px;font-weight:400;color:var(--ink-2)}
+.tt-verein img{width:14px;height:14px;object-fit:contain}
+.tt-opt{color:var(--amber)}
+.au-z-name em.tt-rolle{color:var(--ink-2)}
+.tt-zeile .au-z-min{text-align:right;white-space:normal;max-width:132px}
+@media(max-width:700px){.tt-steuer{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){
+  /* Vier Spieler nebeneinander stehen 24 % der Platzbreite auseinander -
+     auf kleinen Handys (Platz 240 px) weniger als die 60 px eines Namens.
+     Deshalb wachsen Name und Ersatz mit dem Platz (cqw), hoechstens bis
+     zur festen Breite. */
+  .tt-platz{--au-d:34px;container-type:inline-size}
+  .tt-sp{padding:4px 0}
+  .tt-slot .au-name{max-width:60px;max-width:min(60px,23cqw)}
+  .tt-marke{left:-10px}
+  .tt-ers{max-width:62px;max-width:min(62px,23cqw);gap:3px;padding:1px 4px 1px 3px;font-size:8.5px;border-radius:5px}
+  .tt-ers-e{font-size:7px;padding-right:3px}
+  .tt-ers b{font-size:8px}
+  .tt-k{font-size:12px;padding:6px 11px}
+  .tt-k.tt-f{font-size:11px;padding:6px 9px}
+}
 @media(max-width:700px){
   /* Auch bei 250 px Tabellenbreite passt alles: sieben schmale Spalten,
      die Minuten doppelt so breit (im Browser nachgemessen). */
@@ -1200,6 +1260,18 @@ input[type=range]::-webkit-slider-thumb{box-shadow:none}
   </div>
 </div>
 
+<!-- Top-Team der Liga: je Liga eine Elf aus ihren Spielern, nach Kategorie
+     und Formation. Eigene Seite, weil es kein Verein ist - Raenge, Bedarf
+     und Empfehlungen der Kaderanalyse gelten hier nicht. -->
+<div class="page" id="p-topteam">
+  <button class="nav-back" onclick="go('kaderanalyse')"><i class="ti ti-arrow-left"></i> Eingabe</button>
+  <div class="kad-wrap">
+    <div class="kad-head" id="tt-kopf"></div>
+    <div class="sec" id="tt-steuerung"></div>
+    <div class="sec"><div class="sec-title">Aufstellung</div><div id="tt-aufstellung"></div></div>
+  </div>
+</div>
+
 <!-- Merkliste. Eigene Seite, weil ein Stern ohne Wiederfinden nutzlos
      waere. Die Trefferliste selbst wird von renderPlayers gezeichnet -
      derselbe Aufbau wie in jeder anderen Suche. -->
@@ -1743,7 +1815,7 @@ function go(page,from){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('p-'+page).classList.add('active');
   window.scrollTo(0,0);
-  const lbl={home:'TERMINAL // START',spielersuche:'SPIELERSUCHE',vereinsmatching:'VEREINS-MATCHING',kaderanalyse:'KADERANALYSE',kaderresult:'KADER // REPORT',ergebnisse:'TREFFER',profil:'SPIELERAKTE',auslaufer:'VERTRAGSAUSLÄUFER',ordner:'MERKLISTE',kader:'KADER'};
+  const lbl={home:'TERMINAL // START',spielersuche:'SPIELERSUCHE',vereinsmatching:'VEREINS-MATCHING',kaderanalyse:'KADERANALYSE',kaderresult:'KADER // REPORT',ergebnisse:'TREFFER',profil:'SPIELERAKTE',auslaufer:'VERTRAGSAUSLÄUFER',ordner:'MERKLISTE',kader:'KADER',topteam:'TOP-TEAM'};
   document.getElementById('bc').innerHTML='<span class="dot"></span> '+(lbl[page]||page);
   if(page==='ergebnisse'){document.getElementById('ergebnis-bk').onclick=()=>go(fromPage);renderPlayers();}
   if(page==='kaderresult'){renderKadResult();metrikenLaden();}
@@ -1767,6 +1839,15 @@ function go(page,from){
   }
   if(page==='ordner')renderOrdnerListe();
   if(page==='kader'&&kaderAnsicht.verein)renderKader();
+  /* Top-Team: zurueck aus einer Akte an dieselbe Stelle. */
+  if(page==='topteam'){
+    renderTopTeam();
+    if(ttRueckScroll!==null){
+      const y=ttRueckScroll;
+      ttRueckScroll=null;
+      requestAnimationFrame(()=>window.scrollTo({top:y,behavior:'instant'}));
+    }
+  }
 }
 function resetPanels(px){
   document.getElementById(px+'-verein-panel').innerHTML='<div class="panel-title"><span class="idx">02</span> Verein</div><div class="empty-panel" style="padding:48px 16px"><i class="ti ti-shield"></i><p>Liga wählen</p></div>';
@@ -1790,7 +1871,7 @@ function pickLiga(px,id){
   if(px==='vm'){vmLiga=id;vmVerein=null}else{kadLiga=id;kadVerein=null}
   renderLigen(px);
   const l=LIGEN.find(x=>x.id===id);
-  document.getElementById(px+'-verein-panel').innerHTML='<div class="panel-title"><span class="idx">02</span> Verein</div><div class="verein-grid">'+l.vereine.map(v=>'<div class="verein-card" onclick="pickVerein(\''+px+'\',\''+v.replace(/'/g,"\\'")+'\',\''+id+'\')"><div class="vc-icon">'+ini(v)+'</div><div class="vc-name">'+v+'</div></div>').join('')+'</div>';
+  document.getElementById(px+'-verein-panel').innerHTML='<div class="panel-title"><span class="idx">02</span> Verein</div><div class="verein-grid">'+(px==='kad'?ttKarteHTML(id):'')+l.vereine.map(v=>'<div class="verein-card" onclick="pickVerein(\''+px+'\',\''+v.replace(/'/g,"\\'")+'\',\''+id+'\')"><div class="vc-icon">'+ini(v)+'</div><div class="vc-name">'+v+'</div></div>').join('')+'</div>';
   document.getElementById(px+'-opt-panel').innerHTML='<div class="panel-title"><span class="idx">03</span> '+(px==='vm'?'Optionen':'Analyse')+'</div><div class="empty-panel" style="padding:48px 16px"><i class="ti ti-'+(px==='vm'?'adjustments':'chart-grid-dots')+'"></i><p>Verein wählen</p></div>';
 }
 function pickVerein(px,name,lid){
@@ -2013,6 +2094,34 @@ function aufstellungProfil(id){
   showProfile(id);
 }
 
+/* Markierungen in Metern nach den Spielregeln: Strafraum 16,5 m tief und
+   40,32 m breit, Torraum 5,5 x 18,32 m, Elfmeterpunkt 11 m, Kreise 9,15 m.
+   L ist die Platzlaenge - 105 m, auf dem Handy 120 m. Gebraucht von der
+   Aufstellung der Kaderanalyse und vom Top-Team der Liga. */
+function platzLinienSVG(L){
+  return '<svg class="au-linien" viewBox="0 0 68 '+L+'" preserveAspectRatio="none" aria-hidden="true">'
+      +'<rect x="1.5" y="1.5" width="65" height="'+(L-3)+'" vector-effect="non-scaling-stroke"/>'
+      +'<line x1="1.5" y1="'+(L/2)+'" x2="66.5" y2="'+(L/2)+'" vector-effect="non-scaling-stroke"/>'
+      +'<circle cx="34" cy="'+(L/2)+'" r="9.15" vector-effect="non-scaling-stroke"/>'
+      +'<rect x="13.84" y="1.5" width="40.32" height="16.5" vector-effect="non-scaling-stroke"/>'
+      +'<rect x="24.84" y="1.5" width="18.32" height="5.5" vector-effect="non-scaling-stroke"/>'
+      +'<path d="M26.69 18A9.15 9.15 0 0 0 41.31 18" vector-effect="non-scaling-stroke"/>'
+      +'<rect x="13.84" y="'+(L-18)+'" width="40.32" height="16.5" vector-effect="non-scaling-stroke"/>'
+      +'<rect x="24.84" y="'+(L-7)+'" width="18.32" height="5.5" vector-effect="non-scaling-stroke"/>'
+      +'<path d="M26.69 '+(L-18)+'A9.15 9.15 0 0 1 41.31 '+(L-18)+'" vector-effect="non-scaling-stroke"/>'
+      +'<circle class="au-punkt-l" cx="34" cy="'+(L/2)+'" r="0.55"/>'
+      +'<circle class="au-punkt-l" cx="34" cy="12.5" r="0.45"/>'
+      +'<circle class="au-punkt-l" cx="34" cy="'+(L-12.5)+'" r="0.45"/>'
+    +'</svg>';
+}
+
+/* Verwandte Positionen, in der Reihenfolge, in der sie aushelfen. Die
+   Aufstellung der Kaderanalyse fuellt damit leere Plaetze im Bild, das
+   Top-Team der Liga leere Plaetze seiner Elf. */
+const POS_VERWANDT={IV:['DM','LV','RV'],LV:['RV','IV','LA'],RV:['LV','IV','RA'],DM:['ZM','IV','OM'],
+  ZM:['DM','OM'],OM:['ZM','LA','RA','ST'],LA:['RA','OM','LV','ST'],RA:['LA','OM','RV','ST'],
+  ST:['OM','LA','RA']};
+
 function aufstellungHTML(verein,ligaId,mitRang,kader){
   const liga=(LIGEN.find(l=>l.id===ligaId)||{}).name||'';
   const jePos={}; mitRang.forEach(r=>{jePos[r.pos]=r});
@@ -2025,9 +2134,7 @@ function aufstellungHTML(verein,ligaId,mitRang,kader){
      meistgespielte Ersatz einer verwandten Position nach, sichtbar
      gekennzeichnet (gestrichelter Ring, "ZM → DM"). Die Analyse selbst -
      Raenge, Balken, Empfehlungen - rechnet weiter streng je Position. */
-  const VERWANDT={IV:['DM','LV','RV'],LV:['RV','IV','LA'],RV:['LV','IV','RA'],DM:['ZM','IV','OM'],
-    ZM:['DM','OM'],OM:['ZM','LA','RA','ST'],LA:['RA','OM','LV','ST'],RA:['LA','OM','RV','ST'],
-    ST:['OM','LA','RA']};
+  const VERWANDT=POS_VERWANDT;
   const benutzt={}, aufgerueckt={}, alsPos={};
   mitRang.forEach(r=>r.start.forEach(p=>{benutzt[p.id]=1}));
   ['IV','DM','ZM','LV','RV','OM','LA','RA','ST'].forEach(function(pos){
@@ -2086,23 +2193,7 @@ function aufstellungHTML(verein,ligaId,mitRang,kader){
   });
   const clubId=(kader.find(p=>p.club_id)||{}).club_id;
   const platz='<div class="au-platz" role="group" aria-label="Aufstellung '+vglEsc(verein)+'">'
-    /* Markierungen in Metern nach den Spielregeln: Strafraum 16,5 m tief
-       und 40,32 m breit, Torraum 5,5 x 18,32 m, Elfmeterpunkt 11 m,
-       Kreise 9,15 m. */
-    +'<svg class="au-linien" viewBox="0 0 68 '+L+'" preserveAspectRatio="none" aria-hidden="true">'
-      +'<rect x="1.5" y="1.5" width="65" height="'+(L-3)+'" vector-effect="non-scaling-stroke"/>'
-      +'<line x1="1.5" y1="'+(L/2)+'" x2="66.5" y2="'+(L/2)+'" vector-effect="non-scaling-stroke"/>'
-      +'<circle cx="34" cy="'+(L/2)+'" r="9.15" vector-effect="non-scaling-stroke"/>'
-      +'<rect x="13.84" y="1.5" width="40.32" height="16.5" vector-effect="non-scaling-stroke"/>'
-      +'<rect x="24.84" y="1.5" width="18.32" height="5.5" vector-effect="non-scaling-stroke"/>'
-      +'<path d="M26.69 18A9.15 9.15 0 0 0 41.31 18" vector-effect="non-scaling-stroke"/>'
-      +'<rect x="13.84" y="'+(L-18)+'" width="40.32" height="16.5" vector-effect="non-scaling-stroke"/>'
-      +'<rect x="24.84" y="'+(L-7)+'" width="18.32" height="5.5" vector-effect="non-scaling-stroke"/>'
-      +'<path d="M26.69 '+(L-18)+'A9.15 9.15 0 0 1 41.31 '+(L-18)+'" vector-effect="non-scaling-stroke"/>'
-      +'<circle class="au-punkt-l" cx="34" cy="'+(L/2)+'" r="0.55"/>'
-      +'<circle class="au-punkt-l" cx="34" cy="12.5" r="0.45"/>'
-      +'<circle class="au-punkt-l" cx="34" cy="'+(L-12.5)+'" r="0.45"/>'
-    +'</svg>'
+    +platzLinienSVG(L)
     +(clubId?'<img class="au-wappen" src="'+WAPPEN_BASIS+clubId+'.png" alt="" loading="lazy" '
       +'referrerpolicy="no-referrer-when-downgrade" onerror="this.remove()">':'')
     +'<span class="au-formation">4-2-3-1</span>'
@@ -2178,6 +2269,441 @@ function erklAufstellung(id){
     +'</dl><div class="erkl-fuss">'+(d.als
       ?'Im Kader steht kein '+vglEsc(TM_POS_NAME[d.als]||d.als)+'. Für das Bild rückt der meistgespielte '
         +'Ersatz einer verwandten Position nach; die Analyse rechnet weiter je Position. '
+      :'')+'Klick öffnet die Spielerakte.</div>';
+}
+
+/* ---------- Top-Team der Liga --------------------------------------------
+   Je Liga eine Elf aus den Spielern ihrer heutigen Kader, nach einer von
+   fuenf Kategorien und in einer von vier Formationen. Je Platz steht der
+   Beste der Kategorie auf dieser Position, der Naechste als Ersatz darunter.
+
+   Es gelten dieselben Grundlagen wie in der Kaderanalyse:
+     - Noten auf das Niveau der Liga umgerechnet (einordnenAuf) - ein
+       Neuzugang aus einer tieferen Liga zaehlt nicht mit seiner dortigen Note;
+     - nur belastbare Noten (Ligaminuten ab der Mindestschwelle) - eine Elf
+       aus Kurzeinsaetzen waere keine Aussage;
+     - Vertragsenden ueber vertragsEnde(): bei Leihspielern zaehlt allein der
+       Vertrag beim Stammverein, ein Leihende ist kein Vertragsende.
+   Jeder Spieler steht hoechstens einmal auf dem Platz. Fehlt einer Position
+   ein Spieler, rueckt wie in der Aufstellung der Kaderanalyse der Naechste
+   einer verwandten Position nach - gestrichelt und mit "als LV" markiert. */
+
+/* Plaetze je Formation: Position, dann x/y in Prozent fuer den breiten Platz
+   (68 x 105 m), dann x/y fuer das Handy (68 x 120 m, siehe .au-platz). Die
+   Reihenfolge entscheidet bei doppelt besetzten Positionen: der erste IV-Platz
+   bekommt den besten Innenverteidiger. Nachgemessen ueber alle Ligen,
+   Kategorien und Breiten: keine Ueberlappung, nichts ragt ueber den Rand. */
+const TT_FORMATIONEN={
+  '4-4-2':{plaetze:[
+    ['ST',35,11, 33,9],['ST',65,11, 67,9],
+    ['LA',13,38, 13,34],['DM',37,43, 37,34],['ZM',63,43, 63,34],['RA',87,38, 87,34],
+    ['LV',13,64, 13,60],['IV',37,69, 37,60],['IV',63,69, 63,60],['RV',87,64, 87,60],
+    ['TW',50,87, 50,86]],
+    hinweis:'LA und RA sind die Außenbahnen im Mittelfeld – Transfermarkt führt dort '
+      +'Linksaußen und linkes Mittelfeld gemeinsam.'},
+  '4-2-3-1':{plaetze:[
+    ['ST',50,11, 50,9],
+    ['LA',16,30, 16,28],['OM',50,33, 50,28],['RA',84,30, 84,28],
+    ['DM',33,51, 33,47],['ZM',67,51, 67,47],
+    ['LV',13,65, 13,66],['IV',37,69, 37,66],['IV',63,69, 63,66],['RV',87,65, 87,66],
+    ['TW',50,87, 50,86]],
+    hinweis:'Dieselbe Elf wie in der Aufstellung der Kaderanalyse.'},
+  '3-5-2':{plaetze:[
+    ['ST',35,11, 33,9],['ST',65,11, 67,9],
+    ['LV',12,31, 13,28],['OM',50,31, 50,28],['RV',88,31, 87,28],
+    ['DM',33,50, 33,47],['ZM',67,50, 67,47],
+    ['IV',25,67, 20,66],['IV',50,69, 50,66],['IV',75,67, 80,66],
+    ['TW',50,87, 50,86]],
+    hinweis:'LV und RV spielen als Schienenspieler im Mittelfeld, zentral stehen '
+      +'DM, ZM und OM.'},
+  '5-3-2':{plaetze:[
+    ['ST',35,11, 33,9],['ST',65,11, 67,9],
+    ['ZM',22,33, 18,29],['DM',50,38, 50,29],['ZM',78,33, 82,29],
+    ['LV',12,52, 13,48],['IV',26,69, 25,67],['IV',50,71, 50,67],['IV',74,69, 75,67],['RV',88,52, 87,48],
+    ['TW',50,87, 50,86]],
+    hinweis:'LV und RV bilden mit drei IV die Fünferkette, im Mittelfeld ein DM '
+      +'und zwei ZM – ohne Zehner.'}
+};
+const TT_FORMATION_VORGABE='4-2-3-1';
+
+/* Altersbonus wie in scripts/compute_grades.py (Potenzialnote PN): 2 Punkte
+   je Lebensjahr unter 26, hoechstens 12; ohne Altersangabe gilt 27, also
+   kein Bonus. Hier auf die UMGERECHNETE Note gesetzt - bei Spielern, deren
+   Note nicht umgerechnet wird, ergibt das genau das PN der Daten. */
+function ttAltersbonus(alter){
+  const a=alter||27;
+  return a<26?Math.max(0,Math.min(12,(26-a)*2)):0;
+}
+function ttPN(p){return Math.min(99,p.ln+ttAltersbonus(p.age));}
+
+/* Vertragsausläufer: Vertrag endet bis zum Ende der laufenden Saison -
+   Winterpause und Saisonende zusammen, also die Fenster "winter" und
+   "saison" der Ausläufer-Suche. Abgelaufenes zaehlt nicht (imFenster). */
+function ttSaisonende(){return (saisonStart()+1)+'-08-31';}
+function ttAuslaeufer(p){return imFenster(p,{von:null,bis:ttSaisonende()});}
+function ttOption(p){
+  const a=p.auslauf;
+  return !!(a&&a.option&&optionArt(a.option)==='verlaengerung');
+}
+
+function ttMwKurz(p){
+  const v=p.mv_eur;
+  if(!v)return 'o. MW';
+  if(v>=1e6){
+    const m=v/1e6;
+    return (m>=10?String(Math.round(m)):String(Math.round(m*10)/10).replace('.',','))+' Mio.';
+  }
+  return Math.round(v/1e3)+' Tsd.';
+}
+function ttEndeKurz(p){
+  const e=vertragsEnde(p);
+  return e?e.slice(5,7)+'/'+e.slice(2,4):'–';
+}
+function ttAlter(p){return p.age?p.age+' J.':'–';}
+
+const ttNachNote=(a,b)=>b.ln-a.ln||(b.minuten||0)-(a.minuten||0);
+const ttNachAlter=(a,b)=>(a.age||99)-(b.age||99)||ttNachNote(a,b);
+
+/* marke: der Wert oben links am Spieler - das, wonach ausgewaehlt wurde.
+   Unten rechts steht in jeder Kategorie die Liga-Note; bei der besten Elf
+   ist sie selbst das Kriterium, dort bleibt oben links frei.
+   Freigegeben am 18.09.2026: Kategorie "Vertragsausläufer" nach Marktwert,
+   Potenzial ueber PN nur unter 26, dazu die beste Elf als erste Kategorie. */
+const TT_KATEGORIEN=[
+  {id:'beste',name:'Beste Elf der Liga',
+   filter:()=>true,sort:ttNachNote,
+   marke:null,markeName:'',
+   wert:p=>ttAlter(p)+' · '+(p.mv_eur?p.mv+' €':'ohne Marktwert'),
+   regel:'Alle Spieler der Liga — je Position die beste Liga-Note, ohne Vertrags- oder '
+     +'Altersfilter'},
+  {id:'auslauf',name:'Vertragsausläufer',
+   filter:ttAuslaeufer,
+   sort:(a,b)=>(b.mv_eur||0)-(a.mv_eur||0)||ttNachNote(a,b),
+   marke:ttMwKurz,markeName:'Marktwert',
+   wert:p=>p.mv_eur?p.mv+' €':'ohne Marktwert',
+   regel:'Vertrag endet bis zum Saisonende — je Position nach Marktwert (Transfermarkt), '
+     +'bei gleichem Wert die bessere Note'},
+  {id:'auslauf-note',name:'Vertragsausläufer (bestes Rating)',
+   filter:ttAuslaeufer,sort:ttNachNote,
+   marke:ttEndeKurz,markeName:'Vertragsende (Monat/Jahr)',
+   wert:p=>'bis '+(vertragsEnde(p)?dtm(vertragsEnde(p)):'–'),
+   regel:'Vertrag endet bis zum Saisonende — je Position nach Liga-Note'},
+  {id:'auslauf-jung',name:'Vertragsausläufer (jüngste)',
+   filter:ttAuslaeufer,sort:ttNachAlter,
+   marke:ttAlter,markeName:'Alter',
+   wert:p=>ttAlter(p)+' · bis '+(vertragsEnde(p)?dtm(vertragsEnde(p)):'–'),
+   regel:'Vertrag endet bis zum Saisonende — je Position der Jüngste, bei gleichem '
+     +'Alter die bessere Note'},
+  {id:'jung',name:'Jüngste Mannschaft',
+   filter:()=>true,sort:ttNachAlter,
+   marke:ttAlter,markeName:'Alter',
+   wert:ttAlter,
+   regel:'Alle Spieler der Liga — je Position der Jüngste, bei gleichem Alter die '
+     +'bessere Note'},
+  {id:'potenzial',name:'Mannschaft mit viel Potenzial',
+   filter:p=>!!p.age&&p.age<26,
+   sort:(a,b)=>ttPN(b)-ttPN(a)||ttNachNote(a,b)||(a.age||99)-(b.age||99),
+   marke:p=>'PN '+ttPN(p),markeName:'PN (Note + Altersbonus)',
+   wert:p=>'PN '+ttPN(p)+' · '+ttAlter(p),
+   regel:'Spieler unter 26 — je Position nach PN: Liga-Note plus 2 Punkte je Lebensjahr '
+     +'unter 26, höchstens 12'}
+];
+
+let ttZustand={liga:null,kat:TT_KATEGORIEN[0].id,form:TT_FORMATION_VORGABE};
+let ttDaten={};          // Spieler-ID -> {p, platz, ersatz, als, rang, von}
+let ttRueckScroll=null;  // Scrollstand beim Oeffnen einer Akte
+
+function ttKategorie(id){return TT_KATEGORIEN.find(k=>k.id===id)||TT_KATEGORIEN[0];}
+
+/* Die Elf. Erst alle Startplaetze aus der eigenen Position, dann deren Luecken
+   aus verwandten Positionen, dann die Ersatzplaetze in derselben Reihenfolge -
+   ein Stammplatz geht immer vor einem Platz auf der Bank. */
+function ttAufstellung(ligaId,katId,formId){
+  const kat=ttKategorie(katId);
+  const form=TT_FORMATIONEN[formId]||TT_FORMATIONEN[TT_FORMATION_VORGABE];
+  const ziel=niveauVonLiga(ligaId);
+  const kandidaten=PLAYERS.filter(p=>p.liga_id===ligaId&&!p.weg&&p.belastbar!==false)
+    .map(p=>einordnenAuf(p,ziel)).filter(kat.filter);
+  const nach={};
+  kandidaten.forEach(p=>{(nach[p.pos]=nach[p.pos]||[]).push(p);});
+  for(const pos in nach)nach[pos].sort(kat.sort);
+  const benutzt=new Set();
+  const naechster=pos=>(nach[pos]||[]).find(p=>!benutzt.has(p.id))||null;
+  const verwandter=pos=>{
+    for(const q of (POS_VERWANDT[pos]||[])){const p=naechster(q);if(p)return p;}
+    return null;
+  };
+  const plaetze=form.plaetze.map(x=>({pos:x[0],xy:[x[1],x[2]],eng:[x[3],x[4]],
+    start:null,ersatz:null,startAls:false,ersatzAls:false}));
+  const fuellen=(feld,quelle,als)=>plaetze.forEach(pl=>{
+    if(pl[feld])return;
+    const p=quelle(pl.pos);
+    if(p){pl[feld]=p;pl[feld+'Als']=als;benutzt.add(p.id);}
+  });
+  fuellen('start',naechster,false);
+  fuellen('start',verwandter,true);
+  fuellen('ersatz',naechster,false);
+  fuellen('ersatz',verwandter,true);
+  return {kat:kat,form:form,plaetze:plaetze,nach:nach,anzahl:kandidaten.length};
+}
+
+function ttRing(p,als){
+  if(als)return 'au-ersatz';
+  return p.ln>=70?'au-gut':p.ln>=40?'au-mittel':'au-schwach';
+}
+
+function ttKarteHTML(ligaId){
+  return '<div class="verein-card tt-karte" onclick="pickTopTeam(\''+ligaId+'\')">'
+    +'<div class="vc-icon"><i class="ti ti-trophy" aria-hidden="true"></i></div>'
+    +'<div class="vc-name">Top-Team der Liga<span class="tt-karte-sub">'
+    +TT_KATEGORIEN.length+' Kategorien · '+Object.keys(TT_FORMATIONEN).length
+    +' Formationen</span></div></div>';
+}
+
+function pickTopTeam(ligaId){
+  /* Kein Verein: ohne dieses Zuruecksetzen rechnete die Akte die Passung
+     noch gegen den zuvor gewaehlten Verein. */
+  kadVerein=null;kadVereinLiga=null;
+  ttZustand.liga=ligaId;
+  document.querySelectorAll('#kad-verein-panel .verein-card')
+    .forEach(c=>c.classList.toggle('sel',c.classList.contains('tt-karte')));
+  const l=LIGEN.find(x=>x.id===ligaId)||{name:'',land:''};
+  document.getElementById('kad-opt-panel').innerHTML=
+    '<div class="panel-title"><span class="idx">03</span> Analyse</div>'
+    +'<div class="sel-info"><div class="sl">Ausgewählt</div><div class="sn">Top-Team der Liga</div>'
+    +'<div class="sm">'+l.name+' · '+l.land+'</div></div>'
+    +'<p class="tt-panel-text">Eine Elf aus den Spielern der Liga: je Position der Beste der '
+    +'gewählten Kategorie, dazu ein Ersatz. Kategorie und Formation lassen sich danach '
+    +'direkt umschalten.</p>'
+    +'<div class="fg"><label for="tt-kat-wahl">Kategorie</label><select id="tt-kat-wahl">'
+    +TT_KATEGORIEN.map(k=>'<option value="'+k.id+'"'+(k.id===ttZustand.kat?' selected':'')+'>'
+      +k.name+'</option>').join('')+'</select></div>'
+    +'<div class="fg"><label for="tt-form-wahl">Formation</label><select id="tt-form-wahl">'
+    +Object.keys(TT_FORMATIONEN).map(f=>'<option'+(f===ttZustand.form?' selected':'')+'>'+f
+      +'</option>').join('')+'</select></div>'
+    +'<button class="btn-primary" onclick="topTeamStarten()"><i class="ti ti-trophy"></i> Top-Team zeigen</button>';
+}
+
+function topTeamStarten(){
+  const k=document.getElementById('tt-kat-wahl'), f=document.getElementById('tt-form-wahl');
+  if(k)ttZustand.kat=k.value;
+  if(f)ttZustand.form=f.value;
+  ttRueckScroll=null;
+  go('topteam','topteam');
+}
+
+function ttProfil(id){
+  ttRueckScroll=window.scrollY;
+  profilZurueck='topteam';
+  showProfile(id);
+}
+
+function ttKategorieSetzen(id){ttZustand.kat=id;ttZeichnen();}
+function ttFormationSetzen(id){ttZustand.form=id;ttZeichnen();}
+
+function renderTopTeam(){
+  const l=LIGEN.find(x=>x.id===ttZustand.liga);
+  const kopf=document.getElementById('tt-kopf');
+  if(!l){
+    kopf.innerHTML='<h2>Top-Team der Liga</h2><p>Keine Liga gewählt</p>';
+    document.getElementById('tt-steuerung').innerHTML='';
+    document.getElementById('tt-aufstellung').innerHTML=
+      '<div class="au-hinweis">Liga in der Kaderanalyse wählen.</div>';
+    return;
+  }
+  kopf.innerHTML='<h2>Top-Team der Liga <span class="hl">// '+vglEsc(l.name)+'</span></h2><p>'
+    +[l.land,dataSaisonAktuell?'Kader '+dataSaisonAktuell:null,
+      dataSaison?'Noten '+dataSaison:null].filter(Boolean).join(' · ')+'</p>';
+  ttZeichnen();
+}
+
+/* Nur Schalter und Platz neu - der Kopf bleibt, die Seite springt nicht. */
+function ttZeichnen(){
+  const l=LIGEN.find(x=>x.id===ttZustand.liga);
+  if(!l)return;
+  const knopf=(an,text,aufruf,wert,extra)=>'<button type="button" class="tt-k'+(extra||'')+(an?' an':'')
+    +'" aria-pressed="'+an+'" onclick="'+aufruf+'(\''+wert+'\')">'+text+'</button>';
+  document.getElementById('tt-steuerung').innerHTML=
+    '<div class="tt-steuer">'
+      +'<div><div class="tt-wahl-titel" id="tt-kat-titel">Kategorie</div>'
+        +'<div class="tt-wahl" role="group" aria-labelledby="tt-kat-titel">'
+        +TT_KATEGORIEN.map(k=>knopf(k.id===ttZustand.kat,k.name,'ttKategorieSetzen',k.id)).join('')
+        +'</div></div>'
+      +'<div><div class="tt-wahl-titel" id="tt-form-titel">Formation</div>'
+        +'<div class="tt-wahl" role="group" aria-labelledby="tt-form-titel">'
+        +Object.keys(TT_FORMATIONEN).map(f=>knopf(f===ttZustand.form,f,'ttFormationSetzen',f,' tt-f')).join('')
+        +'</div></div>'
+    +'</div>';
+  erklWeg();
+  document.getElementById('tt-aufstellung').innerHTML=
+    ttHTML(ttAufstellung(l.id,ttZustand.kat,ttZustand.form),l);
+}
+
+function ttHTML(a,l){
+  ttDaten={};
+  const kat=a.kat;
+  const zahl=v=>Number(v||0).toLocaleString('de-DE');
+  const bild=p=>{const u=bildUrl(p);
+    return u?'<img src="'+u+'" alt="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" onerror="this.remove()">':'';};
+  const auslauf=kat.filter===ttAuslaeufer;
+  const zeichen=p=>{
+    const leihe=istLeihe(p), m=restmonate(p);
+    return (leihe?'<i class="ti ti-arrow-back-up" aria-hidden="true"></i>':'')
+      +(auslauf&&ttOption(p)?'<i class="ti ti-repeat" aria-hidden="true"></i>':'')
+      +(!auslauf&&!leihe&&m!==null&&m<=12?'<i class="ti ti-hourglass-low" aria-hidden="true"></i>':'');
+  };
+  const merke=(p,pl,ersatz,als)=>{
+    const liste=a.nach[p.pos]||[];
+    ttDaten[p.id]={p:p,platz:pl.pos,ersatz:ersatz,als:als,kat:kat,
+      rang:liste.indexOf(p)+1,von:liste.length,liga:l.name};
+  };
+  const posName=pos=>TM_POS_NAME[pos]||pos;
+
+  /* ---- Platz */
+  const eng=!!(window.matchMedia&&window.matchMedia('(max-width: 600px)').matches);
+  const L=eng?120:105;
+  let figuren='';
+  a.plaetze.forEach(function(pl){
+    const xy=eng?pl.eng:pl.xy;
+    const lage='left:'+xy[0]+'%;top:'+xy[1]+'%';
+    if(!pl.start){
+      figuren+='<div class="tt-slot" style="'+lage+'"><div class="tt-leer">'
+        +'<span class="au-kreis">'+pl.pos+'</span><span class="au-name">unbesetzt</span></div></div>';
+      return;
+    }
+    const p=pl.start, e=pl.ersatz;
+    merke(p,pl,false,pl.startAls);
+    if(e)merke(e,pl,true,pl.ersatzAls);
+    const woher=pl.startAls?', aufgerückt von '+posName(p.pos):'';
+    figuren+='<div class="tt-slot" style="'+lage+'">'
+      +'<button type="button" class="tt-sp '+ttRing(p,pl.startAls)+'" data-erkl="t:'+p.id+'" '
+        +'onclick="ttProfil('+p.id+')" aria-label="'+vglEsc(p.name+', '+posName(pl.pos)+woher
+          +', Startelf, Note '+p.ln+(kat.marke?', '+kat.markeName+' '+kat.marke(p):'')+'. Spielerakte öffnen')+'">'
+        +'<span class="au-kreis">'+vglEsc(p.ini||'')+bild(p)
+          +(kat.marke?'<span class="au-nr tt-marke">'+vglEsc(kat.marke(p))+'</span>':'')
+          +'<span class="au-note">'+p.ln+'</span></span>'
+        +'<span class="au-name">'+vglEsc(kurzname(p.name))+zeichen(p)+'</span>'
+      +'</button>'
+      +(e
+        ?'<button type="button" class="tt-ers'+(pl.ersatzAls?' tt-ers-als':'')+'" data-erkl="t:'+e.id+'" '
+          +'onclick="ttProfil('+e.id+')" aria-label="'+vglEsc('Ersatz '+posName(pl.pos)+': '+e.name
+            +(pl.ersatzAls?', aufgerückt von '+posName(e.pos):'')+', Note '+e.ln+'. Spielerakte öffnen')+'">'
+          +'<span class="tt-ers-e" aria-hidden="true">E</span>'
+          +'<span class="tt-ers-n">'+vglEsc(kurzname(e.name))+'</span><b>'+e.ln+'</b></button>'
+        :'<span class="tt-ers tt-ers-leer"><span class="tt-ers-e" aria-hidden="true">E</span>kein Ersatz</span>')
+      +'</div>';
+  });
+  const platz='<div class="au-platz tt-platz" role="group" aria-label="'
+      +vglEsc('Top-Team '+l.name+', '+kat.name+', '+Object.keys(TT_FORMATIONEN).find(f=>TT_FORMATIONEN[f]===a.form))+'">'
+    +platzLinienSVG(L)
+    +'<span class="au-formation">'+Object.keys(TT_FORMATIONEN).find(f=>TT_FORMATIONEN[f]===a.form)+'</span>'
+    +figuren+'</div>';
+
+  /* ---- Liste je Position: Startelf und Ersatz, mit Verein und dem Wert der
+     Kategorie - zugleich die Tabellenansicht zum Bild. */
+  const zeile=(p,ersatz,als,pos)=>{
+    if(!p)return '<div class="au-z-leer">'+(ersatz?'Kein Ersatz':'Unbesetzt')
+      +' — in dieser Kategorie gibt es keinen weiteren Spieler dafür.</div>';
+    const wappen=p.club_id?'<img src="'+WAPPEN_BASIS+p.club_id+'.png" alt="" loading="lazy" '
+      +'referrerpolicy="no-referrer-when-downgrade" onerror="this.remove()">':'';
+    const opt=auslauf&&ttOption(p)?' <span class="tt-opt">+ Option</span>':'';
+    return '<button type="button" class="au-zeile tt-zeile'+(ersatz?'':' au-start')+'" data-erkl="t:'+p.id+'" '
+      +'onclick="ttProfil('+p.id+')">'
+      +'<span class="au-mini">'+vglEsc(p.ini||'')+bild(p)+'</span>'
+      +'<span class="au-z-name">'+vglEsc(p.name)
+        +(als?'<em class="tt-rolle">'+p.pos+' als '+pos+'</em>':'<em'+(ersatz?' class="tt-rolle"':'')+'>'
+          +(ersatz?'Ersatz':'Startelf')+'</em>')
+        +'<span class="tt-verein">'+wappen+vglEsc(p.club)+'</span></span>'
+      +'<span class="au-z-min">'+vglEsc(kat.wert(p))+opt+'</span>'
+      +'<span class="au-z-note">'+p.ln+'</span></button>';
+  };
+  /* Dieselbe Reihenfolge wie die Liste der Kaderanalyse. */
+  const folge=POS_REIHENFOLGE.filter(pos=>a.plaetze.some(pl=>pl.pos===pos));
+  const liste=folge.map(function(pos){
+    const pls=a.plaetze.filter(pl=>pl.pos===pos);
+    const anzahl=(a.nach[pos]||[]).length;
+    return '<div class="au-gruppe"><div class="au-g-kopf"><strong>'+posName(pos)
+        +(pls.length>1?' ×'+pls.length:'')+'</strong>'
+        +'<span class="au-rang">'+anzahl+' in dieser Kategorie</span></div>'
+      +pls.map(pl=>zeile(pl.start,false,pl.startAls,pos)).join('')
+      +pls.map(pl=>pl.start?zeile(pl.ersatz,true,pl.ersatzAls,pos):'').join('')
+      +'</div>';
+  }).join('');
+
+  const leer=a.plaetze.filter(pl=>!pl.start).length;
+  const ohneErsatz=a.plaetze.filter(pl=>pl.start&&!pl.ersatz).length;
+  const aufgerueckt=a.plaetze.some(pl=>pl.startAls||pl.ersatzAls);
+  const mwAnteil=l.marktwert_anteil;
+  const warnungen=[];
+  if(!a.anzahl)warnungen.push('In dieser Kategorie gibt es in der '+vglEsc(l.name)+' keinen Spieler.');
+  else if(leer||ohneErsatz)warnungen.push((leer?leer+' Platz'+(leer>1?'plätze':'')+' unbesetzt':'')
+    +(leer&&ohneErsatz?', ':'')+(ohneErsatz?ohneErsatz+' ohne Ersatz':'')
+    +' — die Kategorie hat dafür zu wenige Spieler, auch auf verwandten Positionen.');
+  if(kat.id==='auslauf'&&typeof mwAnteil==='number'&&mwAnteil<50)
+    warnungen.push('Transfermarkt führt in dieser Liga nur für '+mwAnteil+' % der Spieler einen '
+      +'Marktwert. Ohne Marktwert entscheidet die Note — die Elf gleicht dann weitgehend '
+      +'„Vertragsausläufer (bestes Rating)“.');
+
+  const umgerechnet=a.plaetze.some(pl=>(pl.start&&pl.start.ln_roh!==undefined)
+    ||(pl.ersatz&&pl.ersatz.ln_roh!==undefined));
+  const ende=ttSaisonende();
+  return '<div class="au-kopf"><span><strong>'+vglEsc(kat.name)+'</strong> · '+zahl(a.anzahl)
+      +' Spieler kommen infrage</span>'
+      +'<span>'+vglEsc(kat.regel)+(auslauf?' (spätestens '+dtm(ende)+')':'')+'</span></div>'
+    +(warnungen.length?'<div class="tt-warnung">'+warnungen.map(w=>'<p><i class="ti ti-info-circle" aria-hidden="true"></i>'+w+'</p>').join('')+'</div>':'')
+    +'<div class="au-raster">'
+      +'<div>'+platz
+        +'<div class="legend au-legende">'
+          +'<div class="leg-item au-gut"><span class="leg-dot"></span>Note ab 70</div>'
+          +'<div class="leg-item au-mittel"><span class="leg-dot"></span>40 bis 69</div>'
+          +'<div class="leg-item au-schwach"><span class="leg-dot"></span>unter 40</div>'
+          +(aufgerueckt?'<div class="leg-item au-ersatz"><span class="leg-dot"></span>von verwandter Position</div>':'')
+          +(kat.marke?'<div class="leg-item">Zahl oben links: '+vglEsc(kat.markeName)+'</div>':'')
+          +'<div class="leg-item">'+(kat.marke?'unten rechts: ':'Zahl am Spieler: ')+'Liga-Note'
+            +(umgerechnet?', auf die Liga umgerechnet':'')+'</div>'
+          +'<div class="leg-item"><span class="tt-ers-e tt-leg-e">E</span>Ersatz auf dieser Position</div>'
+          +(auslauf?'<div class="leg-item"><i class="ti ti-repeat"></i>Verlängerungsoption</div>'
+                   :'<div class="leg-item"><i class="ti ti-hourglass-low"></i>Vertrag ≤ 12 Monate</div>')
+          +'<div class="leg-item"><i class="ti ti-arrow-back-up"></i>Leihspieler</div>'
+        +'</div>'
+        +'<div class="au-hinweis">'+vglEsc(a.form.hinweis)+' Je Platz der Beste der Kategorie auf '
+          +'dieser Position, darunter der Nächste als Ersatz (E); jeder Spieler steht nur einmal. '
+          +'Grundlage: heutige Kader '+vglEsc(dataSaisonAktuell||'')+', Noten '+vglEsc(dataSaison||'')
+          +' mit mindestens '+zahl(window.MIN_MINUTEN||450)+' Ligaminuten, auf das Niveau der '+vglEsc(l.name)
+          +' umgerechnet. Vertragsenden und Marktwerte: Transfermarkt — bei Leihspielern zählt der '
+          +'Vertrag beim Stammverein. <strong>Klick auf einen Spieler</strong> öffnet seine Akte.</div>'
+      +'</div>'
+      +'<div class="au-tiefe" aria-label="Startelf und Ersatz je Position">'+liste+'</div>'
+    +'</div>';
+}
+
+/* Erklaerfenster ueber einem Spieler des Top-Teams (t:) */
+function erklTopTeam(id){
+  const d=ttDaten[id];
+  if(!d)return '';
+  const p=d.p, kat=d.kat;
+  const zahl=v=>Number(v||0).toLocaleString('de-DE');
+  const posName=pos=>TM_POS_NAME[pos]||pos;
+  const bonus=ttAltersbonus(p.age);
+  return '<h6>'+vglEsc(p.name)+'</h6><dl>'
+    +erklZeile('Platz',(d.ersatz?'Ersatz':'Startelf')+' · '+vglEsc(posName(d.platz))
+      +(d.als?' — aufgerückt, eigentlich '+vglEsc(posName(p.pos)):''))
+    +erklZeile('Verein',vglEsc(p.club))
+    +erklZeile('Note',p.ln+(p.ln_roh!==undefined
+      ?' — umgerechnet auf die '+vglEsc(d.liga)+', gemessen '+p.ln_roh+(p.note_liga?' in der '+vglEsc(p.note_liga):'')
+      :''))
+    +erklZeile('Alter',p.age?p.age+' Jahre':'k. A.')
+    +(kat.id==='potenzial'?erklZeile('PN',ttPN(p)+' = Note '+p.ln+' + Altersbonus '+bonus
+      +(p.ln+bonus>99?' (höchstens 99)':'')):'')
+    +erklZeile('Vertrag',vertragText(p)+(ttOption(p)
+      ?' <span style="color:var(--amber)">· mit Verlängerungsoption („'+vglEsc(p.auslauf.option)
+        +'“) — zieht der Verein sie, wird er nicht frei</span>':''))
+    +erklZeile('Marktwert',p.mv_eur?vglEsc(p.mv)+' €':'nicht angegeben')
+    +erklZeile('Spielzeit',zahl(p.minuten)+' Ligaminuten in '+(p.einsaetze||0)+' Einsätzen, '+vglEsc(dataSaison||''))
+    +erklZeile('Auswahl','Nr. '+d.rang+' von '+d.von+' '+vglEsc(posName(p.pos))+' in „'+vglEsc(kat.name)+'“')
+    +'</dl><div class="erkl-fuss">'+(d.als
+      ?'Auf diesem Platz gibt es in der Kategorie keinen weiteren '+vglEsc(posName(d.platz))
+        +' — deshalb rückt der Nächste einer verwandten Position nach. '
       :'')+'Klick öffnet die Spielerakte.</div>';
 }
 
@@ -5418,6 +5944,7 @@ function erklZeigen(el){
     else if(art==='u')html=erklBereich(wert,true);
     else if(art==='l')html=erklLeistung(wert);
     else if(art==='a')html=erklAufstellung(+wert);
+    else if(art==='t')html=erklTopTeam(+wert);
   }catch(e){html='';}
   const pop=erklPop();
   if(!html){erklWeg();return;}
@@ -6157,7 +6684,7 @@ function renderProfile(p,hasV,vN){
   document.getElementById('profil-bk').onclick=()=>go(zurueck);
   document.getElementById('profil-bk').innerHTML='<i class="ti ti-arrow-left"></i> '
     +(zurueck==='kader'?'Kader':zurueck==='kaderresult'?'Kaderanalyse'
-      :zurueck==='spielersuche'?'Spielersuche':'Ergebnisse');
+      :zurueck==='spielersuche'?'Spielersuche':zurueck==='topteam'?'Top-Team':'Ergebnisse');
   const rb=hasV?'<div class="report-bar"><div class="report-bar-info"><strong>Bericht generieren</strong>Spielerakte + Passungsanalyse für '+vN+'</div><button class="btn-report" onclick="openModal()"><i class="ti ti-file-text"></i> Bericht</button></div>':'<div class="report-bar"><div class="report-bar-info"><strong>Bericht generieren</strong>Spielerakte mit Stärken, Schwächen und Eigenschaften</div><button class="btn-report" onclick="openModal()"><i class="ti ti-file-text"></i> Bericht</button></div>';
   const flagsArr=flagsFuer(p);
   const tnCard=(hasV&&lastTN)

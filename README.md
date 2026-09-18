@@ -850,6 +850,89 @@ Metern nach den Spielregeln gezeichnet, Kreise bleiben also rund. Die
 Statusringe halten auf dem Rasen mindestens 3,3:1 Kontrast, die Beschriftung
 4,5:1.
 
+### Top-Team der Liga (freigegeben am 18.09.2026)
+
+In der Kaderanalyse steht bei jeder Liga über den Vereinen die Karte **„Top-Team
+der Liga"**. Sie baut eine Elf aus den Spielern der Liga: je Platz der Beste
+der gewählten Kategorie, darunter der Nächste als **Ersatz (E)**. Kategorie
+und Formation lassen sich auf der Seite direkt umschalten. Jeder Spieler, auf
+dem Platz wie in der Liste daneben, öffnet mit Klick seine Akte; Zurück führt
+an dieselbe Stelle. Die Akte übernimmt dabei keinen Verein, denn das Top-Team
+ist keiner.
+
+| Kategorie | Wer kommt infrage | Reihenfolge je Position | oben links am Spieler |
+|---|---|---|---|
+| Beste Elf der Liga | alle | Liga-Note | — |
+| Vertragsausläufer | Vertrag endet bis zum Saisonende | Marktwert (Transfermarkt), bei Gleichstand die Note | Marktwert |
+| Vertragsausläufer (bestes Rating) | wie oben | Liga-Note | Vertragsende |
+| Vertragsausläufer (jüngste) | wie oben | Alter, bei Gleichstand die Note | Alter |
+| Jüngste Mannschaft | alle | Alter, bei Gleichstand die Note | Alter |
+| Mannschaft mit viel Potenzial | unter 26 | PN | PN |
+
+Für alle Kategorien gilt:
+
+- **Heutiger Kader 2026/27**, Noten 2025/26 mit mindestens 450 Ligaminuten,
+  auf das Niveau der Liga umgerechnet — dieselbe Grundlage wie die übrige
+  Kaderanalyse. Unten rechts am Spieler steht immer diese Liga-Note, der Ring
+  zeigt ihre Stufe (ab 70, 40 bis 69, unter 40).
+- **Vertragsausläufer** heißt: Vertrag endet spätestens am 31.08. nach dem
+  laufenden Saisonende, also die Fenster „Winterpause" und „Saisonende" der
+  Ausläufer-Suche zusammen. Es gilt dieselbe Regel wie dort: bei Leihspielern
+  zählt allein der Vertrag beim Stammverein. Eine Verlängerungsoption schließt
+  nicht aus, sie ist am Spieler markiert (↻) und im Erklärfenster genannt.
+- **Alter** in ganzen Jahren, wie Transfermarkt es führt. Geburtsdaten stehen
+  nicht in den Daten, deshalb entscheidet bei gleichem Alter die Note. Die
+  jüngsten Elfen sind streng nach Alter gebaut, dort stehen also auch Spieler
+  mit sehr niedriger Note. Wer seine Note in einer tieferen Liga erspielt hat,
+  fällt beim Umrechnen teils bis auf 1.
+- **PN** ist die Potenzialnote aus `scripts/compute_grades.py`: Note plus 2
+  Punkte je Lebensjahr unter 26, höchstens 12. Hier wird sie auf die
+  umgerechnete Note gesetzt; wo nichts umgerechnet wird, ist sie genau das PN
+  der Daten.
+
+**Formationen.** Jeder Platz gehört zu genau einer Position:
+
+| Formation | Plätze |
+|---|---|
+| 4-4-2 | TW · LV IV IV RV · LA DM ZM RA · ST ST |
+| 4-2-3-1 | TW · LV IV IV RV · DM ZM · LA OM RA · ST — wie die Aufstellung der Kaderanalyse |
+| 3-5-2 | TW · IV IV IV · LV DM ZM OM RV · ST ST — LV/RV als Schienenspieler |
+| 5-3-2 | TW · LV IV IV IV RV · DM ZM ZM · ST ST |
+
+Transfermarkt führt linkes und rechtes Mittelfeld unter LA und RA, deshalb
+stehen dort im 4-4-2 die Außenbahnen.
+
+**Ersatz.** Jeder Platz hat einen Ersatz, zwei Innenverteidiger also zwei
+Ersatz-IV. Erst werden alle Startplätze vergeben, dann die Ersatzplätze;
+jeder Spieler steht nur einmal. Hat eine Position in der Kategorie keinen
+Spieler mehr, rückt der Nächste einer verwandten Position nach, nach derselben
+Tabelle wie in der Aufstellung, gestrichelt und als „OM als ST" beschriftet.
+Nachgezählt über 35 Ligen, 6 Kategorien und 4 Formationen: jeder Platz ist
+besetzt, und jeder hat einen Ersatz.
+
+**Warum so — die Messung vor der Freigabe** (35 Ligen, 4-2-3-1, 385
+Startplätze):
+
+| Frage | Variante | Ergebnis |
+|---|---|---|
+| Worin unterscheidet sich „Vertragsausläufer" von „(bestes Rating)"? | nach Marktwert — **gewählt** | 242 von 385 Startplätzen anders |
+| | nach Ligaminuten | 246 anders |
+| | nach frühestem Vertragsende | nur 4 anders — fast alle Verträge enden am 30.06.2027 |
+| Woran misst sich Potenzial? | PN, nur unter 26 — **gewählt** | Bundesliga: Olise (24) PN 93, Bischof (21) 84, Gruda (22) 83 |
+| | PN ohne Altersgrenze | 141 von 385 Plätzen mit Spielern ab 26 (Kane, Orbán, Coufal) |
+| | Marktwert der U23 | holt schwache Noten in die Elf (Bakayoko, Note 31, 20 Mio. €) |
+
+Dazu kam auf Wunsch die beste Elf der Liga als erste Kategorie, als Maßstab
+für die übrigen fünf.
+
+**Geprüft** für alle 840 Kombinationen, am Desktop und auf Handybreiten von
+240 bis 460 Pixel: keine Überlappung zwischen Spielern oder Ersatz-Schildern,
+nichts ragt über den Platz, kein seitliches Scrollen. Auf dem Handy wachsen
+Namen und Ersatz-Schilder mit der Platzbreite (bei vier Spielern nebeneinander
+bleiben auf einem 240-Pixel-Platz nur 24 % der Breite je Spieler). Die
+Kaderanalyse selbst ist unverändert: Aufstellung, Balken, Einordnung und
+Empfehlungen aller 631 Vereine sind zeichengenau dieselben wie vorher.
+
 ## Passung direkt in der Spielerakte
 
 Die Passungsanalyse gab es bisher nur in eine Richtung: erst einen Verein
