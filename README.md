@@ -850,6 +850,55 @@ Metern nach den Spielregeln gezeichnet, Kreise bleiben also rund. Die
 Statusringe halten auf dem Rasen mindestens 3,3:1 Kontrast, die Beschriftung
 4,5:1.
 
+### Eingaben: Budget, Ablöse, Vertragsausläufer (freigegeben am 18.09.2026)
+
+Das Formular der Kaderanalyse hatte vier Felder, die nirgends gelesen wurden:
+„Transferbudget", „Max. Ablöse / Spieler", „Vertragsläufer bevorzugen" und
+„Nur Schwachstellen". Heute wirken sie so:
+
+| Feld | Wirkung |
+|---|---|
+| Transferbudget | **Budgetplan** über den Positionen; zugleich Obergrenze je Spieler. Leer: kein Plan. |
+| Max. Ablöse / Spieler | Obergrenze je Kandidat. Leer: automatisch das 1,5-Fache des teuersten eigenen Spielers, wie bisher. |
+| Vertragsausläufer | Beides · nur Ausläufer · ohne Ausläufer (vorher „Vertragsläufer bevorzugen: Beides/Ja/Nein") |
+| Nur Schwachstellen | an: Positionen im unteren Drittel der Liga; aus: alle Positionen, die schwächste zuerst |
+
+**Ablöse heißt Marktwert** (Transfermarkt) als Richtwert — eine echte Ablöse
+kennt die Quelle nicht. Spieler ohne Marktwert bleiben in den
+Kandidatenlisten, sonst fiele in den Oberligen jeder heraus. **Ausläufer** heißt
+wie im Top-Team: Vertrag endet bis zum Saisonende, bei Leihspielern zählt der
+Vertrag beim Stammverein. Über den Empfehlungen steht, welche Eingaben gelten.
+
+**Budgetplan.** Die Positionen in der Reihenfolge der Empfehlungen, die
+schwächste zuerst. Je Position zählt nur ein Kandidat, der die Startelf
+verbessert — seine auf die Liga umgerechnete Note liegt über der des
+schwächsten Stammspielers, wie in der Akte — und dessen Marktwert bekannt ist
+und ins Restbudget passt. Unter ihnen gewinnt die höchste Note, bei gleicher
+Note der günstigere. Gezeigt wird, wie sich die Startelf-Note der Position
+ändert; bei zwei Innenverteidigern ist das der neue Schnitt beider. Spieler,
+die ihren Verein verlassen haben, bleiben außen vor, weil Vertrag und Marktwert
+dann beim neuen Verein gelten.
+
+| Verein, Budget | Plan (Marktwert in Mio. €, Startelf-Note vorher → nachher) |
+|---|---|
+| 1.FC Kaiserslautern, 5 Mio. € | RA Błanik 0,7 (1 → 84) · ST Pohjanpalo 3,5 (34 → 89) · DM Sounas 0,5 (39 → 75) · LV Novak 0,1 (52 → 82) — Summe 4,8 Mio. € |
+| 1.FC Union Berlin, 15 Mio. € | TW Butez 8,0 · LA Grifo 4,0 · LV Berchiche 1,0 · DM Witsel 1,2 · OM Nowak 0,45 · IV Janicki 0,3 (50 → 64) — ST: nichts mehr im Restbudget von 50 Tsd. € |
+
+Gemessen vor der Freigabe, Kandidaten je Schwachstelle beim 1.FC
+Kaiserslautern: RA 858 (nur Ausläufer 166, ohne 692), ST 507 (102 / 405),
+DM 313 (82 / 231), LV 581 (126 / 455).
+
+**Nebenbei behoben.** Der Klick auf „Kandidaten →" schrieb die Position in die
+Filterleiste der Spielersuche und leerte deren Ligawahl. Deren übrige Filter
+wirkten dadurch unsichtbar in der Kandidatenliste mit, und die Spielersuche
+stand danach auf dieser Position. Die Kandidaten haben jetzt eine eigene
+Grundmenge: Spieler der Position mit belastbarer Note. „Zurück" führt aus der
+Liste wieder zur Analyse statt zum geleerten Formular.
+
+**Geprüft:** Ohne Eingaben sind für alle 631 Vereine Analyse und alle 2.116
+Kandidatenlisten dieselben wie vorher — dieselben Spieler in derselben
+Reihenfolge, dieselbe Hinweiszeile. Die Spielersuche bleibt unberührt.
+
 ### Top-Team der Liga (freigegeben am 18.09.2026)
 
 In der Kaderanalyse steht bei jeder Liga über den Vereinen die Karte **„Top-Team

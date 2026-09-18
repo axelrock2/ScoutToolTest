@@ -649,6 +649,37 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
   .au-nr{font-size:8px;min-width:15px;height:14px;line-height:12px;left:-8px;top:-4px;padding:0 3px}
 }
 @media(prefers-reduced-motion:reduce){.au-kreis{transition:none}}
+/* ---- Eingaben der Kaderanalyse: Eingabezeile, Budgetplan, Positionen
+   ausserhalb des unteren Drittels (Farbe wie die Balken). */
+.kad-opt-hinweis{margin:-6px 0 12px;font-style:normal}
+.kad-einst{margin:-6px 0 14px;font-size:12px;line-height:1.6;color:var(--ink-2)}
+.kad-einst strong{color:var(--ink)}
+.kad-av{background:color-mix(in srgb,var(--c) 12%,transparent);border-color:color-mix(in srgb,var(--c) 35%,transparent);
+  color:var(--c);font-family:'JetBrains Mono',monospace;font-size:15px}
+.bp{border:1px solid var(--line-bright);border-radius:12px;background:var(--pitch-2);padding:12px 14px;margin-bottom:18px}
+.bp-kopf{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin-bottom:6px;font-size:13px;color:var(--ink)}
+.bp-kopf span{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--ink-2);text-transform:uppercase;letter-spacing:0.8px}
+.bp-zeile{display:grid;grid-template-columns:34px minmax(0,1fr) auto auto;align-items:center;gap:10px;width:calc(100% + 12px);
+  padding:7px 6px;margin:0 -6px;background:none;border:0;border-top:1px solid var(--line);border-radius:0;font:inherit;
+  color:var(--ink);text-align:left;cursor:pointer}
+.bp-zeile:hover{background:rgba(127,127,127,0.09)}
+.bp-zeile:focus-visible{outline:2px solid var(--lime);outline-offset:-2px}
+.bp-pos{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--ink-2)}
+.bp-name{font-size:13px;font-weight:600;line-height:1.3;overflow-wrap:anywhere}
+.bp-name small{display:block;font-size:11px;font-weight:400;color:var(--ink-2)}
+.bp-mw{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink);white-space:nowrap;text-align:right}
+.bp-note{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:var(--ink);white-space:nowrap;text-align:right}
+.bp-note small{display:block;font-size:9.5px;font-weight:400;color:var(--ink-2);letter-spacing:0.3px}
+.bp-leer{cursor:default;color:var(--ink-2)}
+.bp-leer:hover{background:none}
+.bp-leer .bp-name{font-weight:400;grid-column:2/-1}
+.bp-summe{border-top:1px solid var(--line-bright);padding-top:8px;margin-top:2px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink);text-align:right}
+.bp-fuss{margin-top:8px;font-size:11.5px;line-height:1.6;color:var(--ink-2)}
+@media(max-width:600px){
+  .bp-zeile{grid-template-columns:30px minmax(0,1fr) auto}
+  .bp-note{grid-column:2/-1;text-align:left}
+  .bp-note small{display:inline;margin-left:6px}
+}
 /* ---- Top-Team der Liga. Platz, Kreise, Namen und Liste kommen von der
    Aufstellung; neu sind die Schalter, der Ersatz unter jedem Spieler und
    die Karte in der Vereinsauswahl. */
@@ -1256,7 +1287,7 @@ input[type=range]::-webkit-slider-thumb{box-shadow:none}
     <div class="sec"><div class="sec-title">Aufstellung</div><div id="kad-aufstellung"></div></div>
     <div class="sec"><div class="sec-title">Einordnung in der Liga</div><div id="kad-gesamt"></div></div>
     <div class="sec"><div class="sec-title">Position im Vergleich zur Ligakonkurrenz</div><div id="kad-bars"></div><div class="legend"><div class="leg-item"><div class="leg-dot" style="background:var(--green)"></div>obere Ligahälfte</div><div class="leg-item"><div class="leg-dot" style="background:var(--amber)"></div>Mittelfeld</div><div class="leg-item"><div class="leg-dot" style="background:var(--red)"></div>unteres Drittel</div></div></div>
-    <div class="sec"><div class="sec-title">Empfohlene Verstärkungen</div><p style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-2);text-transform:uppercase;letter-spacing:1px;margin-bottom:16px">Positionen im unteren Drittel der Liga</p><div id="kad-recs"></div></div>
+    <div class="sec"><div class="sec-title">Empfohlene Verstärkungen</div><p style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-2);text-transform:uppercase;letter-spacing:1px;margin-bottom:16px" id="kad-recs-sub">Positionen im unteren Drittel der Liga</p><div id="kad-recs"></div></div>
   </div>
 </div>
 
@@ -1817,7 +1848,15 @@ function go(page,from){
   window.scrollTo(0,0);
   const lbl={home:'TERMINAL // START',spielersuche:'SPIELERSUCHE',vereinsmatching:'VEREINS-MATCHING',kaderanalyse:'KADERANALYSE',kaderresult:'KADER // REPORT',ergebnisse:'TREFFER',profil:'SPIELERAKTE',auslaufer:'VERTRAGSAUSLÄUFER',ordner:'MERKLISTE',kader:'KADER',topteam:'TOP-TEAM'};
   document.getElementById('bc').innerHTML='<span class="dot"></span> '+(lbl[page]||page);
-  if(page==='ergebnisse'){document.getElementById('ergebnis-bk').onclick=()=>go(fromPage);renderPlayers();}
+  if(page==='ergebnisse'){
+    /* Aus den Kandidaten der Kaderanalyse zurueck zur Analyse, nicht zur
+       Eingabe - go('kaderanalyse') setzt Liga, Verein und Felder zurueck. */
+    const zurueck=fromPage==='kaderanalyse'?'kaderresult':fromPage;
+    const bk=document.getElementById('ergebnis-bk');
+    bk.onclick=()=>go(zurueck);
+    bk.innerHTML='<i class="ti ti-arrow-left"></i> '+(zurueck==='kaderresult'?'Kaderanalyse':'Filter');
+    renderPlayers();
+  }
   if(page==='kaderresult'){renderKadResult();metrikenLaden();}
   if(page==='vereinsmatching'){vmLiga=null;vmVerein=null;renderLigen('vm');resetPanels('vm');}
   if(page==='kaderanalyse'){kadLiga=null;kadVerein=null;renderLigen('kad');resetPanels('kad');}
@@ -1875,7 +1914,7 @@ function pickLiga(px,id){
   document.getElementById(px+'-opt-panel').innerHTML='<div class="panel-title"><span class="idx">03</span> '+(px==='vm'?'Optionen':'Analyse')+'</div><div class="empty-panel" style="padding:48px 16px"><i class="ti ti-'+(px==='vm'?'adjustments':'chart-grid-dots')+'"></i><p>Verein wählen</p></div>';
 }
 function pickVerein(px,name,lid){
-  if(px==='vm'){vmVerein=name;vmVereinLiga=lid}else{kadVerein=name;kadVereinLiga=lid}
+  if(px==='vm'){vmVerein=name;vmVereinLiga=lid}else{kadVerein=name;kadVereinLiga=lid;kadOptionen=kadOptionenVorgabe();}
   document.querySelectorAll('#'+px+'-verein-panel .verein-card').forEach(c=>c.classList.toggle('sel',c.querySelector('.vc-name').textContent===name));
   const l=LIGEN.find(x=>x.id===lid);
   if(px==='vm'){
@@ -1897,11 +1936,14 @@ function pickVerein(px,name,lid){
   }else{
     document.getElementById('kad-opt-panel').innerHTML='<div class="panel-title"><span class="idx">03</span> Analyse</div>'+
     '<div class="sel-info"><div class="sl">Ausgewählt</div><div class="sn">'+name+'</div><div class="sm">'+l.name+' · '+l.land+'</div></div>'+
-    '<div class="fg"><label>Transferbudget (Mio. €)</label><input type="number" placeholder="Automatisch schätzen"></div>'+
-    '<div class="fg"><label>Max. Ablöse / Spieler (Mio. €)</label><input type="number" placeholder="z.B. 5"></div>'+
-    '<div class="fg"><label>Vertragsläufer bevorzugen</label><select><option>Beides</option><option>Ja</option><option>Nein</option></select></div>'+
-    '<div class="fg"><div class="tr"><label>Nur Schwachstellen</label><label class="tog"><input type="checkbox" checked><span class="tslider"></span></label></div></div>'+
-    '<button class="btn-primary" onclick="go(\'kaderresult\',\'kaderanalyse\')"><i class="ti ti-chart-grid-dots"></i> Analyse starten</button>';
+    '<div class="fg"><label for="kad-budget">Transferbudget (Mio. €)</label><input type="number" id="kad-budget" min="0" step="0.1" placeholder="optional, für den Budgetplan"></div>'+
+    '<div class="fg"><label for="kad-abloese">Max. Ablöse / Spieler (Mio. €)</label><input type="number" id="kad-abloese" min="0" step="0.1" placeholder="'
+      +(kaderObergrenze(name)?'automatisch: bis '+kadGeld(kaderObergrenze(name)):'ohne Grenze')+'"></div>'+
+    '<div class="fg"><label for="kad-auslauf">Vertragsausläufer</label><select id="kad-auslauf"><option value="beides">Beides</option><option value="nur">Nur Ausläufer</option><option value="ohne">Ohne Ausläufer</option></select></div>'+
+    '<div class="fg"><div class="tr"><label for="kad-schwach">Nur Schwachstellen</label><label class="tog"><input type="checkbox" id="kad-schwach" checked><span class="tslider"></span></label></div></div>'+
+    '<div class="pf-hinweis kad-opt-hinweis">Ablöse heißt hier Marktwert (Transfermarkt) als Richtwert. '
+      +'Ohne eigene Grenze gilt das 1,5-Fache des teuersten eigenen Spielers. Mit Budget entsteht ein Budgetplan.</div>'+
+    '<button class="btn-primary" onclick="kadAnalyseStarten()"><i class="ti ti-chart-grid-dots"></i> Analyse starten</button>';
   }
 }
 function renderKadResult(){
@@ -1992,20 +2034,31 @@ function renderKadResult(){
 
   /* Schwachstellen: nicht die niedrigste Note zaehlt, sondern der
      schlechteste Rang - das ist der Rueckstand auf die Konkurrenz. */
-  const weak=mitRang.filter(r=>r.rang&&rangAnteil(r)<40)
+  /* Mit "Nur Schwachstellen" aus stehen alle Positionen da, die
+     schwaechste zuerst - gefaerbt wie die Balken darueber. */
+  const weak=mitRang.filter(r=>r.rang&&(!kadOptionen.nurSchwach||rangAnteil(r)<40))
                     .sort((a,b)=>rangAnteil(a)-rangAnteil(b));
-  document.getElementById('kad-recs').innerHTML=weak.length?weak.map(r=>{
+  const recsSub=document.getElementById('kad-recs-sub');
+  if(recsSub)recsSub.textContent=kadOptionen.nurSchwach
+    ?'Positionen im unteren Drittel der Liga':'Alle Positionen, die schwächste zuerst';
+  document.getElementById('kad-recs').innerHTML=kadEinstellungHTML(name)+kadBudgetplanHTML(name,lid,weak)
+   +(weak.length?weak.map(r=>{
     const rueckstand=(r.ligaBester??r.note)-r.note;
+    const anteil=rangAnteil(r), schwach=anteil<40;
+    const stufe=anteil>=60?'var(--green)':'var(--amber)';
     return '<div class="pcard" onclick="kadWeakClick(\''+r.pos+'\')" style="grid-template-columns:auto 1fr auto">'
-      +'<div class="av" style="background:rgba(255,91,91,0.1);border-color:rgba(255,91,91,0.3);color:#FF5B5B;font-family:\'JetBrains Mono\',monospace;font-size:15px">'
+      +(schwach
+        ?'<div class="av" style="background:rgba(255,91,91,0.1);border-color:rgba(255,91,91,0.3);color:#FF5B5B;font-family:\'JetBrains Mono\',monospace;font-size:15px">'
+        :'<div class="av kad-av" style="--c:'+stufe+'">')
       +r.rang+'.</div>'
       +'<div class="pi"><h4>'+r.pos+' — Platz '+r.rang+' von '+r.vonWievielen+'</h4>'
       +'<div class="meta"><span>'+r.anzahl+' eigene Spieler</span>'
       +'<span>Startelf '+r.note+'</span>'
       +'<span>Ligaschnitt '+(r.ligaSchnitt??'—')+'</span>'
-      +'<span style="color:var(--red)">'+rueckstand+' Pkt hinter dem Besten</span></div></div>'
+      +'<span style="color:'+(schwach?'var(--red)':stufe)+'">'
+        +(rueckstand>0?rueckstand+' Pkt hinter dem Besten':'bester Wert der Liga')+'</span></div></div>'
       +'<div style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--lime);text-transform:uppercase;letter-spacing:1px">Kandidaten →</div></div>';
-  }).join(''):'<div style="font-size:13px;color:var(--ink-2)">Keine Position im unteren Drittel der Liga.</div>';
+  }).join(''):'<div style="font-size:13px;color:var(--ink-2)">Keine Position im unteren Drittel der Liga.</div>');
 
   /* Kadertiefe - getrennt vom Bedarf. Der Bedarf richtet sich allein nach
      der Startelf; ob die Bank einen Ausfall auffangen kann, ist eine
@@ -2026,6 +2079,157 @@ function renderKadResult(){
           '<span><strong>'+r.pos+'</strong> · Startelf '+elf+' · '+text+'</span></div>';
       }).join(''));
   }
+}
+
+/* ---------- Eingaben der Kaderanalyse ------------------------------------
+   Vier Felder im Formular, bis zum 18.09.2026 ohne Wirkung - sie wurden
+   nirgends gelesen. Freigegeben am 18.09.2026:
+     Transferbudget     Budgetplan: je Position (schwaechste zuerst) der beste
+                        Kandidat, der die Startelf verbessert und ins
+                        Restbudget passt; zugleich Obergrenze je Spieler.
+     Max. Abloese       Obergrenze je Spieler. Leer: automatisch das
+                        Anderthalbfache des teuersten eigenen Spielers, wie
+                        bisher (kaderObergrenze).
+     Vertragsauslaeufer Filter: Beides, nur Auslaeufer oder ohne. Auslaeufer
+                        wie im Top-Team (ttAuslaeufer): Vertrag endet bis zum
+                        Saisonende, bei Leihe zaehlt der Stammverein.
+     Nur Schwachstellen An: Positionen im unteren Drittel; aus: alle.
+   Abloese heisst ueberall Marktwert (Transfermarkt) als Richtwert - eine
+   echte Abloese kennt die Quelle nicht. */
+function kadOptionenVorgabe(){return {budget:null,abloese:null,auslauf:'beides',nurSchwach:true};}
+/* var statt let: keine temporale Totzone, falls frueh darauf zugegriffen
+   wird - an genau diesem Muster ist die Seite schon einmal gescheitert. */
+var kadOptionen=kadOptionenVorgabe();
+
+function kadAnalyseStarten(){
+  const mio=id=>{
+    const el=document.getElementById(id);
+    const v=parseFloat(String(el?el.value:'').replace(',','.'));
+    return isNaN(v)||v<=0?null:Math.round(v*1e6);
+  };
+  const aus=document.getElementById('kad-auslauf'), nur=document.getElementById('kad-schwach');
+  kadOptionen={budget:mio('kad-budget'),abloese:mio('kad-abloese'),
+    auslauf:aus?aus.value:'beides',nurSchwach:nur?nur.checked:true};
+  go('kaderresult','kaderanalyse');
+}
+
+/* Das Anderthalbfache des teuersten eigenen Spielers - nur wenn genug
+   Marktwerte vorliegen. In den Oberligen fuehrt die Quelle fast keine,
+   dort waere jede Grenze aus der Luft gegriffen. */
+function kaderObergrenze(verein){
+  const kader=kaderHeute(verein);
+  const eigene=kader.filter(x=>x.mv_eur).map(x=>x.mv_eur);
+  return eigene.length>=Math.max(3,kader.length/3)?Math.max(...eigene)*1.5:null;
+}
+/* Grenze je Spieler: Max. Abloese oder automatisch, hoechstens das Budget. */
+function kadGrenze(verein){
+  const je=kadOptionen.abloese!=null?kadOptionen.abloese:kaderObergrenze(verein);
+  const b=kadOptionen.budget;
+  if(je!=null&&b!=null)return Math.min(je,b);
+  return je!=null?je:b;
+}
+function kadGeld(v){
+  if(!v)return '0 €';
+  return v>=1e6?(v/1e6).toFixed(1).replace('.',',')+' Mio. €':Math.round(v/1000)+' Tsd. €';
+}
+function kadGrenzText(verein){
+  const g=kadGrenze(verein);
+  if(!g)return '';
+  const b=kadOptionen.budget, a=kadOptionen.abloese;
+  const woher=(b!=null&&g===b&&(a==null||a>b))?' Budget':(a!=null&&g===a)?' Ablöse':'';
+  return ' (bis '+kadGeld(g)+woher+')';
+}
+/* Erreichbar: hoechstens 8 Niveaupunkte ueber der eigenen Liga, nicht mehr
+   als zwei Suchradien darunter - derselbe Massstab wie bisher. */
+function kadErreichbar(p,refNiv){
+  const n=(typeof p.niveau==='number')?p.niveau:niveauVonLiga(p.liga_id);
+  return !(n>refNiv+8)&&!(n<refNiv-RADIUS_NAH*2);
+}
+function kadAuslaufPasst(p){
+  if(kadOptionen.auslauf==='nur')return ttAuslaeufer(p);
+  if(kadOptionen.auslauf==='ohne')return !ttAuslaeufer(p);
+  return true;
+}
+
+function kadEinstellungHTML(verein){
+  const t=[];
+  const auto=kaderObergrenze(verein);
+  if(kadOptionen.budget)t.push('Budget '+kadGeld(kadOptionen.budget));
+  if(kadOptionen.abloese)t.push('Ablöse bis '+kadGeld(kadOptionen.abloese)+' je Spieler');
+  else if(auto)t.push('Ablöse automatisch bis '+kadGeld(auto)+' je Spieler (1,5 × teuerster eigener Spieler)');
+  else t.push('Ablöse ohne Grenze (zu wenige Marktwerte im Kader)');
+  t.push({beides:'mit und ohne auslaufenden Vertrag',nur:'nur Vertragsausläufer',
+          ohne:'ohne Vertragsausläufer'}[kadOptionen.auslauf]||'');
+  t.push(kadOptionen.nurSchwach?'nur Schwachstellen':'alle Positionen');
+  return '<div class="kad-einst"><strong>Eingaben:</strong> '+t.filter(Boolean).join(' · ')+'</div>';
+}
+
+/* Budgetplan. Die Positionen kommen in der Reihenfolge der Empfehlungen,
+   also die schwaechste zuerst. Je Position zaehlt nur ein Kandidat, der die
+   Startelf verbessert (auf die Liga umgerechnete Note ueber dem schwaechsten
+   Stammspieler, wie in spielerFuerVerein), dessen Marktwert bekannt ist und
+   ins Restbudget passt; unter ihnen der mit der hoechsten Note, bei gleicher
+   Note der guenstigere. Wer seinen Verein verlassen hat, bleibt aussen vor:
+   Vertrag und Marktwert gelten dann beim neuen Verein. Streng je Position -
+   ein RV wird am rechten Verteidiger gemessen, nicht am linken. */
+function kadBudgetplan(verein,ligaId,positionen){
+  const budget=kadOptionen.budget;
+  if(!budget)return null;
+  const refNiv=niveauVonLiga(ligaId);
+  const grenze=kadGrenze(verein);
+  let rest=budget;
+  const benutzt=new Set();
+  const zeilen=positionen.map(function(r){
+    const schwaechster=Math.min(...r.start.map(x=>x.ln));
+    let best=null;
+    PLAYERS.forEach(function(p){
+      if(p.pos!==r.pos||p.weg||p.belastbar===false||p.club===verein||benutzt.has(p.id))return;
+      if(!p.mv_eur||p.mv_eur>rest||(grenze&&p.mv_eur>grenze))return;
+      if(!kadErreichbar(p,refNiv)||!kadAuslaufPasst(p))return;
+      const ein=eingeordneteNote(p,refNiv), wert=ein?ein.wert:p.ln;
+      if(wert<=schwaechster)return;
+      if(!best||wert>best.wert||(wert===best.wert&&p.mv_eur<best.p.mv_eur))best={p:p,wert:wert};
+    });
+    if(!best)return {r:r,p:null,rest:rest};
+    rest-=best.p.mv_eur;
+    benutzt.add(best.p.id);
+    return {r:r,p:best.p,b:spielerFuerVerein(best.p,verein,ligaId)};
+  });
+  return {budget:budget,rest:rest,zeilen:zeilen};
+}
+
+function kadBudgetplanHTML(verein,ligaId,positionen){
+  const plan=kadBudgetplan(verein,ligaId,positionen);
+  if(!plan)return '';
+  const liga=(LIGEN.find(l=>l.id===ligaId)||{}).name||'';
+  const zeilen=plan.zeilen.map(function(z){
+    if(!z.p)return '<div class="bp-zeile bp-leer"><span class="bp-pos">'+z.r.pos+'</span>'
+      +'<span class="bp-name">Keine Verstärkung, die ins Restbudget von '+kadGeld(z.rest)+' passt</span></div>';
+    const p=z.p, b=z.b;
+    const vertrag=ttAuslaeufer(p)?' · Vertrag bis '+dtm(vertragsEnde(p)):'';
+    return '<button type="button" class="bp-zeile" onclick="kadPlanProfil('+p.id+')" '
+      +'title="'+vglEsc(b.text)+'">'
+      +'<span class="bp-pos">'+z.r.pos+'</span>'
+      +'<span class="bp-name">'+vglEsc(p.name)+'<small>'+vglEsc(p.club)+' · '+vglEsc(p.liga)+vertrag+'</small></span>'
+      +'<span class="bp-mw">'+kadGeld(p.mv_eur)+'</span>'
+      +'<span class="bp-note">'+b.schnitt+' → '+b.neu+'<small>Startelf '+z.r.pos+'</small></span>'
+      +'</button>';
+  }).join('');
+  return '<div class="bp">'
+    +'<div class="bp-kopf"><strong>Budgetplan</strong><span>'+kadGeld(plan.budget)+' · schwächste Position zuerst</span></div>'
+    +zeilen
+    +'<div class="bp-summe">Summe '+kadGeld(plan.budget-plan.rest)+' · Rest '+kadGeld(plan.rest)+'</div>'
+    +'<div class="bp-fuss">Je Position der Kandidat mit der höchsten Note, der die Startelf verbessert und ins '
+      +'Restbudget passt; bei gleicher Note der günstigere. Noten auf das Niveau der '+vglEsc(liga)
+      +' umgerechnet – eine Schätzung. Ablöse = Marktwert (Transfermarkt) als Richtwert; '
+      +'Vertragsausläufer sind ab Sommer ablösefrei. Ohne Spieler ohne Marktwert und ohne Spieler, '
+      +'die ihren Verein verlassen haben. Klick öffnet die Akte.</div>'
+    +'</div>';
+}
+
+function kadPlanProfil(id){
+  profilZurueck='kaderresult';
+  showProfile(id);
 }
 
 /* ---------- Aufstellung ---------------------------------------------------
@@ -2915,17 +3119,18 @@ function aktiverVerein(){
    Der Vereinsbezug bleibt erhalten, damit jeder Treffer zeigt, was er FUER
    DIESEN Verein bedeuten wuerde. */
 window.kadWeakClick=function(pos){
-  const sel=document.getElementById('f-pos');
-  if(sel)sel.value=['LV','RV'].includes(pos)?'LV,RV'
+  /* Frueher schrieb dieser Klick die Position in die Filterleiste der
+     Spielersuche und leerte deren Ligawahl - die uebrigen Filter der
+     Spielersuche wirkten dann unsichtbar mit, und die Spielersuche stand
+     danach auf dieser Position. Jetzt hat die Kandidatenliste ihre eigene
+     Grundmenge (renderPlayers), und es gelten nur die Eingaben der
+     Kaderanalyse. Erreichbar heisst weiter: eigenes Niveau plus ein Stueck
+     darueber (siehe kadErreichbar). */
+  kadKandidatPos=['LV','RV'].includes(pos)?'LV,RV'
     :['OM','LA','RA'].includes(pos)?'OM,LA,RA':pos;
-  LIGA_WAHL['f-liga'].clear();
-  zeichneLigaAuswahl('f-liga');
-  /* Nur Spieler zeigen, die fuer diesen Verein ueberhaupt erreichbar sind:
-     eigenes Niveau plus ein Stueck darueber. */
-  kadPosFilter=pos;
   go('ergebnisse','kaderanalyse');
 };
-let kadPosFilter=null;
+let kadKandidatPos=null;
 /* Werte der Filterleiste einsammeln. Fehlt ein Feld (z. B. weil die Seite
    noch nicht gezeichnet ist), gilt der Filter als nicht gesetzt. */
 function leseFilter(){
@@ -3833,6 +4038,16 @@ function renderPlayers(ziel){
     ligaBezug=af.ligen.length===1?af.ligen[0]:null;
   }
 
+  /* Kandidaten der Kaderanalyse: eigene Grundmenge wie beim Matching und bei
+     den Auslaeufern - Spieler der angeklickten Position mit belastbarer Note.
+     Die Filterleiste der Spielersuche gilt hier nicht. */
+  if(fromPage==='kaderanalyse'&&kadKandidatPos&&!ziel.suche){
+    const gruppe=kadKandidatPos.split(',');
+    treffer=sortPlayers(PLAYERS.filter(p=>gruppe.includes(p.pos)&&p.belastbar!==false),f.sort);
+    hinweis=gruppe.join('/');
+    ligaBezug=null;
+  }
+
   const refNiv=verein?niveauVonLiga(verein.liga)
               :(ligaBezug?niveauVonLiga(ligaBezug):null);
 
@@ -3844,27 +4059,22 @@ function renderPlayers(ziel){
        Haaland und Mbappe an der Spitze der Werder-Kandidaten - formal
        richtig, als Vorschlag wertlos. Die Grenze kommt aus dem Verein
        selbst: das Anderthalbfache seines teuersten Spielers. */
-    const kaderGross=kaderHeute(verein.name).length;
-    const eigene=kaderHeute(verein.name).filter(x=>x.mv_eur)
-                        .map(x=>x.mv_eur);
-    /* Nur wenn genug Marktwerte vorliegen. In den Oberligen fuehrt die
-       Quelle fast keine - dort waere jede Grenze aus der Luft gegriffen. */
-    const obergrenze=eigene.length>=Math.max(3,kaderGross/3)
-      ? Math.max(...eigene)*1.5 : null;
+    /* Die Grenze je Spieler kommt aus den Eingaben der Kaderanalyse -
+       Max. Abloese, hoechstens das Budget -, sonst wie bisher automatisch
+       (kaderObergrenze). Spieler ohne Marktwert bleiben drin, sonst fiele
+       in den Oberligen jeder heraus. */
+    const obergrenze=kadGrenze(verein.name);
 
     treffer=treffer.filter(e=>{
       const p=e.p||e;
       if(p.club===verein.name)return false;             // eigene Spieler
-      const n=(typeof p.niveau==='number')?p.niveau:niveauVonLiga(p.liga_id);
-      if(n>refNiv+8)return false;      // deutlich staerkere Liga: unrealistisch
-      if(n<refNiv-RADIUS_NAH*2)return false;            // zu weit darunter
+      if(!kadErreichbar(p,refNiv))return false;
       if(obergrenze&&p.mv_eur&&p.mv_eur>obergrenze)return false;
+      if(!kadAuslaufPasst(p))return false;
       return true;
     });
-    const grenzText=!obergrenze?''
-      :obergrenze>=1e6?' (bis '+(obergrenze/1e6).toFixed(1).replace('.',',')+' Mio. €)'
-      :' (bis '+Math.round(obergrenze/1000)+' Tsd. €)';
-    hinweis+=' · erreichbar für '+verein.name+grenzText;
+    hinweis+=' · erreichbar für '+verein.name+kadGrenzText(verein.name)
+      +({nur:' · nur Vertragsausläufer',ohne:' · ohne Vertragsausläufer'}[kadOptionen.auslauf]||'');
   }
 
   const num=document.getElementById(ziel.anzahl);
