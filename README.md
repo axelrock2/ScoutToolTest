@@ -154,7 +154,7 @@ Spielerakte unter *Datenherkunft*, in Kurzform auf der Startseite.
 | **erhoben** | [Understat](https://understat.com) | xG, npxG, xA, Schlüsselpässe, Schüsse, Aufbaubeteiligung *(nur 5 Ligen)* |
 | **erhoben** | [Sofascore](https://www.sofascore.com) | über fünfzig Zählwerte: Zweikämpfe, Tacklings, Interceptions, Klärungen, Passquote, lange Bälle, Flanken, Schlüsselpässe, Großchancen, xG/xA, Schüsse, Dribblings, Ballkontakte, Paraden, verhinderte Tore, Fouls *(16 Ligen bis zur 3. Liga; nachgerechnet gegen FotMob/Opta)* |
 | **erhoben** | Transfermarkt · Bilder | Spielerfoto, Vereinswappen *(per Verweis, nicht gespeichert)* |
-| **berechnet** | dieses Werkzeug | Liga-Note, Positions-Note, Team-Note, Percentile, Liganiveau, Unterbewertet-Index |
+| **berechnet** | dieses Werkzeug | Liga-Note, Potenzial-Note, Team-Note, Percentile, Liganiveau, Unterbewertet-Index |
 | **fehlt** | — | Zweikämpfe unterhalb der 3. Liga, Klärungen, Passquote, Laufleistung, Gewicht |
 
 Die Trennung ist wichtig: Eine **erhobene** Körpergröße und eine
@@ -885,7 +885,7 @@ Für alle Kategorien gilt:
   jüngsten Elfen sind streng nach Alter gebaut, dort stehen also auch Spieler
   mit sehr niedriger Note. Wer seine Note in einer tieferen Liga erspielt hat,
   fällt beim Umrechnen teils bis auf 1.
-- **PN** ist die Potenzialnote aus `scripts/compute_grades.py`: Note plus 2
+- **PN** ist die Potenzial-Note aus `scripts/compute_grades.py`: Note plus 2
   Punkte je Lebensjahr unter 26, höchstens 12. Hier wird sie auf die
   umgerechnete Note gesetzt; wo nichts umgerechnet wird, ist sie genau das PN
   der Daten.
@@ -1450,6 +1450,21 @@ Die Akte beziffert das:
 | Filip Stanković (TW) | 90 | **38 %** — gut ein Drittel vom Verein |
 
 Ab 30 Prozent erscheint ein ausdrücklicher Warnhinweis.
+
+### Potenzial-Note (PN)
+
+Neben der Liga-Note steht in Akte, Bericht und Trefferliste die
+**Potenzial-Note**: Liga-Note plus 2 Punkte je Lebensjahr unter 26, höchstens
+12, und nie über 99. Ab 26 ist sie gleich der Liga-Note. Berechnet wird sie in
+`scripts/compute_grades.py`; nachgerechnet stimmt die Formel für alle 17.721
+Spieler der Daten.
+
+Bis zum 18.09.2026 hieß sie in Akte, Bericht und Sortierung „Positions-Note —
+Gewichtete Kernparameter". Diese Beschriftung stammte aus der ersten
+Demo-Fassung und passte nicht zur Berechnung. Heute heißt die Kennzahl überall
+Potenzial-Note, und Akte wie Bericht nennen ihre Herleitung je Spieler, etwa
+„Liga-Note + 10 Altersbonus" oder „ab 26 Jahren gleich der Liga-Note". Der
+Wert selbst ist unverändert, ebenso die Sortierung danach.
 
 ## Kennzahlen — und was bewusst fehlt
 

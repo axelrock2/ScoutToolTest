@@ -1192,7 +1192,7 @@ input[type=range]::-webkit-slider-thumb{box-shadow:none}
         <div class="res-count" aria-live="polite"><strong id="s-anzahl">–</strong> Treffer<span class="filt" id="s-filt"></span></div>
         <div class="suche-steuer">
           <select class="sort-sel" id="s-sort" onchange="sucheZeichnen()" aria-label="Sortierung">
-            <option value="um">Note, umgerechnet ↓</option><option value="ln">Liga-Note ↓</option><option value="pn">Positions-Note ↓</option><option value="age">Alter ↑</option><option value="mv">Marktwert ↓</option><option value="vertrag">Vertragsende ↑</option><option value="zk">Zweikampfquote ↓</option>
+            <option value="um">Note, umgerechnet ↓</option><option value="ln">Liga-Note ↓</option><option value="pn">Potenzial-Note ↓</option><option value="age">Alter ↑</option><option value="mv">Marktwert ↓</option><option value="vertrag">Vertragsende ↑</option><option value="zk">Zweikampfquote ↓</option>
           </select>
           <span class="aw" role="group" aria-label="Ansicht"><button type="button" class="aw-k an" data-ansicht="karten" aria-pressed="true" onclick="sucheAnsicht('karten')">Karten</button><button type="button" class="aw-k" data-ansicht="tabelle" aria-pressed="false" onclick="sucheAnsicht('tabelle')">Tabelle</button></span>
         </div>
@@ -1298,7 +1298,7 @@ input[type=range]::-webkit-slider-thumb{box-shadow:none}
   <div class="results-wrap">
     <div class="res-header">
       <div class="res-count"><strong id="res-num">47</strong> Treffer<span class="filt" id="res-filt">Liga-Note 65+ · 2. Bundesliga · OM/Flügel</span></div>
-      <select class="sort-sel" id="f-sort" onchange="renderPlayers()"><option value="ln">Sortieren: Liga-Note ↓</option><option value="um">Note, umgerechnet ↓</option><option value="pn">Positions-Note ↓</option><option value="age">Alter ↑</option><option value="mv">Marktwert ↓</option><option value="vertrag">Vertragsende ↑</option><option value="zk">Zweikampfquote ↓</option></select>
+      <select class="sort-sel" id="f-sort" onchange="renderPlayers()"><option value="ln">Sortieren: Liga-Note ↓</option><option value="um">Note, umgerechnet ↓</option><option value="pn">Potenzial-Note ↓</option><option value="age">Alter ↑</option><option value="mv">Marktwert ↓</option><option value="vertrag">Vertragsende ↑</option><option value="zk">Zweikampfquote ↓</option></select>
     </div>
     <div id="player-list"></div>
   </div>
@@ -2326,15 +2326,30 @@ const TT_FORMATIONEN={
 };
 const TT_FORMATION_VORGABE='4-2-3-1';
 
-/* Altersbonus wie in scripts/compute_grades.py (Potenzialnote PN): 2 Punkte
-   je Lebensjahr unter 26, hoechstens 12; ohne Altersangabe gilt 27, also
-   kein Bonus. Hier auf die UMGERECHNETE Note gesetzt - bei Spielern, deren
-   Note nicht umgerechnet wird, ergibt das genau das PN der Daten. */
-function ttAltersbonus(alter){
+/* Altersbonus der Potenzial-Note PN wie in scripts/compute_grades.py: 2
+   Punkte je Lebensjahr unter 26, hoechstens 12; ohne Altersangabe gilt 27,
+   also kein Bonus. PN = Liga-Note + Bonus, hoechstens 99 - nachgerechnet
+   fuer alle 17.721 Spieler der Daten.
+
+   Die Akte nannte PN frueher "Positions-Note - Gewichtete Kernparameter".
+   Die Beschriftung stammt aus der ersten Demo-Fassung (13.07.2026); seit
+   der Datenpipeline vom 17.08.2026 rechnet compute_grades.py PN als Note
+   plus Altersbonus. Seit dem 18.09.2026 heisst sie ueberall Potenzial-Note,
+   und Akte wie Bericht nennen ihre Herleitung je Spieler. Der Wert selbst
+   ist unveraendert. */
+function pnAltersbonus(alter){
   const a=alter||27;
   return a<26?Math.max(0,Math.min(12,(26-a)*2)):0;
 }
-function ttPN(p){return Math.min(99,p.ln+ttAltersbonus(p.age));}
+function pnHerleitung(p){
+  if(!p.age)return 'ohne Altersangabe gleich der Liga-Note';
+  const b=pnAltersbonus(p.age);
+  if(!b)return 'ab 26 Jahren gleich der Liga-Note';
+  return 'Liga-Note + '+b+' Altersbonus'+(p.ln+b>99?', höchstens 99':'');
+}
+/* Im Top-Team auf die UMGERECHNETE Note gesetzt - bei Spielern, deren Note
+   nicht umgerechnet wird, ergibt das genau das PN der Daten. */
+function ttPN(p){return Math.min(99,p.ln+pnAltersbonus(p.age));}
 
 /* Vertragsausläufer: Vertrag endet bis zum Ende der laufenden Saison -
    Winterpause und Saisonende zusammen, also die Fenster "winter" und
@@ -2403,10 +2418,10 @@ const TT_KATEGORIEN=[
   {id:'potenzial',name:'Mannschaft mit viel Potenzial',
    filter:p=>!!p.age&&p.age<26,
    sort:(a,b)=>ttPN(b)-ttPN(a)||ttNachNote(a,b)||(a.age||99)-(b.age||99),
-   marke:p=>'PN '+ttPN(p),markeName:'PN (Note + Altersbonus)',
+   marke:p=>'PN '+ttPN(p),markeName:'Potenzial-Note (PN)',
    wert:p=>'PN '+ttPN(p)+' · '+ttAlter(p),
-   regel:'Spieler unter 26 — je Position nach PN: Liga-Note plus 2 Punkte je Lebensjahr '
-     +'unter 26, höchstens 12'}
+   regel:'Spieler unter 26 — je Position nach Potenzial-Note PN: Liga-Note plus 2 Punkte '
+     +'je Lebensjahr unter 26, höchstens 12'}
 ];
 
 let ttZustand={liga:null,kat:TT_KATEGORIEN[0].id,form:TT_FORMATION_VORGABE};
@@ -2684,7 +2699,7 @@ function erklTopTeam(id){
   const p=d.p, kat=d.kat;
   const zahl=v=>Number(v||0).toLocaleString('de-DE');
   const posName=pos=>TM_POS_NAME[pos]||pos;
-  const bonus=ttAltersbonus(p.age);
+  const bonus=pnAltersbonus(p.age);
   return '<h6>'+vglEsc(p.name)+'</h6><dl>'
     +erklZeile('Platz',(d.ersatz?'Ersatz':'Startelf')+' · '+vglEsc(posName(d.platz))
       +(d.als?' — aufgerückt, eigentlich '+vglEsc(posName(p.pos)):''))
@@ -6711,7 +6726,7 @@ function renderProfile(p,hasV,vN){
     '<div class="badges">'+cbadge(p.contract)+(istLeihe(p)?auslaufBadge(p,true):'')+'<span class="badge b-blue">'+(p.mv||'k.A.')+' €</span>'+(p.underval?'<span class="badge b-teal"><i class="ti ti-trending-up" style="font-size:10px"></i> Unterbewertet</span>':'')+'</div></div>'+sternKnopf(p)+'</div>'+
   '<div class="note-grid">'+
     ringCard('LN','Liga-Note',p.ln,'vs. alle '+p.pos+' der Liga','var(--lime)')+
-    ringCard('PN','Positions-Note',p.pn,'Gewichtete Kernparameter','var(--green)')+
+    ringCard('PN','Potenzial-Note',p.pn,pnHerleitung(p),'var(--green)')+
     tnCard+
   '</div>'+passungsLeiste(p)+'</div>'+
   tnSec+
@@ -6932,7 +6947,7 @@ function downloadReport(){
   const datum=new Date().toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
   const _fl=flagsFuer(p);const st=_fl.filter(f=>f.c==='pos').map(f=>f.t),sw=_fl.filter(f=>f.c==='neg').map(f=>f.t),nu=_fl.filter(f=>f.c==='neu').map(f=>f.t);
   const tnRes=lastTN,ms=tnRes?tnRes.tn:null;
-  let h='<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;font-size:11pt;color:#1a1a1a;margin:0}.page{padding:40px 48px;max-width:800px;margin:0 auto}.header{border-bottom:2px solid #185FA5;padding-bottom:16px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-end}.header h1{font-size:18pt;font-weight:700;color:#185FA5;margin:0 0 4px}.header p{font-size:9pt;color:#666;margin:0}.hr{text-align:right;font-size:9pt;color:#666}.logo{font-size:14pt;font-weight:700;color:#185FA5}h2{font-size:12pt;font-weight:700;color:#185FA5;margin:22px 0 10px;padding-bottom:4px;border-bottom:0.5px solid #dde4f0}h3{font-size:11pt;font-weight:700;margin:14px 0 6px}.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}.si{background:#f0f5fb;border-radius:4px;padding:8px 10px}.sl{font-size:8pt;color:#666}.sv{font-size:11pt;font-weight:700}.ng{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}.nb{border:1px solid #dde4f0;border-radius:4px;padding:12px 14px}.nl{font-size:8pt;color:#666}.nv{font-size:22pt;font-weight:700;color:#185FA5}.ns{font-size:8pt;color:#888}.fi{display:flex;gap:8px;margin-bottom:6px;font-size:10pt}.fd{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:3px}.fd.p{background:#3B6D11}.fd.n{background:#A32D2D}.fd.u{background:#888}.fz{background:#e8f2fb;border-left:3px solid #185FA5;padding:12px 14px;font-size:10pt;color:#0C447C;line-height:1.6}.pr{display:flex;align-items:center;gap:10px;margin-bottom:8px}.pn{font-size:9pt;width:180px;flex-shrink:0}.po{flex:1;height:7px;background:#e8eef5;border-radius:4px;overflow:hidden}.pi2{height:100%}.pp{font-size:9pt;color:#666;width:28px;text-align:right}.mb{background:#f7fdf9;border:1px solid #c0ddb0;border-radius:4px;padding:14px 16px}.mt{font-size:10pt;font-weight:700;color:#3B6D11;margin-bottom:6px}.mx{font-size:10pt;line-height:1.6}.cb{display:inline-block;padding:3px 10px;border-radius:12px;font-size:9pt;font-weight:700}.cr{background:#FCEBEB;color:#A32D2D}.cy{background:#FAEEDA;color:#854F0B}.cg{background:#EAF3DE;color:#3B6D11}.cn{background:#EEF1F5;color:#555}.ub{display:inline-block;background:#E1F5EE;color:#0F6E56;padding:2px 8px;border-radius:10px;font-size:9pt;font-weight:700;margin-left:8px}.footer{border-top:0.5px solid #ddd;margin-top:32px;padding-top:10px;font-size:8pt;color:#999;display:flex;justify-content:space-between}.ldt{width:100%;border-collapse:collapse;font-size:9.5pt;margin:4px 0 12px}.ldt th{font-size:8pt;color:#666;font-weight:normal;text-align:right;padding:4px 6px;border-bottom:1px solid #dde4f0}.ldt td{text-align:right;padding:5px 6px;border-bottom:0.5px solid #eef1f5}.ldt th:first-child,.ldt td:first-child{text-align:left}.ldt td small{display:block;color:#888;font-size:8pt}.ldt tr.sum td{font-weight:700;background:#f5f8fc}.lhinw{font-size:8pt;color:#888;margin:-6px 0 12px}.kzb{break-inside:avoid;margin-bottom:8px}.kzb h4{font-size:9.5pt;margin:12px 0 5px;color:#185FA5}.kzr{display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:9pt}.kzn{width:210px;flex-shrink:0}.kzw{width:64px;text-align:right;color:#333;flex-shrink:0}.kzo{flex:1;height:6px;background:#e8eef5;border-radius:3px;overflow:hidden}.kzi{height:100%}.kzp{width:26px;text-align:right;color:#666;flex-shrink:0}.rol{display:flex;align-items:baseline;gap:8px;margin-bottom:5px;font-size:9.5pt}.rol b{width:210px;flex-shrink:0}.rol span{color:#666;font-size:8.5pt;flex:1}.rol i{font-style:normal;font-weight:700;color:#185FA5;width:40px;text-align:right}@media print{body{print-color-adjust:exact;-webkit-print-color-adjust:exact}}</style></head><body><div class="page"><div class="header"><div><h1>'+p.name+'</h1><p>'+p.pos+' · '+p.club+' · '+p.liga+' · #'+p.number+'</p></div><div class="hr"><div class="logo">ScoutIQ</div><div>Erstellt am '+datum+'</div><div>'+(reportType==='kompakt'?'Kompaktbericht':'Ausführlicher Bericht')+'</div></div></div><h2>Spielereinschätzung</h2><div class="sg"><div class="si"><div class="sl">Alter</div><div class="sv">'+p.age+' J.</div></div><div class="si"><div class="sl">Fuß</div><div class="sv">'+p.foot+'</div></div><div class="si"><div class="sl">Größe</div><div class="sv">'+p.height+'</div></div><div class="si"><div class="sl">Marktwert</div><div class="sv">'+p.mv+' €</div></div></div><div style="margin-bottom:14px">Vertrag: <span class="cb '+(p.contract==='red'?'cr':p.contract==='yellow'?'cy':p.contract==='green'?'cg':'cn')+'">'+ctxt(p.contract)+'</span>'+(function(){const lh=leiheInfo(p);if(!lh)return '';return ' <span style="font-size:9pt;color:#555">· ausgeliehen'+(lh.von?' von '+lh.von:'')+(lh.bis?' bis '+dtm(lh.bis):'')+'; Vertrag beim Stammverein '+(lh.stamm?'bis '+dtm(lh.stamm):'unbekannt')+'</span>';})()+(p.underval?'<span class="ub">Unterbewertet</span>':'')+'</div><div class="ng"><div class="nb"><div class="nl">Liga-Note (LN)</div><div class="nv">'+p.ln+'</div><div class="ns">Percentil vs. alle '+p.pos+'</div></div><div class="nb"><div class="nl">Positions-Note (PN)</div><div class="nv">'+p.pn+'</div><div class="ns">Gewichtete Kernparameter</div></div></div>';
+  let h='<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;font-size:11pt;color:#1a1a1a;margin:0}.page{padding:40px 48px;max-width:800px;margin:0 auto}.header{border-bottom:2px solid #185FA5;padding-bottom:16px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-end}.header h1{font-size:18pt;font-weight:700;color:#185FA5;margin:0 0 4px}.header p{font-size:9pt;color:#666;margin:0}.hr{text-align:right;font-size:9pt;color:#666}.logo{font-size:14pt;font-weight:700;color:#185FA5}h2{font-size:12pt;font-weight:700;color:#185FA5;margin:22px 0 10px;padding-bottom:4px;border-bottom:0.5px solid #dde4f0}h3{font-size:11pt;font-weight:700;margin:14px 0 6px}.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}.si{background:#f0f5fb;border-radius:4px;padding:8px 10px}.sl{font-size:8pt;color:#666}.sv{font-size:11pt;font-weight:700}.ng{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}.nb{border:1px solid #dde4f0;border-radius:4px;padding:12px 14px}.nl{font-size:8pt;color:#666}.nv{font-size:22pt;font-weight:700;color:#185FA5}.ns{font-size:8pt;color:#888}.fi{display:flex;gap:8px;margin-bottom:6px;font-size:10pt}.fd{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:3px}.fd.p{background:#3B6D11}.fd.n{background:#A32D2D}.fd.u{background:#888}.fz{background:#e8f2fb;border-left:3px solid #185FA5;padding:12px 14px;font-size:10pt;color:#0C447C;line-height:1.6}.pr{display:flex;align-items:center;gap:10px;margin-bottom:8px}.pn{font-size:9pt;width:180px;flex-shrink:0}.po{flex:1;height:7px;background:#e8eef5;border-radius:4px;overflow:hidden}.pi2{height:100%}.pp{font-size:9pt;color:#666;width:28px;text-align:right}.mb{background:#f7fdf9;border:1px solid #c0ddb0;border-radius:4px;padding:14px 16px}.mt{font-size:10pt;font-weight:700;color:#3B6D11;margin-bottom:6px}.mx{font-size:10pt;line-height:1.6}.cb{display:inline-block;padding:3px 10px;border-radius:12px;font-size:9pt;font-weight:700}.cr{background:#FCEBEB;color:#A32D2D}.cy{background:#FAEEDA;color:#854F0B}.cg{background:#EAF3DE;color:#3B6D11}.cn{background:#EEF1F5;color:#555}.ub{display:inline-block;background:#E1F5EE;color:#0F6E56;padding:2px 8px;border-radius:10px;font-size:9pt;font-weight:700;margin-left:8px}.footer{border-top:0.5px solid #ddd;margin-top:32px;padding-top:10px;font-size:8pt;color:#999;display:flex;justify-content:space-between}.ldt{width:100%;border-collapse:collapse;font-size:9.5pt;margin:4px 0 12px}.ldt th{font-size:8pt;color:#666;font-weight:normal;text-align:right;padding:4px 6px;border-bottom:1px solid #dde4f0}.ldt td{text-align:right;padding:5px 6px;border-bottom:0.5px solid #eef1f5}.ldt th:first-child,.ldt td:first-child{text-align:left}.ldt td small{display:block;color:#888;font-size:8pt}.ldt tr.sum td{font-weight:700;background:#f5f8fc}.lhinw{font-size:8pt;color:#888;margin:-6px 0 12px}.kzb{break-inside:avoid;margin-bottom:8px}.kzb h4{font-size:9.5pt;margin:12px 0 5px;color:#185FA5}.kzr{display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:9pt}.kzn{width:210px;flex-shrink:0}.kzw{width:64px;text-align:right;color:#333;flex-shrink:0}.kzo{flex:1;height:6px;background:#e8eef5;border-radius:3px;overflow:hidden}.kzi{height:100%}.kzp{width:26px;text-align:right;color:#666;flex-shrink:0}.rol{display:flex;align-items:baseline;gap:8px;margin-bottom:5px;font-size:9.5pt}.rol b{width:210px;flex-shrink:0}.rol span{color:#666;font-size:8.5pt;flex:1}.rol i{font-style:normal;font-weight:700;color:#185FA5;width:40px;text-align:right}@media print{body{print-color-adjust:exact;-webkit-print-color-adjust:exact}}</style></head><body><div class="page"><div class="header"><div><h1>'+p.name+'</h1><p>'+p.pos+' · '+p.club+' · '+p.liga+' · #'+p.number+'</p></div><div class="hr"><div class="logo">ScoutIQ</div><div>Erstellt am '+datum+'</div><div>'+(reportType==='kompakt'?'Kompaktbericht':'Ausführlicher Bericht')+'</div></div></div><h2>Spielereinschätzung</h2><div class="sg"><div class="si"><div class="sl">Alter</div><div class="sv">'+p.age+' J.</div></div><div class="si"><div class="sl">Fuß</div><div class="sv">'+p.foot+'</div></div><div class="si"><div class="sl">Größe</div><div class="sv">'+p.height+'</div></div><div class="si"><div class="sl">Marktwert</div><div class="sv">'+p.mv+' €</div></div></div><div style="margin-bottom:14px">Vertrag: <span class="cb '+(p.contract==='red'?'cr':p.contract==='yellow'?'cy':p.contract==='green'?'cg':'cn')+'">'+ctxt(p.contract)+'</span>'+(function(){const lh=leiheInfo(p);if(!lh)return '';return ' <span style="font-size:9pt;color:#555">· ausgeliehen'+(lh.von?' von '+lh.von:'')+(lh.bis?' bis '+dtm(lh.bis):'')+'; Vertrag beim Stammverein '+(lh.stamm?'bis '+dtm(lh.stamm):'unbekannt')+'</span>';})()+(p.underval?'<span class="ub">Unterbewertet</span>':'')+'</div><div class="ng"><div class="nb"><div class="nl">Liga-Note (LN)</div><div class="nv">'+p.ln+'</div><div class="ns">Percentil vs. alle '+p.pos+'</div></div><div class="nb"><div class="nl">Potenzial-Note (PN)</div><div class="nv">'+p.pn+'</div><div class="ns">'+pnHerleitung(p)+'</div></div></div>';
   h+=berichtLeistung(p)+(reportType==='ausfuehrlich'?'':berichtRolleKurz(p));
   if(reportType==='ausfuehrlich'){h+='<h3>Parameter-Percentile</h3>';p.params.forEach(pm=>{const c=pm.cat==='top'?'#185FA5':pm.cat==='low'?'#F0997B':'#9DC0E8';h+='<div class="pr"><div class="pn">'+pm.n+'</div><div class="po"><div class="pi2" style="width:'+pm.p+'%;background:'+c+'"></div></div><div class="pp">'+pm.p+'</div></div>'})}
   if(reportType==='ausfuehrlich')h+=berichtKennzahlen(p)+berichtRollen(p);

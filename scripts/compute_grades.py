@@ -820,7 +820,7 @@ HERKUNFT = {
         "name": "Von diesem Werkzeug berechnet",
         "url": None,
         "art": "abgeleitet",
-        "felder": ["Liga-Note", "Positions-Note", "Team-Note", "Percentile",
+        "felder": ["Liga-Note", "Potenzial-Note", "Team-Note", "Percentile",
                    "Anteil an Teamtoren", "Einsatzanteil", "Liganiveau",
                    "Eingeordnete Note", "Unterbewertet-Index",
                    "Verletzungsanfälligkeit"],
