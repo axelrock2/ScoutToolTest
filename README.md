@@ -1459,8 +1459,8 @@ Neben der Liga-Note steht in Akte, Bericht und Trefferliste die
 `scripts/compute_grades.py`; nachgerechnet stimmt die Formel für alle 17.721
 Spieler der Daten.
 
-Bis zum 18.09.2026 hieß sie in Akte, Bericht und Sortierung „Positions-Note —
-Gewichtete Kernparameter". Diese Beschriftung stammte aus der ersten
+Bis zum 18.09.2026 hieß sie „Positions-Note", in Akte und Bericht mit dem
+Zusatz „Gewichtete Kernparameter". Diese Beschriftung stammte aus der ersten
 Demo-Fassung und passte nicht zur Berechnung. Heute heißt die Kennzahl überall
 Potenzial-Note, und Akte wie Bericht nennen ihre Herleitung je Spieler, etwa
 „Liga-Note + 10 Altersbonus" oder „ab 26 Jahren gleich der Liga-Note". Der
