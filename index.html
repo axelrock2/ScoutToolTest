@@ -649,6 +649,10 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
   .au-nr{font-size:8px;min-width:15px;height:14px;line-height:12px;left:-8px;top:-4px;padding:0 3px}
 }
 @media(prefers-reduced-motion:reduce){.au-kreis{transition:none}}
+/* Betrag mit Einheit: Zahl links, Tsd. €/Mio. € rechts */
+.geld-feld{display:flex;gap:6px}
+.geld-feld input{flex:1;min-width:0}
+.geld-feld select.geld-einheit{flex:0 0 auto;width:auto}
 /* ---- Eingaben der Kaderanalyse: Eingabezeile, Budgetplan, Positionen
    ausserhalb des unteren Drittels (Farbe wie die Balken). */
 .kad-opt-hinweis{margin:-6px 0 12px;font-style:normal}
@@ -1200,12 +1204,12 @@ input[type=range]::-webkit-slider-thumb{box-shadow:none}
     <div class="filter-panel" id="suche-filter">
       <div class="panel-title"><span class="idx">//</span> Filter</div>
       <div class="fg"><label for="f-name">Name</label><input type="search" id="f-name" placeholder="z.B. Müller" autocomplete="off" spellcheck="false"></div>
-      <div class="fg"><label for="f-pos">Position</label><select id="f-pos"><option value="">Alle Positionen</option><option value="TW">TW</option><option value="IV">IV</option><option value="LV,RV">LV / RV</option><option value="DM">DM</option><option value="ZM">ZM</option><option value="OM,LA,RA">OM / Flügel</option><option value="ST">ST</option></select></div>
+      <div class="fg"><label for="f-pos">Position</label><select id="f-pos"><option value="">Alle Positionen</option></select></div>
       <div class="fg"><label>Ligen</label><div class="mehrfach" id="mf-f-liga"><button type="button" class="mehrfach-knopf" onclick="ligaAuswahlUmschalten('f-liga')">Alle Ligen</button></div></div>
       <div class="fg"><label for="f-age-von">Alter</label><div class="age-row"><input type="number" id="f-age-von" placeholder="von" aria-label="Alter von"><input type="number" id="f-age-bis" placeholder="bis" aria-label="Alter bis"></div></div>
       <details class="mehr-filter" id="suche-mehr">
         <summary>Weitere Filter<span class="mehr-zahl" id="suche-mehr-zahl"></span></summary>
-        <div class="fg"><label for="f-mw">Max. Marktwert (Mio. €)</label><input type="number" id="f-mw" step="0.1" placeholder="z.B. 10"></div>
+        <div class="fg"><label for="f-mw">Max. Marktwert</label><div class="geld-feld"><input type="number" id="f-mw" min="0" step="any" placeholder="z.B. 10"><select id="f-mw-einheit" class="geld-einheit" aria-label="Einheit: Max. Marktwert"><option value="1000">Tsd. €</option><option value="1000000" selected>Mio. €</option></select></div></div>
         <div class="fg"><label for="f-zk" title="Nur Spieler mit Zweikampfwerten von Sofascore (bis zur 3. Liga) und mindestens 40 Zweikämpfen - darunter wäre die Quote Zufall.">Min. Zweikampfquote (%)</label><input type="number" id="f-zk" step="1" min="0" max="100" placeholder="z.B. 55"></div>
         <div class="fg"><label for="f-ln">Mindest-Liga-Note</label><select id="f-ln"><option value="">Keine</option><option value="60">60+</option><option value="65">65+</option><option value="70">70+</option><option value="75">75+</option><option value="80">80+</option></select></div>
         <div class="fg"><label for="f-vertrag">Vertragsstatus</label><select id="f-vertrag"><option value="">Alle</option><option value="red">Läuft ab (rot)</option><option value="yellow">Kritisch (gelb)</option><option value="green">Stabil (grün)</option><option value="none">Ohne Angabe</option></select></div>
@@ -1244,10 +1248,10 @@ input[type=range]::-webkit-slider-thumb{box-shadow:none}
       <div class="panel-title"><span class="idx">//</span> Vertragsende</div>
       <div class="fg"><label>Vertrag endet</label><select id="a-fenster"><option value="">Wird geladen …</option></select></div>
       <div class="fg"><label>Oder einzelne Stichtage</label><div class="mehrfach" id="mf-a-datum"><button type="button" class="mehrfach-knopf" onclick="mehrfachUmschalten('a-datum')">Alle Stichtage</button></div></div>
-      <div class="fg"><label>Position</label><select id="a-pos"><option value="">Alle Positionen</option><option value="TW">TW</option><option value="IV">IV</option><option value="LV,RV">LV / RV</option><option value="DM">DM</option><option value="ZM">ZM</option><option value="OM,LA,RA">OM / Flügel</option><option value="ST">ST</option></select></div>
+      <div class="fg"><label for="a-pos">Position</label><select id="a-pos"><option value="">Alle Positionen</option></select></div>
       <div class="fg"><label>Ligen</label><div class="mehrfach" id="mf-a-liga"><button type="button" class="mehrfach-knopf" onclick="ligaAuswahlUmschalten('a-liga')">Alle Ligen</button></div></div>
       <div class="fg"><label>Alter</label><div class="age-row"><input type="number" id="a-age-von" placeholder="von"><input type="number" id="a-age-bis" placeholder="bis"></div></div>
-      <div class="fg"><label>Max. Marktwert (Mio. €)</label><input type="number" id="a-mw" step="0.1" placeholder="z.B. 10"></div>
+      <div class="fg"><label for="a-mw">Max. Marktwert</label><div class="geld-feld"><input type="number" id="a-mw" min="0" step="any" placeholder="z.B. 10"><select id="a-mw-einheit" class="geld-einheit" aria-label="Einheit: Max. Marktwert"><option value="1000">Tsd. €</option><option value="1000000" selected>Mio. €</option></select></div></div>
       <div class="fg"><label>Mindest-Liga-Note</label><select id="a-ln"><option value="">Keine</option><option value="60">60+</option><option value="65">65+</option><option value="70">70+</option><option value="75">75+</option><option value="80">80+</option></select></div>
       <div class="fg">
         <div class="tr"><label title="Spieler mit Verlängerungsoption stehen in einem eigenen Abschnitt. Hier lassen sie sich ganz ausblenden.">Nur ohne Verlängerungsoption</label><label class="tog"><input type="checkbox" id="a-ohne-option"><span class="tslider"></span></label></div>
@@ -1922,7 +1926,7 @@ function pickVerein(px,name,lid){
     '<div class="sel-info"><div class="sl">Ausgewählt</div><div class="sn">'+name+'</div><div class="sm">'+l.name+' · '+l.land+'</div></div>'+
     '<button type="button" class="kader-knopf" onclick="zeigeKader(vmVerein,vmVereinLiga)"><i class="ti ti-users"></i> Kader ansehen</button>'+
     '<div class="fg"><label>Formation</label><select id="vm-formation"><option>4-2-3-1</option><option>4-3-3</option><option>3-5-2</option><option>4-4-2</option><option>3-4-3</option><option>5-3-2</option><option>4-1-4-1</option></select></div>'+
-    '<div class="fg"><label>Gesuchte Position</label><select id="vm-pos"><option value="">Alle Positionen</option><option value="TW">TW</option><option value="IV">IV</option><option value="LV,RV">LV / RV</option><option value="DM">DM</option><option value="ZM">ZM</option><option value="OM,LA,RA">OM / Flügel</option><option value="ST">ST / HS</option></select></div>'+
+    '<div class="fg"><label for="vm-pos">Gesuchte Position</label><select id="vm-pos">'+posOptionenHTML()+'</select></div>'+
     '<div class="fg"><label>Suchradius</label><select id="vm-radius">'+
       '<option value="nah">Vergleichbares Niveau (empfohlen)</option>'+
       '<option value="tiefer">Auch deutlich tiefere Ligen</option>'+
@@ -1930,15 +1934,15 @@ function pickVerein(px,name,lid){
       '</select></div>'+
     '<div class="fg"><label>Spielstil-Profil</label><div style="margin-top:8px">'+['Pressing','Ballbesitz','Konter','Aufbau hinten','Standards'].map((s,i)=>'<div class="slider-row"><div class="srl"><span>'+s+'</span><span class="srv" id="sv'+i+'">3</span></div><input type="range" min="1" max="5" value="3" id="si'+i+'" aria-label="'+s+'" oninput="document.getElementById(\'sv'+i+'\').textContent=this.value"></div>').join('')+'<div class="pf-hinweis" id="vm-stil-herkunft" style="margin-top:4px">Stil wird aus der Startelf abgeleitet …</div></div></div>'+
     '<div class="fg"><label>Max. Alter</label><input type="number" id="vm-alter" placeholder="z.B. 27"></div>'+
-    '<div class="fg"><label>Max. Marktwert (Mio. €)</label><input type="number" id="vm-budget" step="0.1" placeholder="ohne Grenze"></div>'+
+    geldFeldHTML('vm-budget','Max. Marktwert','ohne Grenze',vereinsEinheit(name))+
     '<button class="btn-primary" onclick="startMatching()"><i class="ti ti-arrows-shuffle"></i> Matching starten</button>';
     stilReglerVorbelegen(name,lid);
   }else{
     document.getElementById('kad-opt-panel').innerHTML='<div class="panel-title"><span class="idx">03</span> Analyse</div>'+
     '<div class="sel-info"><div class="sl">Ausgewählt</div><div class="sn">'+name+'</div><div class="sm">'+l.name+' · '+l.land+'</div></div>'+
-    '<div class="fg"><label for="kad-budget">Transferbudget (Mio. €)</label><input type="number" id="kad-budget" min="0" step="0.1" placeholder="optional, für den Budgetplan"></div>'+
-    '<div class="fg"><label for="kad-abloese">Max. Ablöse / Spieler (Mio. €)</label><input type="number" id="kad-abloese" min="0" step="0.1" placeholder="'
-      +(kaderObergrenze(name)?'automatisch: bis '+kadGeld(kaderObergrenze(name)):'ohne Grenze')+'"></div>'+
+    geldFeldHTML('kad-budget','Transferbudget','optional',vereinsEinheit(name))+
+    geldFeldHTML('kad-abloese','Max. Ablöse / Spieler',kaderObergrenze(name)
+      ?'auto: '+geldText(kaderObergrenze(name)):'ohne Grenze',vereinsEinheit(name))+
     '<div class="fg"><label for="kad-auslauf">Vertragsausläufer</label><select id="kad-auslauf"><option value="beides">Beides</option><option value="nur">Nur Ausläufer</option><option value="ohne">Ohne Ausläufer</option></select></div>'+
     '<div class="fg"><div class="tr"><label for="kad-schwach">Nur Schwachstellen</label><label class="tog"><input type="checkbox" id="kad-schwach" checked><span class="tslider"></span></label></div></div>'+
     '<div class="pf-hinweis kad-opt-hinweis">Ablöse heißt hier Marktwert (Transfermarkt) als Richtwert. '
@@ -2081,6 +2085,43 @@ function renderKadResult(){
   }
 }
 
+/* ---------- Betraege und Positionen in Eingabefeldern --------------------
+   Betraege gehen in Tausend oder Millionen Euro ein - kleine Vereine
+   handeln nicht in Millionen. Kaderanalyse und Matching stellen die Einheit
+   nach dem Verein vor: Tsd. €, wenn seine automatische Grenze unter 1 Mio. €
+   liegt oder der Kader keine Marktwerte hat (gemessen: 77 von 91
+   Regionalligisten, 224 von 240 Oberligisten ohne Marktwerte).
+   Positionen sind einzeln waehlbar (seit 22.09.2026), gruppiert wie bei
+   Transfermarkt: Torwart, Abwehr, Mittelfeld, Sturm. */
+function geldText(v){
+  if(!v)return '0 €';
+  return v>=1e6?(v/1e6).toFixed(1).replace('.',',')+' Mio. €':Math.round(v/1000)+' Tsd. €';
+}
+/* Betrag in Euro, NaN wenn leer oder ungueltig. */
+function geldEingabe(id){
+  const el=document.getElementById(id);
+  if(!el)return NaN;
+  const v=parseFloat(String(el.value).replace(',','.'));
+  if(isNaN(v)||v<0)return NaN;
+  const e=document.getElementById(id+'-einheit');
+  return Math.round(v*(e?parseFloat(e.value):1e6));
+}
+function vereinsEinheit(verein){
+  const g=verein?kaderObergrenze(verein):null;
+  return (!g||g<1e6)?1e3:1e6;
+}
+function geldFeldHTML(id,label,platzhalter,einheit){
+  return '<div class="fg"><label for="'+id+'">'+label+'</label><div class="geld-feld">'
+    +'<input type="number" id="'+id+'" min="0" step="any" placeholder="'+platzhalter+'">'
+    +'<select id="'+id+'-einheit" class="geld-einheit" aria-label="Einheit: '+label+'">'
+    +'<option value="1000"'+(einheit===1e3?' selected':'')+'>Tsd. €</option>'
+    +'<option value="1000000"'+(einheit!==1e3?' selected':'')+'>Mio. €</option></select></div></div>';
+}
+function posOptionenHTML(){
+  return '<option value="">Alle Positionen</option>'+TM_GRUPPEN.map(g=>'<optgroup label="'+g.name+'">'
+    +g.pos.map(p=>'<option value="'+p+'">'+p+' · '+TM_POS_NAME[p]+'</option>').join('')+'</optgroup>').join('');
+}
+
 /* ---------- Eingaben der Kaderanalyse ------------------------------------
    Vier Felder im Formular, bis zum 18.09.2026 ohne Wirkung - sie wurden
    nirgends gelesen. Freigegeben am 18.09.2026:
@@ -2102,13 +2143,9 @@ function kadOptionenVorgabe(){return {budget:null,abloese:null,auslauf:'beides',
 var kadOptionen=kadOptionenVorgabe();
 
 function kadAnalyseStarten(){
-  const mio=id=>{
-    const el=document.getElementById(id);
-    const v=parseFloat(String(el?el.value:'').replace(',','.'));
-    return isNaN(v)||v<=0?null:Math.round(v*1e6);
-  };
+  const betrag=id=>{const v=geldEingabe(id);return isNaN(v)||v<=0?null:v;};
   const aus=document.getElementById('kad-auslauf'), nur=document.getElementById('kad-schwach');
-  kadOptionen={budget:mio('kad-budget'),abloese:mio('kad-abloese'),
+  kadOptionen={budget:betrag('kad-budget'),abloese:betrag('kad-abloese'),
     auslauf:aus?aus.value:'beides',nurSchwach:nur?nur.checked:true};
   go('kaderresult','kaderanalyse');
 }
@@ -2128,16 +2165,12 @@ function kadGrenze(verein){
   if(je!=null&&b!=null)return Math.min(je,b);
   return je!=null?je:b;
 }
-function kadGeld(v){
-  if(!v)return '0 €';
-  return v>=1e6?(v/1e6).toFixed(1).replace('.',',')+' Mio. €':Math.round(v/1000)+' Tsd. €';
-}
 function kadGrenzText(verein){
   const g=kadGrenze(verein);
   if(!g)return '';
   const b=kadOptionen.budget, a=kadOptionen.abloese;
   const woher=(b!=null&&g===b&&(a==null||a>b))?' Budget':(a!=null&&g===a)?' Ablöse':'';
-  return ' (bis '+kadGeld(g)+woher+')';
+  return ' (bis '+geldText(g)+woher+')';
 }
 /* Erreichbar: hoechstens 8 Niveaupunkte ueber der eigenen Liga, nicht mehr
    als zwei Suchradien darunter - derselbe Massstab wie bisher. */
@@ -2154,9 +2187,9 @@ function kadAuslaufPasst(p){
 function kadEinstellungHTML(verein){
   const t=[];
   const auto=kaderObergrenze(verein);
-  if(kadOptionen.budget)t.push('Budget '+kadGeld(kadOptionen.budget));
-  if(kadOptionen.abloese)t.push('Ablöse bis '+kadGeld(kadOptionen.abloese)+' je Spieler');
-  else if(auto)t.push('Ablöse automatisch bis '+kadGeld(auto)+' je Spieler (1,5 × teuerster eigener Spieler)');
+  if(kadOptionen.budget)t.push('Budget '+geldText(kadOptionen.budget));
+  if(kadOptionen.abloese)t.push('Ablöse bis '+geldText(kadOptionen.abloese)+' je Spieler');
+  else if(auto)t.push('Ablöse automatisch bis '+geldText(auto)+' je Spieler (1,5 × teuerster eigener Spieler)');
   else t.push('Ablöse ohne Grenze (zu wenige Marktwerte im Kader)');
   t.push({beides:'mit und ohne auslaufenden Vertrag',nur:'nur Vertragsausläufer',
           ohne:'ohne Vertragsausläufer'}[kadOptionen.auslauf]||'');
@@ -2181,16 +2214,22 @@ function kadBudgetplan(verein,ligaId,positionen){
   const benutzt=new Set();
   const zeilen=positionen.map(function(r){
     const schwaechster=Math.min(...r.start.map(x=>x.ln));
-    let best=null;
+    /* Nebenbei gezaehlt, warum eine Position leer bleiben kann - gerade bei
+       kleinen Vereinen: zu teuer, ueber der Grenze je Spieler oder ohne
+       Marktwert (in den Oberligen fuehrt Transfermarkt fast keine). */
+    let best=null, guenstigste=null, ueberGrenze=0, ohneMw=0;
     PLAYERS.forEach(function(p){
       if(p.pos!==r.pos||p.weg||p.belastbar===false||p.club===verein||benutzt.has(p.id))return;
-      if(!p.mv_eur||p.mv_eur>rest||(grenze&&p.mv_eur>grenze))return;
       if(!kadErreichbar(p,refNiv)||!kadAuslaufPasst(p))return;
       const ein=eingeordneteNote(p,refNiv), wert=ein?ein.wert:p.ln;
-      if(wert<=schwaechster)return;
+      if(wert<=schwaechster)return;              // verbessert die Startelf nicht
+      if(!p.mv_eur){ohneMw++;return;}
+      if(grenze&&p.mv_eur>grenze){ueberGrenze++;return;}
+      if(guenstigste===null||p.mv_eur<guenstigste)guenstigste=p.mv_eur;
+      if(p.mv_eur>rest)return;
       if(!best||wert>best.wert||(wert===best.wert&&p.mv_eur<best.p.mv_eur))best={p:p,wert:wert};
     });
-    if(!best)return {r:r,p:null,rest:rest};
+    if(!best)return {r:r,p:null,rest:rest,guenstigste:guenstigste,ueberGrenze:ueberGrenze,ohneMw:ohneMw,grenze:grenze};
     rest-=best.p.mv_eur;
     benutzt.add(best.p.id);
     return {r:r,p:best.p,b:spielerFuerVerein(best.p,verein,ligaId)};
@@ -2203,22 +2242,29 @@ function kadBudgetplanHTML(verein,ligaId,positionen){
   if(!plan)return '';
   const liga=(LIGEN.find(l=>l.id===ligaId)||{}).name||'';
   const zeilen=plan.zeilen.map(function(z){
-    if(!z.p)return '<div class="bp-zeile bp-leer"><span class="bp-pos">'+z.r.pos+'</span>'
-      +'<span class="bp-name">Keine Verstärkung, die ins Restbudget von '+kadGeld(z.rest)+' passt</span></div>';
+    if(!z.p){
+      const warum=z.guenstigste!==null
+          ?'Keine Verstärkung, die ins Restbudget von '+geldText(z.rest)+' passt – die günstigste kostet '+geldText(z.guenstigste)
+        :z.ueberGrenze?'Keine Verstärkung bis '+geldText(z.grenze)+' je Spieler'
+        :z.ohneMw?'Keine Verstärkung mit bekanntem Marktwert – '+z.ohneMw+' ohne Marktwert, zu finden unter „Kandidaten →“'
+        :'Keine Verstärkung gefunden';
+      return '<div class="bp-zeile bp-leer"><span class="bp-pos">'+z.r.pos+'</span>'
+        +'<span class="bp-name">'+warum+'</span></div>';
+    }
     const p=z.p, b=z.b;
     const vertrag=ttAuslaeufer(p)?' · Vertrag bis '+dtm(vertragsEnde(p)):'';
     return '<button type="button" class="bp-zeile" onclick="kadPlanProfil('+p.id+')" '
       +'title="'+vglEsc(b.text)+'">'
       +'<span class="bp-pos">'+z.r.pos+'</span>'
       +'<span class="bp-name">'+vglEsc(p.name)+'<small>'+vglEsc(p.club)+' · '+vglEsc(p.liga)+vertrag+'</small></span>'
-      +'<span class="bp-mw">'+kadGeld(p.mv_eur)+'</span>'
+      +'<span class="bp-mw">'+geldText(p.mv_eur)+'</span>'
       +'<span class="bp-note">'+b.schnitt+' → '+b.neu+'<small>Startelf '+z.r.pos+'</small></span>'
       +'</button>';
   }).join('');
   return '<div class="bp">'
-    +'<div class="bp-kopf"><strong>Budgetplan</strong><span>'+kadGeld(plan.budget)+' · schwächste Position zuerst</span></div>'
+    +'<div class="bp-kopf"><strong>Budgetplan</strong><span>'+geldText(plan.budget)+' · schwächste Position zuerst</span></div>'
     +zeilen
-    +'<div class="bp-summe">Summe '+kadGeld(plan.budget-plan.rest)+' · Rest '+kadGeld(plan.rest)+'</div>'
+    +'<div class="bp-summe">Summe '+geldText(plan.budget-plan.rest)+' · Rest '+geldText(plan.rest)+'</div>'
     +'<div class="bp-fuss">Je Position der Kandidat mit der höchsten Note, der die Startelf verbessert und ins '
       +'Restbudget passt; bei gleicher Note der günstigere. Noten auf das Niveau der '+vglEsc(liga)
       +' umgerechnet – eine Schätzung. Ablöse = Marktwert (Transfermarkt) als Richtwert; '
@@ -3126,8 +3172,9 @@ window.kadWeakClick=function(pos){
      Grundmenge (renderPlayers), und es gelten nur die Eingaben der
      Kaderanalyse. Erreichbar heisst weiter: eigenes Niveau plus ein Stueck
      darueber (siehe kadErreichbar). */
-  kadKandidatPos=['LV','RV'].includes(pos)?'LV,RV'
-    :['OM','LA','RA'].includes(pos)?'OM,LA,RA':pos;
+  /* Streng je Position (seit 22.09.2026): ein fehlender LV sucht LV, nicht
+     LV und RV - wie Budgetplan und Positionsfilter. */
+  kadKandidatPos=pos;
   go('ergebnisse','kaderanalyse');
 };
 let kadKandidatPos=null;
@@ -3138,7 +3185,7 @@ function leseFilter(){
   const an=id=>{const el=document.getElementById(id);return!!(el&&el.checked);};
   return {name:v('f-name').toLowerCase(),pos:v('f-pos'),ligen:gewaehlteLigen('f-liga'),
           ageVon:parseInt(v('f-age-von'),10),ageBis:parseInt(v('f-age-bis'),10),
-          maxMw:parseFloat(v('f-mw')),minLn:parseInt(v('f-ln'),10),
+          maxMw:geldEingabe('f-mw'),minLn:parseInt(v('f-ln'),10),
           minZk:parseFloat(v('f-zk')),
           vertrag:v('f-vertrag'),auslaufend:an('f-auslaufend'),
           underval:an('f-underval'),belastbar:an('f-belastbar'),fit:an('f-fit'),
@@ -3171,7 +3218,7 @@ function filterPlayers(f){
     if(f.ligen.length&&!f.ligen.includes(p.liga_id))return false;
     if(!isNaN(f.ageVon)&&p.age<f.ageVon)return false;
     if(!isNaN(f.ageBis)&&p.age>f.ageBis)return false;
-    if(!isNaN(f.maxMw)&&(p.mv_eur??0)>f.maxMw*1e6)return false;
+    if(!isNaN(f.maxMw)&&(p.mv_eur??0)>f.maxMw)return false;
     if(!isNaN(f.minLn)&&p.ln<f.minLn)return false;
     /* Wer keine belastbare Quote hat, laesst sich nicht pruefen - er faellt
        heraus, und die Ergebniszeile sagt das. */
@@ -3231,7 +3278,7 @@ function filterText(f){
   if(f.ligen.length)t.push(ligenText(f.ligen));
   if(!isNaN(f.ageVon)||!isNaN(f.ageBis))
     t.push('Alter '+(isNaN(f.ageVon)?'':f.ageVon)+'–'+(isNaN(f.ageBis)?'':f.ageBis));
-  if(!isNaN(f.maxMw))t.push('max. '+f.maxMw+' Mio. €');
+  if(!isNaN(f.maxMw))t.push('max. '+geldText(f.maxMw));
   if(!isNaN(f.minLn))t.push('Liga-Note '+f.minLn+'+');
   if(!isNaN(f.minZk))t.push('Zweikampfquote ab '+f.minZk+' % (nur mit Zweikampfwerten)');
   if(f.vertrag)t.push('Vertrag '+f.vertrag);
@@ -3681,7 +3728,7 @@ function leseAuslaufFilter(){
   const an=id=>{const el=document.getElementById(id);return!!(el&&el.checked);};
   return {fenster:v('a-fenster'),pos:v('a-pos'),ligen:gewaehlteLigen('a-liga'),
           ageVon:parseInt(v('a-age-von'),10),ageBis:parseInt(v('a-age-bis'),10),
-          maxMw:parseFloat(v('a-mw')),minLn:parseInt(v('a-ln'),10),
+          maxMw:geldEingabe('a-mw'),minLn:parseInt(v('a-ln'),10),
           ohneOption:an('a-ohne-option'),mitLeihende:an('a-mit-leihende'),
           daten:gewaehlteStichtage(),
           belastbar:an('a-belastbar'),fit:an('a-fit'),
@@ -3705,7 +3752,7 @@ function passtOhneFenster(p,f,posListe){
   if(f.ligen.length&&!f.ligen.includes(p.liga_id))return false;
   if(!isNaN(f.ageVon)&&p.age<f.ageVon)return false;
   if(!isNaN(f.ageBis)&&p.age>f.ageBis)return false;
-  if(!isNaN(f.maxMw)&&(p.mv_eur??0)>f.maxMw*1e6)return false;
+  if(!isNaN(f.maxMw)&&(p.mv_eur??0)>f.maxMw)return false;
   if(!isNaN(f.minLn)&&p.ln<f.minLn)return false;
   if(f.belastbar&&p.belastbar===false)return false;
   if(f.fit&&p.verletzungen&&p.verletzungen.tage_3j>=90)return false;
@@ -3765,7 +3812,7 @@ function auslaufText(f){
   if(f.ligen.length)t.push(ligenText(f.ligen));
   if(!isNaN(f.ageVon)||!isNaN(f.ageBis))
     t.push('Alter '+(isNaN(f.ageVon)?'':f.ageVon)+'–'+(isNaN(f.ageBis)?'':f.ageBis));
-  if(!isNaN(f.maxMw))t.push('max. '+f.maxMw+' Mio. €');
+  if(!isNaN(f.maxMw))t.push('max. '+geldText(f.maxMw));
   if(!isNaN(f.minLn))t.push('Liga-Note '+f.minLn+'+');
   if(f.ohneOption)t.push('ohne Verlängerungsoption');
   if(f.mitLeihende)t.push('mit Leihenden');
@@ -3965,9 +4012,9 @@ function renderPlayers(ziel){
        Liga vor - rechnerisch sauber, als Transferziel unbrauchbar.
        Spieler ohne Marktwert (Oberliga) bleiben drin, sonst fiele dort
        jeder heraus. */
-    const budget=parseFloat((document.getElementById('vm-budget')||{}).value);
+    const budget=geldEingabe('vm-budget');
     if(!isNaN(budget))
-      treffer=treffer.filter(p=>!p.mv_eur||p.mv_eur<=budget*1e6);
+      treffer=treffer.filter(p=>!p.mv_eur||p.mv_eur<=budget);
     /* Ohne eingetragenes Budget dieselbe Grenze wie bei den Kandidaten der
        Kaderanalyse: das Anderthalbfache des teuersten eigenen Spielers - nur
        wenn genug Marktwerte vorliegen (in den Oberligen fehlen sie). Gemessen:
@@ -4002,7 +4049,7 @@ function renderPlayers(ziel){
     hinweis='Passung zu '+(vmVerein||'Profil')+' · '+chosenFormation
       +(wunsch?' · '+wunsch:'')
       +(!isNaN(alterMax)?' · bis '+alterMax+' J.':'')
-      +(!isNaN(budget)?' · max. '+budget+' Mio. €'
+      +(!isNaN(budget)?' · max. '+geldText(budget)
         :autoGrenze?' · erreichbar bis '+(autoGrenze>=1e6
           ?(autoGrenze/1e6).toFixed(1).replace('.',',')+' Mio. €'
           :Math.round(autoGrenze/1000)+' Tsd. €'):'')
@@ -4330,6 +4377,7 @@ function sucheZuruecksetzen(){
     const el=document.getElementById(id); if(el)el.checked=false;
   });
   const b=document.getElementById('f-belastbar'); if(b)b.checked=true;
+  const e=document.getElementById('f-mw-einheit'); if(e)e.value='1000000';
   LIGA_WAHL['f-liga'].clear();
   zeichneLigaAuswahl('f-liga');
   const s=document.getElementById('s-sort'); if(s)s.value='um';
@@ -6228,6 +6276,10 @@ const TM_POS_NAME={TW:'Torwart',IV:'Innenverteidiger',LV:'Linker Verteidiger',
   RV:'Rechter Verteidiger',DM:'Defensives Mittelfeld',ZM:'Zentrales Mittelfeld',
   OM:'Offensives Mittelfeld',LA:'Linksaußen',RA:'Rechtsaußen',ST:'Mittelstürmer'};
 const TM_POS_RANG=Object.fromEntries(TM_GRUPPEN.flatMap(g=>g.pos).map((p,i)=>[p,i]));
+['f-pos','a-pos'].forEach(function(id){
+  const el=document.getElementById(id);
+  if(el)el.innerHTML=posOptionenHTML();
+});
 
 function zeigeKader(verein,ligaId){
   if(!verein)return;

@@ -214,6 +214,38 @@ Niveaupunkt Abstand 0,55 Notenpunkte.
 (24 und 4.427) und Merkliste (250) zeigen nach dem Laden aller Portionen
 zeichengleich dieselben Karten wie vorher.
 
+## Positionen einzeln, Beträge in Tausend oder Millionen (22.09.2026)
+
+**Positionen.** In Spielersuche, Ausläufer-Suche und Vereins-Matching ist
+jede der zehn Positionen einzeln wählbar, gruppiert wie bei Transfermarkt:
+Torwart, Abwehr, Mittelfeld, Sturm. Die Sammeloptionen „LV / RV", „OM /
+Flügel" und „ST / HS" gibt es nicht mehr. „ST / HS" suchte ohnehin nur
+Mittelstürmer — die Transfermarkt-Position „Hängende Spitze" steht in den
+Daten als OM. Auch die Kandidaten der Kaderanalyse gelten streng je
+Position: Ein schwacher LV sucht LV, nicht LV und RV.
+
+**Beträge.** Jedes Geldfeld hat eine Einheit, Tsd. € oder Mio. €, denn kleine
+Vereine handeln nicht in Millionen. Kaderanalyse und Matching stellen die
+Einheit nach dem Verein vor: Tsd. €, wenn seine automatische Grenze (das
+1,5-Fache des teuersten eigenen Spielers) unter 1 Mio. € liegt oder sein
+Kader keine Marktwerte hat. Gemessen trifft das 77 von 91 Regionalligisten
+(Grenze im Mittel 300 Tsd. €) und 9 von 20 Drittligisten; 224 von 240
+Oberligisten haben gar keine Marktwerte.
+
+Beispiel 1.FC Bocholt (Regionalliga West) mit 50 Tsd. € Budget: RV Arlind
+Iljazi aus der Regionalliga Südwest für 50 Tsd. €, Startelf-Note 39 → 70.
+Bleibt eine Position im Budgetplan leer, steht jetzt der Grund dabei: das
+Restbudget reicht nicht (mit dem Preis der günstigsten Verstärkung), die
+Grenze je Spieler ist zu niedrig, oder es gibt nur Verstärkungen ohne
+Marktwert.
+
+**Geprüft:** Ohne Positionswahl und mit Beträgen in Mio. € liefern
+Spielersuche, Ausläufer-Suche, Matching (drei Vereine, mit und ohne Budget)
+und die Budgetpläne dasselbe wie vorher. Eine einzelne Position liefert genau
+die Spieler dieser Position aus der früheren Sammelliste, in derselben
+Reihenfolge — nachgerechnet für alle 631 Vereine mit ihren 2.116
+Kandidatenlisten.
+
 ## Mehrere Ligen auf einmal
 
 Der Liga-Filter ist eine Mehrfachauswahl — in der Spielersuche wie bei den
@@ -862,6 +894,10 @@ Das Formular der Kaderanalyse hatte vier Felder, die nirgends gelesen wurden:
 | Max. Ablöse / Spieler | Obergrenze je Kandidat. Leer: automatisch das 1,5-Fache des teuersten eigenen Spielers, wie bisher. |
 | Vertragsausläufer | Beides · nur Ausläufer · ohne Ausläufer (vorher „Vertragsläufer bevorzugen: Beides/Ja/Nein") |
 | Nur Schwachstellen | an: Positionen im unteren Drittel der Liga; aus: alle Positionen, die schwächste zuerst |
+
+Budget und Ablöse gehen seit dem 22.09.2026 in Tsd. € oder Mio. € ein, bei
+kleinen Vereinen ist Tsd. € vorgestellt — siehe „Positionen einzeln, Beträge in
+Tausend oder Millionen".
 
 **Ablöse heißt Marktwert** (Transfermarkt) als Richtwert — eine echte Ablöse
 kennt die Quelle nicht. Spieler ohne Marktwert bleiben in den
