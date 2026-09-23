@@ -924,6 +924,49 @@ Gemessen vor der Freigabe, Kandidaten je Schwachstelle beim 1.FC
 Kaiserslautern: RA 858 (nur Ausläufer 166, ohne 692), ST 507 (102 / 405),
 DM 313 (82 / 231), LV 581 (126 / 455).
 
+#### Ablöse in Ligen ohne Marktwerte (freigegeben am 23.09.2026)
+
+In der Oberliga führt Transfermarkt kaum Marktwerte: 4 % der Spieler haben
+einen, in der Regionalliga 74 %. Transfermarkt sagt das selbst — die Oberliga
+Westfalen steht dort mit 485 Tsd. € Gesamtwert für 479 Spieler, die Bremenliga
+ohne jeden Wert. Eine andere Quelle mit verlässlichen Marktwerten für diese
+Ebene gibt es nicht: FuPa und FUSSBALL.DE führen Spielpläne, Tabellen und
+Torjäger, aber keine Werte; match-day.de hat zwar Amateur-Marktwerte, deckt
+aber nur den Sauerland-Kreisfußball ab und bildet sie aus Redaktion und
+Nutzerurteilen.
+
+Im Amateurbereich ist die Ablöse aber gar keine Schätzung, sondern eine feste
+Größe. Nach **DFB-Spielordnung § 16 Nr. 3.2.3** und den Spielordnungen der
+Landesverbände zahlt der aufnehmende Verein in der Sommerperiode eine
+Ausbildungsentschädigung nach seiner Spielklasse: Oberliga 2.500 €, 6. Liga
+1.500 €, 7. Liga 750 €, 8. Liga 500 €, Kreisligen 250 €. Beim Wechsel nach oben
+gilt der höhere Betrag, nach unten der Mittelwert. Vertragsspieler sind bei
+Vertragsende ablösefrei, im Winter sind die Beträge frei verhandelbar. Die
+Landesverbände führen eigene Tabellen — Hessen rechnet nach § 94 etwa
+Regionalliga → Hessenliga mit 3.125 €, mit Zu- und Abschlägen von 50 % —,
+deshalb steht der Betrag im Werkzeug als Richtwert.
+
+Der Budgetplan rechnet damit **nur in Ligen, in denen die Quelle kaum
+Marktwerte führt** (Marktwertanteil unter 50 %):
+
+| Fall | Ablöse im Plan |
+|---|---|
+| Vertrag endet bis zum Saisonende | 0 € — ablösefrei ab Sommer |
+| Marktwert bei Transfermarkt vorhanden | dieser Marktwert |
+| Verein im Amateurbereich, kein Vertrag bei Transfermarkt eingetragen | Ausbildungsentschädigung der Spielklasse |
+| laufender Vertrag ohne Marktwert | nicht einplanbar — die Ablöse wäre Verhandlungssache |
+
+Fehlende Vertragsdaten aus höheren Ligen zählen ausdrücklich **nicht** als
+Amateur, sonst stünde ein Zweitligaprofi für 2.500 € im Plan.
+
+**Wirkung, gemessen über alle 240 Oberligavereine** (725 Schwachstellen,
+Budget 10 Tsd. €): Vorher bekamen 217 Positionen einen Vorschlag, jetzt alle
+725 — davon 589 ablösefrei und 136 zu 2.500 €. Beispiel FC Eddersheim
+(Hessenliga, 10 Tsd. €): DM Chris Tabi Bandoh 2.500 € (Startelf 25 → 88) und
+RA Julián Suaterna ablösefrei (24 → 94). In den Ligen mit Marktwerten ändert
+sich nichts: Die Budgetpläne von 391 Vereinen sind dieselben wie vorher.
+Die Regel steht mit Quelle in der Datenherkunft und unter jedem Plan.
+
 **Nebenbei behoben.** Der Klick auf „Kandidaten →" schrieb die Position in die
 Filterleiste der Spielersuche und leerte deren Ligawahl. Deren übrige Filter
 wirkten dadurch unsichtbar in der Kandidatenliste mit, und die Spielersuche
