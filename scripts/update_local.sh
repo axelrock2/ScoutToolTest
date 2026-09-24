@@ -144,12 +144,36 @@ if [ "$PUSH" != "1" ]; then
   exit 0
 fi
 
-git add data/players.json data/players_raw.json.gz
+# Identitaet ausdruecklich: die Erkennung ueber die Git-Konfiguration ist auf
+# diesem Rechner schon ausgefallen, und die Historie ist oeffentlich.
+GIT_ID=(-c user.name="Raoul Worek" -c user.email="raoulworek@Air-von-Raoul.fritz.box")
+
+kein_netz() {
+  echo "Kein Zugriff auf GitHub - die neuen Daten liegen committet auf diesem Rechner." >&2
+  echo "Sobald wieder Netz da ist, genuegt ein neuer Lauf; er uebertraegt sie nach." >&2
+  echo "Von Hand geht es auch:  git pull --rebase origin main && git push origin main" >&2
+  exit 1
+}
+
+# metriken.json gehoert dazu: compute_grades.py schreibt sie im selben Lauf,
+# und die Akte laedt sie fuer die Kennzahlen. Fehlte sie im Commit, stuenden
+# neue Noten neben alten Kennzahlen (am 23.09.2026 genau so passiert).
+git add data/players.json data/players_raw.json.gz data/metriken.json
 if git diff --staged --quiet; then
-  echo "Keine Aenderungen."
+  echo "Keine neuen Daten zum Einchecken."
+else
+  git "${GIT_ID[@]}" commit -q -m "Spielerdaten aktualisiert ($(date +%d.%m.%Y))"
+fi
+
+# Auch ohne neue Daten uebertragen, was noch lokal liegt. Genau daran
+# scheiterte der Lauf vom 23.09.2026: der Commit war da, nur der Push fehlte,
+# und ein zweiter Lauf haette ihn mit "Keine Aenderungen" liegen lassen.
+git fetch -q origin || kein_netz
+if [ -z "$(git log --oneline origin/main..HEAD)" ]; then
+  echo "Nichts zu uebertragen - der Stand auf GitHub ist aktuell."
   exit 0
 fi
-git commit -q -m "Spielerdaten aktualisiert ($(date +%d.%m.%Y))"
-git pull --rebase --autostash -q origin main
-git push -q origin main
+
+git "${GIT_ID[@]}" pull --rebase --autostash -q origin main || kein_netz
+git push -q origin main || kein_netz
 echo "Gepusht. GitHub Pages baut die Seite in ein bis zwei Minuten neu."

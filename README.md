@@ -1904,6 +1904,20 @@ GitHub-Action: Er schrieb nur vier Schlüssel und hätte zusätzlich die
 Bildadresse und die Vereinslisten der laufenden Saison verloren. Er rettet
 jetzt dasselbe wie `build_players.py`.
 
+**Der Lauf war fertig, der Push nicht.** Am 23.09.2026 brach
+`update_local.sh` im Schritt „Übertragen" mit *Could not resolve host:
+github.com* ab — kein Netz. Die neuen Daten waren gesammelt, berechnet und
+lokal committet, aber nicht auf GitHub, und ein zweiter Lauf hätte den
+fertigen Commit mit „Keine Änderungen" liegen lassen. Der Schritt überträgt
+jetzt auch, was schon lokal liegt, nennt bei fehlendem Netz den Weg von Hand
+und endet mit Fehlercode statt stillschweigend. Dabei fiel auf, dass er
+`data/metriken.json` gar nicht eingecheckt hat, obwohl `compute_grades.py`
+sie im selben Lauf neu schreibt und die Akte sie für die Kennzahlen lädt —
+neue Noten hätten neben alten Kennzahlen gestanden. Sie gehört jetzt in
+denselben Commit. Geprüft sind alle fünf Wege des Schritts in einem
+Wegwerf-Repository: ohne Netz, mit nachzuholendem Commit, ohne Änderungen,
+mit neuen Daten und mit `PUSH=0`.
+
 **Und ein Merksatz dazu:** Ein laufendes Shell-Skript nicht bearbeiten.
 Bash liest Skripte über einen Byte-Offset nach; werden Zeilen davor
 eingefügt, setzt es an verschobener Stelle fort. Aufgetreten als
