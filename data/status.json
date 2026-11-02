@@ -1,27 +1,27 @@
 {
  "art": "wochenlauf",
- "start": "2026-11-02T09:51:34Z",
- "ende": "2026-11-02T09:51:46+00:00",
- "ergebnis": "ok",
+ "start": "2026-11-02T10:11:04Z",
+ "ende": "2026-11-02T10:12:22+00:00",
+ "ergebnis": "teilweise",
  "transferteil": "2026-09-10",
  "schritte": [
   {
    "name": "Kader 2026",
    "status": "ok",
    "detail": "18654 Spieler einem heutigen Kader zugeordnet, davon 5512 mit Vereinswechsel; 8299 ohne heutigen Kader (davon 1985, deren Verein nicht mehr in erfassten Ligen s",
-   "sekunden": 3
+   "sekunden": 22
   },
   {
    "name": "Leistungsdaten 2026",
    "status": "ok",
    "detail": "17210 Spieler geschrieben (14548 mit Saisonwerten) -> data/players_raw_2026.json.gz",
-   "sekunden": 5
+   "sekunden": 31
   },
   {
    "name": "Sofascore",
-   "status": "uebersprungen",
-   "detail": "SOFASCORE=0",
-   "sekunden": 0
+   "status": "gesperrt",
+   "detail": "[X] Bundesliga: HTTP 403",
+   "sekunden": 1
   },
   {
    "name": "Vertraege, Leihen, Fotos",
@@ -30,22 +30,22 @@
    "sekunden": 0
   },
   {
-   "name": "Noten 2026",
+   "name": "Noten",
    "status": "ok",
    "detail": "17721 Spieler bewertet, davon 12666 mit belastbarer Spielzeit (ab 450 Min) - von 26953 gesammelt -> data/players.json",
-   "sekunden": 2
+   "sekunden": 12
   },
   {
    "name": "Mischnote",
    "status": "ok",
    "detail": "Mischnote 2025/26 + 2026/27 (K = 1800): 2960 gemischt, 394 bisher duenn, 995 neu bewertet, 3326 in Sofascore-Ligen gehalten.",
-   "sekunden": 1
+   "sekunden": 11
   },
   {
    "name": "Frontend",
    "status": "ok",
-   "detail": "index.html: 3 Skriptblock(e), 352327 Zeichen, Syntax in Ordnung",
-   "sekunden": 1
+   "detail": "index.html: 3 Skriptblock(e), 353608 Zeichen, Syntax in Ordnung",
+   "sekunden": 0
   }
  ]
 }
