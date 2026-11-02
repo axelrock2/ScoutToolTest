@@ -2075,8 +2075,8 @@ function renderKadResult(){
 
   document.getElementById('kad-bars').innerHTML=
     '<div class="kad-hint">Grundlage ist die <strong>Startelf</strong>: je '
-    +'Position der meistgespielte Spieler (Innenverteidigung: die zwei '
-    +'meistgespielten). Noten aus anderen Ligen sind auf das Niveau der '
+    +'Position der meistgespielte Spieler der Saison '+startelfSaison()+' beim heutigen Verein '
+    +'(Innenverteidigung: die zwei meistgespielten). Noten aus anderen Ligen sind auf das Niveau der '
     +ln+' umgerechnet — für alle Vereine gleich. Balkenlänge = Rang unter den '
     +(mitRang[0]?mitRang[0].vonWievielen:0)+' Vereinen der Liga auf dieser '
     +'Position. Ganz rechts heißt: beste Startelf der Liga.</div>'
@@ -2591,7 +2591,8 @@ function aufstellungHTML(verein,ligaId,mitRang,kader){
       +'</span>'
       +'<span class="au-z-name">'+vglEsc(p.name)+(start?'<em>Startelf</em>'
         :alsPos[p.id]?'<em class="au-als">als '+alsPos[p.id]+'</em>':'')+'</span>'
-      +'<span class="au-z-min">'+zahl(p.minuten)+'\'</span>'
+      +'<span class="au-z-min" title="Minuten '+vglEsc(startelfSaison())+'">'
+        +zahl(STARTELF_MODUS==='laufend'&&window.NOTENBASIS?minutenLaufend(p):p.minuten)+'\'</span>'
       +'<span class="au-z-note">'+p.ln+'</span></button>';
   };
   const tiefe=POS_REIHENFOLGE.map(function(pos){
@@ -2605,7 +2606,7 @@ function aufstellungHTML(verein,ligaId,mitRang,kader){
   }).join('');
 
   const umgerechnet=kader.some(p=>p.note_liga_id&&p.note_liga_id!==ligaId);
-  return '<div class="au-kopf"><span><strong>Startelf nach Ligaminuten '+vglEsc(dataSaison||'')+'</strong>'
+  return '<div class="au-kopf"><span><strong>Startelf nach Ligaminuten '+vglEsc(startelfSaison())+'</strong>'
       +' · heutiger Kader '+vglEsc(dataSaisonAktuell||'')+'</span>'
       +'<span>Zahl am Spieler: Liga-Note'+(umgerechnet?', auf das Niveau der '+vglEsc(liga)+' umgerechnet':'')+'</span></div>'
     +'<div class="au-raster">'
@@ -2619,8 +2620,13 @@ function aufstellungHTML(verein,ligaId,mitRang,kader){
           +'<div class="leg-item"><i class="ti ti-arrow-back-up"></i>Leihspieler</div>'
         +'</div>'
         +'<div class="au-hinweis">Aufstellungen führt die freie Quelle nicht. Gezeigt ist je Position, '
-          +'wer aus dem heutigen Kader '+vglEsc(dataSaison||'')+' die meisten Ligaminuten hatte — '
-          +'Neuzugänge mit ihren Minuten beim früheren Verein. <strong>Klick auf einen Spieler</strong> '
+          +(STARTELF_MODUS==='laufend'&&window.NOTENBASIS
+            ?'wer im heutigen Kader in der Saison '+vglEsc(startelfSaison())+' die meisten Ligaminuten '
+              +'für diesen Verein hat; bei Gleichstand entscheiden die Minuten aus '+vglEsc(dataSaison||'')+'. '
+              +'Die Zahl in der Liste daneben sind diese Minuten. '
+            :'wer aus dem heutigen Kader '+vglEsc(dataSaison||'')+' die meisten Ligaminuten hatte — '
+              +'Neuzugänge mit ihren Minuten beim früheren Verein. ')
+          +'<strong>Klick auf einen Spieler</strong> '
           +'öffnet seine Akte.</div>'
       +'</div>'
       +'<div class="au-tiefe" aria-label="Tiefe je Position">'+tiefe+'</div>'
@@ -2640,7 +2646,10 @@ function erklAufstellung(id){
     +erklZeile('Note',p.ln+(p.ln_roh!==undefined
       ?' — umgerechnet auf die '+vglEsc(liga)+', gemessen '+p.ln_roh+(p.note_liga?' in der '+vglEsc(p.note_liga):'')
       :''))
-    +erklZeile('Spielzeit',zahl(p.minuten)+' Ligaminuten in '+(p.einsaetze||0)+' Einsätzen, '+vglEsc(dataSaison||''))
+    +(STARTELF_MODUS==='laufend'&&window.NOTENBASIS
+      ?erklZeile('Spielzeit',zahl(minutenLaufend(p))+' Ligaminuten '+vglEsc(startelfSaison())+' für '+vglEsc(p.club)
+        +' · '+zahl(p.minuten)+' in '+vglEsc(dataSaison||''))
+      :erklZeile('Spielzeit',zahl(p.minuten)+' Ligaminuten in '+(p.einsaetze||0)+' Einsätzen, '+vglEsc(dataSaison||'')))
     +erklZeile('Rang',r&&r.rang
       ?'Startelf-Note '+r.note+' auf dieser Position — Platz '+r.rang+' von '+r.vonWievielen+' ('+st.t+')'
       :'kein Ligavergleich')
@@ -3250,9 +3259,16 @@ function noteMitHerkunft(x){
                     Gleichstand die der Notensaison
      'gewichtet'    beide Saisons als Anteil ihrer moeglichen Minuten,
                     gewichtet wie die Mischnote (K = 1.800)
-   Die Wahl aendert Raenge, Schwachstellen und Kaderbedarf - umgestellt wird
-   nur nach Messung und Freigabe. */
-const STARTELF_MODUS='notensaison';
+   Die Wahl aendert Raenge, Schwachstellen und Kaderbedarf. Seit 02.11.2026
+   'laufend' (freigegeben nach Messung ueber alle 631 Vereine: 3,0 getauschte
+   Startelfplaetze je Verein, 65 % der Positionsraenge anders). 'gewichtet'
+   behielt Spieler ohne einen Einsatz in der laufenden Saison in der Elf.
+   Ohne Daten der laufenden Saison entscheidet automatisch wieder 2025/26. */
+const STARTELF_MODUS='laufend';
+/* Nach welcher Saison die Startelf gerade gewaehlt ist - fuer die Texte. */
+function startelfSaison(){
+  return (STARTELF_MODUS==='laufend'&&window.NOTENBASIS)?window.NOTENBASIS.neu:(dataSaison||'');
+}
 function minutenLaufend(p){
   const r=(p.ld_neu||[]).find(x=>(x.club||p.club)===p.club);
   return r?(r.min||0):0;

@@ -903,6 +903,30 @@ Eine bekannte Schwäche, bewusst so belassen: Bei Rotation ist „meiste
 Minuten" ein Münzwurf — in Bayerns Offensivmittelfeld liegt Karl
 (1.282 Min.) vor Gnabry (1.228 Min.).
 
+### Startelf nach der laufenden Saison (freigegeben am 02.11.2026)
+
+Seit es Leistungsdaten der laufenden Saison gibt, wählt die Kaderanalyse die
+Startelf nach den **Ligaminuten 2026/27 beim heutigen Verein**; bei
+Gleichstand entscheiden die Minuten aus 2025/26. Vorher zählten die Minuten
+der Notensaison — Neuzugänge gingen mit ihren Minuten beim früheren Verein
+ein, und wer diese Saison nicht mehr spielt, stand trotzdem in der Elf.
+
+Gemessen über alle 631 Vereine, verglichen mit der Wahl nach 2025/26:
+
+| | Minuten 2026/27 — **gewählt** | beide Saisons gewichtet wie die Mischnote |
+|---|---|---|
+| getauschte Startelfplätze je Verein | 3,0 | 1,3 |
+| Vereine mit Änderung | 96 % | 73 % |
+| Positionen mit anderem Ligarang | 65 % | 43 % |
+| ausgetauschte Schwachstellen | 480 | 251 |
+
+Die gewichtete Variante war ruhiger, behielt aber Spieler ohne einen
+einzigen Einsatz in der laufenden Saison in der Elf (1.FC Bocholt: Jonas
+Carls links hinten, 0 Minuten 2026/27). Beim HSV stehen mit der gewählten
+Variante die Neuzugänge Moffi, Grønbæk und Møller Wolfe in der Startelf.
+Der Preis: Ein länger verletzter Stammspieler fällt heraus, solange er
+fehlt. Ohne Daten der laufenden Saison gilt automatisch wieder 2025/26.
+
 ### Aufstellung
 
 Ganz oben in der Kaderanalyse steht diese Startelf auf dem Platz, im 4-2-3-1,
