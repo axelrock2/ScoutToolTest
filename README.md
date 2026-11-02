@@ -807,6 +807,62 @@ heißt, der Verein selbst spielt in keiner erfassten Liga mehr — dort steht
 er durchaus noch im Kader. Unterscheiden lässt sich das nur mit den
 Vereinslisten *aller* Ligen; ein Teillauf setzt es deshalb nicht.
 
+### Mischnote: die laufende Saison zählt mit (freigegeben am 02.11.2026)
+
+Seit dem 10. Spieltag geht die Saison 2026/27 in die Noten ein — nach
+Einsatzminuten, nicht als harter Wechsel:
+
+```
+Note = (Minuten 26/27 × Note 26/27 + 1.800 × Note 25/26) / (Minuten 26/27 + 1.800)
+```
+
+Gemessen am 01.11.2026 in Regionalliga West und Oberliga Westfalen (dort
+beruhen beide Saisons auf denselben Kennzahlen):
+
+| Variante | Anteil neue Saison (Median) | Ø Abweichung zur bisherigen Note | ab 15 Punkten |
+|---|---|---|---|
+| Harte Umstellung auf 26/27 | 100 % | 17–18 Punkte | 46–52 % |
+| Mischnote, K = 900 | 47–51 % | 8–9 Punkte | 16–20 % |
+| **Mischnote, K = 1.800** | 31–34 % | 5–6 Punkte | 2–3 % |
+| Mischnote, K = 2.700 | 23–26 % | 4 Punkte | 0 % |
+
+Ein Saisonteil allein ist zu unruhig: Die Noten beider Saisons hängen in
+derselben Liga nur mäßig zusammen (Korrelation 0,36 bis 0,43). Albin Thaqi
+stand 2025/26 bei 88 in der Oberliga Westfalen (auf Regionalliga-Niveau 84)
+und nach 585 Minuten 2026/27 bei 25 — gemischt 70 statt 25.
+
+Regeln, jede mit Grund:
+
+- **Ab 450 Minuten**, wie jede Note. Darunter bleibt die alte Note stehen.
+- **Ohne belastbare alte Note gilt die neue allein.** So werden Neuzugänge
+  bewertbar, die bisher ohne Note im Kader standen — in den zwei gemessenen
+  Ligen 142 Spieler.
+- **Die alte Note wird vorher auf das Niveau der Liga der neuen Saison
+  umgerechnet** — dieselbe Formel und Schwelle wie überall im Werkzeug.
+- **Ligen mit Sofascore-Kennzahlen (bis zur 3. Liga) bleiben vorerst bei
+  2025/26.** Sofascore antwortet seit Herbst 2026 mit HTTP 403; eine neue
+  Note nur aus Transfermarkt-Werten wäre ein anderes Notenmodell als die
+  alte. Kader, Marktwerte und die Leistungszeile 2026/27 sind dort trotzdem
+  aktuell. Freischalten lässt sich die Mischung mit
+  `MISCH_SOFASCORE_LIGEN=1`, sobald Werte der neuen Saison vorliegen —
+  vorher die Wirkung messen.
+- **Kennzahlen, Teilnoten und Stärkenprofil bleiben die der Saison 2025/26.**
+  Die Akte sagt das und nennt die Zusammensetzung, etwa „Note 70 = 75 % × 84
+  aus 2025/26 (Oberliga Westfalen, 2.967 Min., umgerechnet von 88) + 25 % ×
+  25 aus 2026/27 (Regionalliga West, 585 Min.)". Darunter stehen die
+  Leistungsdaten beider Saisons als eigene Tabellen.
+
+Gerechnet wird in `scripts/mische_noten.py`, nach `compute_grades.py`: Es
+bewertet die laufende Saison mit demselben Notenlauf in eine Zwischendatei
+und verrechnet beide in `data/players.json`. Die Leistungsdaten der
+laufenden Saison liegen in `data/players_raw_2026.json.gz`.
+
+**Offen für Juli 2027:** Dann ist 2026/27 abgeschlossen und muss selbst zur
+Notensaison werden. Dieser Wechsel ist noch nicht automatisiert. Bis dahin
+läuft alles von selbst; ab Juli 2027 lässt `mische_noten.py` die Note
+ungemischt und meldet „Saisonwechsel nötig" im Laufstatus der Seite, statt
+2025/26 mit 2027/28 zu mischen und eine Saison auszulassen.
+
 ## Kaderanalyse: Startelf statt Kaderschnitt
 
 Grundlage jeder Kaderbewertung ist die **Startelf**. Früher zählte der
@@ -1808,15 +1864,57 @@ Quelle nicht unnötig belasten.
 
 ## Aktualisieren
 
-Es läuft **kein Zeitplan**. Aktualisiert wird bei Benutzung — der Bestand
-einer abgeschlossenen Saison veraltet ohnehin kaum, es ändern sich vor
-allem Marktwerte und Verträge.
+### Wochenlauf (seit 02.11.2026)
 
-Die Seite weist selbst darauf hin: Ab sieben Tagen erscheint das Alter in
-der Kopfzeile, ab vierzehn Tagen zusätzlich ein Hinweis auf der Startseite
-samt Befehl.
+Die Aktualisierung läuft **wöchentlich von selbst auf dem eigenen Mac** —
+über launchd, den eingebauten Zeitplaner von macOS. Ein Server oder Kosten
+entstehen nicht; Transfermarkt antwortet vom privaten Anschluss, aus
+Rechenzentren nicht (siehe unten).
 
-**Der verlässliche Weg läuft auf dem eigenen Rechner:**
+```bash
+./scripts/zeitplan.sh an       # einrichten: dienstags 07:00
+./scripts/zeitplan.sh status   # eingerichtet? letzter Lauf?
+./scripts/zeitplan.sh jetzt    # sofort einmal laufen lassen
+./scripts/zeitplan.sh aus      # wieder entfernen
+```
+
+**Ablauf eines Laufs** (`scripts/update_woche.sh`):
+
+| Schritt | Wann | Abrufe | Dauer |
+|---|---|---|---|
+| Heutige Kader, Marktwerte, Wechsel | jede Woche | rund 670 | ~17 min |
+| Leistungsdaten der laufenden Saison | jede Woche | rund 1.300 | ~32 min |
+| Sofascore, ein Probeabruf | jede Woche | 1 | Sekunden |
+| Vertragsenden, Leihverträge, Fotos | in den Transferperioden | rund 2.200 | ~60 min |
+| Noten, Mischnote, Syntaxprüfung | jede Woche | — | ~1 min |
+| Committen und übertragen | jede Woche | — | Sekunden |
+
+**Vertragsdaten nur zu den Transferperioden** (festgelegt am 02.11.2026):
+jede Woche im Sommerfenster (1.7.–2.9.) und im Winterfenster (1.1.–2.2.),
+danach noch einmal direkt nach Fensterschluss, damit der Endstand drin ist.
+Außerhalb ändern sich Vertragsenden kaum; die Wechsel selbst erfasst der
+wöchentliche Kaderschritt ohnehin. Das Datum des letzten Vertragsabrufs
+steht in `data/status.json`, erzwingen lässt er sich mit
+`TRANSFERTEIL=1 ./scripts/update_woche.sh`.
+
+**Dienstags um 07:00**, weil dann die Spiele vom Wochenende und vom Montag
+eingetragen sind. Schläft der Mac zu der Zeit, holt launchd den Lauf beim
+nächsten Aufwachen nach; mehrere verpasste Termine werden zu einem Lauf.
+Während des Laufs verhindert `caffeinate` den Ruhezustand bei Leerlauf — ein
+zugeklappter Laptop schläft trotzdem, dann holt der nächste Lauf nach. Ist
+kein Netz da, wartet der Lauf bis zu 15 Minuten.
+
+**Nichts geht still verloren.** Jeder Schritt schreibt sein Ergebnis in
+`data/status.json`, die Seite zeigt es in der Datenherkunft unter
+„Wöchentliche Aktualisierung" — so fiel die Sofascore-Sperre auf. Am Ende
+meldet macOS das Ergebnis. Das Protokoll steht in
+`~/Library/Logs/ScoutTool/wochenlauf.log`. Eine Sperre (`.lauf.lock`)
+verhindert, dass Wochenlauf und `update_local.sh` gleichzeitig sammeln.
+
+Die Seite zeigt das Alter der Daten weiterhin selbst: ab sieben Tagen in der
+Kopfzeile, ab vierzehn zusätzlich auf der Startseite.
+
+**Der volle Lauf von Hand** bleibt für Sonderfälle (rund fünfeinhalb Stunden):
 
 ```bash
 ./scripts/update_local.sh

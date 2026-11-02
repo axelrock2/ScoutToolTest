@@ -18,6 +18,21 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+# Nur ein Lauf zur Zeit - dieselbe Sperre setzt der Wochenlauf
+# (scripts/update_woche.sh). Zwei Sammler auf demselben Bestand haben schon
+# Daten gekostet.
+SPERRE=".lauf.lock"
+if ! mkdir "$SPERRE" 2>/dev/null; then
+  alt_pid="$(cat "$SPERRE/pid" 2>/dev/null || echo)"
+  if [ -n "$alt_pid" ] && kill -0 "$alt_pid" 2>/dev/null; then
+    echo "Es laeuft bereits eine Aktualisierung (PID $alt_pid). Spaeter erneut starten." >&2
+    exit 1
+  fi
+  rm -rf "$SPERRE"; mkdir "$SPERRE"
+fi
+echo $$ > "$SPERRE/pid"
+trap 'rm -rf "$SPERRE"' EXIT
+
 LIGEN="${1:-}"
 PUSH="${PUSH:-1}"
 PY="${PY:-python3}"

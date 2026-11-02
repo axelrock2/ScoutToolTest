@@ -162,6 +162,10 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 .quelle-art{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1.2px;
   text-transform:uppercase;border:1px solid;border-radius:5px;padding:2px 7px}
 .quelle-felder{font-size:12px;color:var(--ink-2);line-height:1.65}
+.lauf-zeile{display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:10px;align-items:baseline;padding:5px 0;border-top:1px solid var(--line);font-size:12px;color:var(--ink)}
+.lauf-zeile i{display:block;font-style:normal;color:var(--ink-2);font-size:11px;overflow-wrap:anywhere}
+.lauf-status{font-family:'JetBrains Mono',monospace;font-size:10.5px;text-transform:uppercase;letter-spacing:0.6px}
+.lauf-dauer{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-2);white-space:nowrap}
 .quelle-hinweis{font-size:12px;color:var(--ink-3);line-height:1.6;margin-top:6px;font-style:italic}
 /* Tabelle der Gegenprobe. Schmal gehalten - sie steht in jeder Akte und
    soll dort nicht mehr Platz einnehmen als die Quellen daneben. */
@@ -1464,6 +1468,12 @@ async function loadScoutData(){
     window.HERKUNFT=d.herkunft||{};
     window.GEGENPROBE=d.gegenprobe||null;
     window.KENNZAHL_ERKLAERUNG=d.kennzahl_erklaerung||{};
+    window.NOTENBASIS=d.notenbasis||null;
+    /* Ergebnis des letzten Wochenlaufs - klein, eigene Datei, und darf
+       fehlen: dann steht in der Datenherkunft schlicht nichts dazu. */
+    fetch(DATA_URL.replace('players.json','status.json')+'?v='+Date.now())
+      .then(r=>r.ok?r.json():null).then(st=>{window.LAUFSTATUS=st;zeigeHerkunft();})
+      .catch(()=>{});
     zeigeHerkunft();
     showDataStand(d);
     fuelleLigaFilter();
@@ -1499,13 +1509,15 @@ function showDataStand(d){
   const tage=Math.floor((Date.now()-new Date(d.stand).getTime())/86400000);
   const alt=tage>=14?'red':tage>=7?'amber':null;
   bc.innerHTML='<span class="dot"'+(alt?' style="background:var(--'+alt+');box-shadow:0 0 8px var(--'+alt+')"':'')
-    +'></span> '+d.players.length+' Spieler · Saison '
-    +(d.saison||'—')+' · Stand '+datum
+    +'></span> '+d.players.length+' Spieler · Noten '
+    +notenSaisonText()+' · Stand '+datum
     +(tage>=7?' <span style="color:var(--'+alt+')">('+tage+' Tage alt)</span>':'')
     +' · '+ok+'/'+ges+' Ligen';
   bc.title=(d.hinweis||'')+'\nMindestminuten: '+(d.mindestminuten||'—')
-    +(tage>=7?'\n\nDaten sind '+tage+' Tage alt. Aktualisieren mit:\n'
-      +'cd ~/Projekte/ScoutToolTest && ./scripts/update_local.sh':'');
+    +(window.NOTENBASIS?'\n'+notenBasisText():'')
+    +(tage>=7?'\n\nDaten sind '+tage+' Tage alt. Der Wochenlauf aktualisiert dienstags von selbst, '
+      +'sofern er eingerichtet ist. Von Hand:\n'
+      +'cd ~/Projekte/ScoutToolTest && ./scripts/update_woche.sh':'');
   zeigeAltersHinweis(tage);
 }
 
@@ -1525,11 +1537,74 @@ function zeigeAltersHinweis(tage){
     +'border:1px solid '+(rot?'rgba(255,91,91,0.4)':'rgba(245,166,35,0.4)')
     +';background:'+(rot?'rgba(255,91,91,0.07)':'rgba(245,166,35,0.07)')+';font-size:13px;line-height:1.6';
   el.innerHTML='<strong style="color:var(--'+(rot?'red':'amber')+')">Daten sind '+tage
-    +' Tage alt.</strong> Marktwerte und Verträge ändern sich laufend. '
-    +'Aktualisieren im Terminal:<br>'
+    +' Tage alt.</strong> Marktwerte und Verträge ändern sich laufend. Der Wochenlauf '
+    +'aktualisiert dienstags von selbst, sofern er auf dem Rechner eingerichtet ist '
+    +'(<code>./scripts/zeitplan.sh status</code>). Von Hand im Terminal:<br>'
     +'<code style="font-family:\'JetBrains Mono\',monospace;font-size:12px;color:var(--lime);'
-    +'display:inline-block;margin-top:7px">cd ~/Projekte/ScoutToolTest &amp;&amp; ./scripts/update_local.sh</code>';
+    +'display:inline-block;margin-top:7px">cd ~/Projekte/ScoutToolTest &amp;&amp; ./scripts/update_woche.sh</code>';
   hero.appendChild(el);
+}
+
+/* ---------- Mischnote: Notensaison plus laufende Saison --------------
+   Seit dem 02.11.2026 zaehlt die laufende Saison nach Einsatzminuten mit
+   (scripts/mische_noten.py): Note = (Minuten neu x Note neu + K x Note alt)
+   / (Minuten neu + K), K = 1.800. Ab 450 Minuten, in den Ligen mit
+   Sofascore-Kennzahlen vorerst nicht. Jede Akte nennt die Zusammensetzung. */
+function notenSaisonText(){
+  const nb=window.NOTENBASIS;
+  return nb&&nb.neu?(dataSaison||nb.alt)+' + '+nb.neu:(dataSaison||'—');
+}
+function notenBasisText(){
+  const nb=window.NOTENBASIS;
+  if(!nb)return '';
+  return 'Noten: '+nb.alt+' und '+nb.neu+' nach Einsatzminuten gemischt (K = '
+    +Number(nb.k).toLocaleString('de-DE')+' Minuten), die laufende Saison ab '+nb.mindestminuten
+    +' Minuten. In den Ligen mit Sofascore-Kennzahlen gilt vorerst '+nb.alt+'.';
+}
+/* Satz zur Herkunft der Note fuer die Akte - oder null, wenn die Note
+   unveraendert aus der Notensaison stammt und nichts dazu zu sagen ist. */
+function mischZeile(p){
+  const nb=window.NOTENBASIS, m=p.misch, zahl=v=>Number(v||0).toLocaleString('de-DE');
+  if(m&&m.w<100)
+    return 'Note '+p.ln+' = '+(100-m.w)+' % × '+m.alt.auf+' aus '+nb.alt+' ('+vglEsc(m.alt.liga||'')+', '
+      +zahl(m.alt.min)+' Min.'+(m.alt.auf!==m.alt.ln?', umgerechnet von '+m.alt.ln:'')+') + '
+      +m.w+' % × '+m.neu.ln+' aus '+nb.neu+' ('+vglEsc(m.neu.liga||'')+', '+zahl(m.neu.min)+' Min.)';
+  if(m)
+    return 'Note aus '+nb.neu+': '+m.neu.ln+' ('+vglEsc(m.neu.liga||'')+', '+zahl(m.neu.min)+' Min.) — '
+      +(m.alt?'in '+nb.alt+' nur '+zahl(m.alt.min)+' Min., zu wenig für eine belastbare Note'
+             :'für '+nb.alt+' liegt keine Note vor');
+  if(nb&&p.ld_neu&&p.ld_neu.length){
+    const min=p.ld_neu.reduce((a,r)=>a+(r.min||0),0);
+    const gehalten=(nb.gehalten||[]).indexOf(p.ld_neu[0].liga_id||p.liga_id)>=0
+      ||(nb.gehalten||[]).indexOf(p.liga_id)>=0;
+    return 'Note aus '+nb.alt+(p.note_club?' bei '+vglEsc(p.note_club)+' · '+vglEsc(p.note_liga):'')+' — '
+      +(gehalten&&min>=nb.mindestminuten
+        ?nb.neu+' zählt in dieser Liga noch nicht mit: Sofascore liefert derzeit keine Werte der laufenden Saison.'
+        :nb.neu+' bisher '+zahl(min)+' Min., die Mischung beginnt ab '+nb.mindestminuten+'.');
+  }
+  return null;
+}
+/* Letzter Wochenlauf, Schritt fuer Schritt - in der Datenherkunft. */
+function laufstatusBlock(){
+  const st=window.LAUFSTATUS, nb=window.NOTENBASIS;
+  if(!st&&!nb)return '';
+  const farbe={ok:'var(--green)',uebersprungen:'var(--ink-3)',fehler:'var(--red)',gesperrt:'var(--amber)'};
+  const wort={ok:'ok',uebersprungen:'übersprungen',fehler:'Fehler',gesperrt:'gesperrt'};
+  const dauer=s=>s>=90?Math.round(s/60)+' min':s+' s';
+  const zeilen=st?(st.schritte||[]).map(x=>'<div class="lauf-zeile"><span class="lauf-status" style="color:'
+      +(farbe[x.status]||'var(--ink-2)')+'">'+(wort[x.status]||x.status)+'</span><span>'+vglEsc(x.name)
+      +(x.detail?'<i>'+vglEsc(x.detail)+'</i>':'')+'</span><span class="lauf-dauer">'+dauer(x.sekunden||0)
+      +'</span></div>').join(''):'';
+  const wann=st?new Date(st.ende).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',
+      hour:'2-digit',minute:'2-digit'}):'';
+  return '<div class="quelle-block"><div class="quelle-kopf"><span class="quelle-art" style="color:var(--blue);'
+    +'border-color:var(--blue)55">Ablauf</span> Wöchentliche Aktualisierung</div>'
+    +(nb?'<div class="quelle-hinweis" style="margin-bottom:8px">'+vglEsc(notenBasisText())+' Stand der laufenden '
+      +'Saison: '+Object.keys(nb.spieltage||{}).length+' Ligen, '+nb.gemischt.toLocaleString('de-DE')
+      +' Noten gemischt, '+nb.nur_neu.toLocaleString('de-DE')+' erstmals bewertet.</div>':'')
+    +(st?'<div class="quelle-felder">Letzter Lauf '+wann+' — '+(st.ergebnis==='ok'?'alle Schritte ok'
+      :'<span style="color:var(--amber)">nicht alle Schritte ok</span>')+'</div>'+zeilen:'')
+    +'</div>';
 }
 
 loadScoutData();
@@ -1975,7 +2050,7 @@ function renderKadResult(){
       +(ohneNote?' + '+ohneNote+' ohne Note':''):'keine bewerteten Spieler',
     kader.length?wert:null,
     dataSaisonAktuell?'Kader '+dataSaisonAktuell:null,
-    dataSaison?'Noten '+dataSaison:null].filter(Boolean).join(' · ');
+    dataSaison?'Noten '+notenSaisonText():null].filter(Boolean).join(' · ');
   document.getElementById('kad-result-header').innerHTML=
     '<h2>'+(name||'Kein Verein gewählt')+' <span class="hl">// Scan</span></h2><p>'+kopf+'</p>';
 
@@ -2832,7 +2907,7 @@ function renderTopTeam(){
   }
   kopf.innerHTML='<h2>Top-Team der Liga <span class="hl">// '+vglEsc(l.name)+'</span></h2><p>'
     +[l.land,dataSaisonAktuell?'Kader '+dataSaisonAktuell:null,
-      dataSaison?'Noten '+dataSaison:null].filter(Boolean).join(' · ')+'</p>';
+      dataSaison?'Noten '+notenSaisonText():null].filter(Boolean).join(' · ')+'</p>';
   ttZeichnen();
 }
 
@@ -2987,7 +3062,7 @@ function ttHTML(a,l){
         +'</div>'
         +'<div class="au-hinweis">'+vglEsc(a.form.hinweis)+' Je Platz der Beste der Kategorie auf '
           +'dieser Position, darunter der Nächste als Ersatz (E); jeder Spieler steht nur einmal. '
-          +'Grundlage: heutige Kader '+vglEsc(dataSaisonAktuell||'')+', Noten '+vglEsc(dataSaison||'')
+          +'Grundlage: heutige Kader '+vglEsc(dataSaisonAktuell||'')+', Noten '+vglEsc(notenSaisonText())
           +' mit mindestens '+zahl(window.MIN_MINUTEN||450)+' Ligaminuten, auf das Niveau der '+vglEsc(l.name)
           +' umgerechnet. Vertragsenden und Marktwerte: Transfermarkt — bei Leihspielern zählt der '
           +'Vertrag beim Stammverein. <strong>Klick auf einen Spieler</strong> öffnet seine Akte.</div>'
@@ -3168,13 +3243,37 @@ function noteMitHerkunft(x){
     ?' ('+x.ln_roh+(x.note_liga?' in der '+x.note_liga:' roh')+')':'');
 }
 
+/* ---------- Wer ist Stammspieler? -----------------------------------
+   STARTELF_MODUS legt fest, nach welchen Minuten die Startelf gewaehlt wird:
+     'notensaison'  Ligaminuten der Notensaison 2025/26 (bisher)
+     'laufend'      Minuten der laufenden Saison beim HEUTIGEN Verein, bei
+                    Gleichstand die der Notensaison
+     'gewichtet'    beide Saisons als Anteil ihrer moeglichen Minuten,
+                    gewichtet wie die Mischnote (K = 1.800)
+   Die Wahl aendert Raenge, Schwachstellen und Kaderbedarf - umgestellt wird
+   nur nach Messung und Freigabe. */
+const STARTELF_MODUS='notensaison';
+function minutenLaufend(p){
+  const r=(p.ld_neu||[]).find(x=>(x.club||p.club)===p.club);
+  return r?(r.min||0):0;
+}
+function startelfSchluessel(p){
+  if(STARTELF_MODUS==='laufend')return minutenLaufend(p)*100000+(p.minuten||0);
+  if(STARTELF_MODUS==='gewichtet'){
+    const nb=window.NOTENBASIS, M=((nb&&nb.spieltage||{})[p.liga_id]||0)*90;
+    const w=M/(M+(nb&&nb.k||1800));
+    const ms=(p.ld&&p.ld.ms)||34;
+    return w*(M?minutenLaufend(p)/M:0)+(1-w)*((p.minuten||0)/(ms*90));
+  }
+  return p.minuten||0;
+}
 function startelfJePosition(spieler){
   const nach={};
   spieler.forEach(p=>{(nach[p.pos]=nach[p.pos]||[]).push(p);});
   const out={};
   for(const pos in nach){
     const g=nach[pos].slice()
-      .sort((a,b)=>(b.minuten||0)-(a.minuten||0)||b.ln-a.ln);
+      .sort((a,b)=>startelfSchluessel(b)-startelfSchluessel(a)||b.ln-a.ln);
     const n=STARTPLAETZE[pos]||1;
     const start=g.slice(0,n), bank=g.slice(n);
     const note=Math.round(start.reduce((a,p)=>a+p.ln,0)/start.length);
@@ -4755,6 +4854,31 @@ const LEISTUNG_SPALTEN=[
   ['minuten','Minuten','Min.','Minuten'],
 ];
 function leistungsAbschnitt(p){
+  const nb=window.NOTENBASIS;
+  const neu=(nb&&p.ld_neu&&p.ld_neu.length)?leistungsTabelle(p.ld_neu.map((r,i)=>({liga:r.liga||p.liga,club:r.club||p.club,
+      sp:r.sp,min:r.min,ld:r.ld||{},haupt:i===0})),!!p.misch,nb.neu):'';
+  const alt=p.ld?leistungsAbschnittAlt(p,!!neu):'';
+  if(!neu)return alt;
+  return '<div class="sec"><div class="sec-title">Leistungsdaten · Saison '+vglEsc(nb.neu)+' · läuft</div>'
+    +neu+'<div class="a-quelle">Stand '+(nb.stand_neu?new Date(nb.stand_neu).toLocaleDateString('de-DE'):'—')
+    +'. Nur Ligaspiele; „Mögliche Spiele“ sind die bisherigen Ligaspiele der Mannschaft. Quelle: Transfermarkt.</div></div>'
+    +alt;
+}
+function leistungsTabelle(reihen,notenGrundlage,saison){
+  const zahl=v=>Number(v||0).toLocaleString('de-DE');
+  const zellen=r=>[r.sp,r.ld.ms,r.ld.t,r.ld.v,r.ld.g,r.ld.gr,r.ld.r,r.min].map(function(v,i){
+    const text=(v===undefined||v===null)?'–':zahl(v)+(i===7?"'":'');
+    return '<span class="ld-zahl" role="cell" aria-label="'+LEISTUNG_SPALTEN[i][3]+': '+text+'">'+text+'</span>';
+  }).join('');
+  const kopf='<div class="ld-reihe ld-kopf" role="row"><span class="ld-wb" role="columnheader">Wettbewerb</span>'
+    +LEISTUNG_SPALTEN.map(s=>'<span role="columnheader" data-erkl="l:'+s[0]+'" tabindex="0" aria-label="'+s[3]+'">'
+      +'<span class="ld-lang">'+s[1]+'</span><span class="ld-kurz">'+s[2]+'</span></span>').join('')+'</div>';
+  return '<div class="ld-tab" role="table" aria-label="Leistungsdaten '+vglEsc(saison)+'">'+kopf
+    +reihen.map(r=>'<div class="ld-reihe" role="row"><span class="ld-wb" role="rowheader">'+vglEsc(r.liga||'')
+      +(notenGrundlage&&r.haupt?' <span class="mk-note" title="Geht in die Note ein">Note</span>':'')
+      +'<i>'+vglEsc(r.club||'')+'</i></span>'+zellen(r)+'</div>').join('')+'</div>';
+}
+function leistungsAbschnittAlt(p,mitNeuer){
   if(!p.ld)return '';
   const zahl=v=>Number(v||0).toLocaleString('de-DE');
   const reihen=[{liga:p.note_liga||p.liga,club:p.note_club||p.club,sp:p.einsaetze,
@@ -4784,7 +4908,8 @@ function leistungsAbschnitt(p){
     });
     rumpf+=zeile(summe,'ld-gesamt','Gesamt<i>alle Ligaspiele der Saison</i>');
   }
-  return '<div class="sec"><div class="sec-title">Leistungsdaten · Saison '+vglEsc(dataSaison||'')+'</div>'
+  return '<div class="sec"><div class="sec-title">Leistungsdaten · Saison '+vglEsc(dataSaison||'')
+    +(mitNeuer?' · abgeschlossen':'')+'</div>'
     +'<div class="ld-tab" role="table" aria-label="Leistungsdaten">'+kopf+rumpf+'</div>'
     +'<div class="a-quelle">Nur Ligaspiele — Transfermarkt zählt im Profil auch Pokal und '
     +'Europapokal mit, dort kann die Summe höher sein. „Mögliche Spiele“ sind die Ligaspiele '
@@ -4920,7 +5045,7 @@ function herkunftAbschnitt(){
     '<div class="param-erklaerung">Jede Angabe im Werkzeug lässt sich einer '+
     'Quelle zuordnen. <strong>Erhoben</strong> heißt: so von der Quelle '+
     'übernommen. <strong>Berechnet</strong> heißt: von diesem Werkzeug aus '+
-    'erhobenen Werten abgeleitet.</div>'+zeilen+regel+gegenprobeBlock()+'</div>';
+    'erhobenen Werten abgeleitet.</div>'+zeilen+regel+laufstatusBlock()+gegenprobeBlock()+'</div>';
 }
 
 /* Nachrechnung der Sofascore-Zaehlwerte gegen FotMob (Datenbasis Opta).
@@ -6412,7 +6537,7 @@ function renderKader(){
   const kopf='<div class="kader-kopf">'
     +(clubId?'<img src="'+WAPPEN_BASIS+clubId+'.png" alt="" referrerpolicy="no-referrer-when-downgrade" onerror="this.remove()">':'')
     +'<div><h2>'+verein+'</h2><div class="kk-sub">'+(lg.name||'')
-    +(dataSaisonAktuell?' · Kader '+dataSaisonAktuell:'')+(dataSaison?' · Noten '+dataSaison:'')
+    +(dataSaisonAktuell?' · Kader '+dataSaisonAktuell:'')+(dataSaison?' · Noten '+notenSaisonText():'')
     +'</div></div></div>'
     +'<div class="kader-zahlen">'
     +'<div><b>'+zeilen.length+'</b><span>Kadergröße</span></div>'
@@ -6907,11 +7032,18 @@ function notenAufbauAbschnitt(p){
     : '<div class="flag"><div class="fdot pos"></div><span>'+(t?t:'0')
       +' % der Note stammen aus Mannschaftswerten — sie beschreibt also '
       +'überwiegend den Spieler selbst.</span></div>';
-  const basis=p.basis
+  const m=p.misch, nb=window.NOTENBASIS;
+  const saisonFlag=(m&&nb)
+    ? '<div class="flag"><div class="fdot neu"></div><span>'+(m.w<100
+      ?'Die Bereiche stammen aus '+nb.alt+' (Note dort '+m.alt.ln+'). Die angezeigte Note '+p.ln
+        +' mischt sie zu '+m.w+' % mit '+nb.neu+' — '+mischZeile(p)+'.'
+      :'Bereiche und Note stammen aus '+nb.neu+'.')+'</span></div>' : '';
+  const basis=saisonFlag+(p.basis
     ? '<div class="flag"><div class="fdot neu"></div><span>Verglichen mit '
       +'<strong>'+p.basis.gruppe+'</strong> Spielern derselben Position in '
       +'derselben Liga, auf Grundlage von <strong>'+p.basis.minuten
-      +'</strong> Spielminuten.</span></div>' : '';
+      +'</strong> Spielminuten.</span></div>' : '');
+  const lnBereiche=(m&&m.w<100)?m.alt.ln:p.ln;
   const titel='<div class="sec-title mit-wahl">Woraus die Note entsteht'+darstellungWahl()+'</div>';
   const detail=darstellung==='detail';
   if(detail&&reihe.length>=3){
@@ -6919,7 +7051,7 @@ function notenAufbauAbschnitt(p){
       name:namen[k]||k, erkl:'b:'+k, a:{p:p.teilnoten[k],text:String(p.teilnoten[k])}
     }));
     return '<div class="sec">'+titel
-      +'<div class="param-erklaerung">Die Liga-Note <strong>'+p.ln+'</strong> ist ein '
+      +'<div class="param-erklaerung">Die Liga-Note <strong>'+lnBereiche+'</strong> ist ein '
       +'gewichtetes Mittel dieser Bereiche. Jedes Kreisstück ist ein Bereich, seine Länge '
       +'die Teilnote von 0 bis 100 — dieselbe Zahl wie in der Übersicht; der kräftiger '
       +'gestrichelte Ring liegt bei 50. <strong>Mit dem Zeiger über einem Stück</strong> '
@@ -6930,7 +7062,7 @@ function notenAufbauAbschnitt(p){
       +'<div style="margin-top:18px">'+warnung+basis+'</div></div>';
   }
   return '<div class="sec">'+titel+
-    '<div class="param-erklaerung">Die Liga-Note <strong>'+p.ln+'</strong> ist ein '
+    '<div class="param-erklaerung">Die Liga-Note <strong>'+lnBereiche+'</strong> ist ein '
     +'gewichtetes Mittel dieser Bereiche. Aufgeschlüsselt zeigt sich, worauf '
     +'sie beruht.</div>'+
     (detail?'<div class="flag" style="margin-bottom:14px"><div class="fdot neu"></div><span>Für einen '
@@ -7043,7 +7175,9 @@ function renderProfile(p,hasV,vN){
   '<div class="ph"><div class="ph-banner">'+phAvatar(p)+'<div class="ph-id"><div class="ph-name"><a href="'+tmUrl(p)+'" target="_blank" rel="noopener noreferrer" class="tm-link" title="Profil auf transfermarkt.de öffnen">'+p.name+'<i class="ti ti-external-link"></i></a></div><div class="ph-sub"><span class="pos-tag">'+p.pos+'</span> · '+wappenImg(p)+p.club+' · '+p.liga+(p.number?' · #'+p.number:'')+'</div>'+
     /* Note aus einem anderen Verein oder einer anderen Liga: gesagt, nicht
        versteckt - das Percentil gilt dort, wo es erspielt wurde. */
-    (p.note_club
+    (mischZeile(p)
+      ? '<div class="ph-herkunft">'+mischZeile(p)+'</div>'
+      : p.note_club
       ? '<div class="ph-herkunft">Note aus '+(dataSaison||'der Vorsaison')+': '
         +p.note_club+' · '+p.note_liga+'</div>'
       : '')+
@@ -7206,6 +7340,21 @@ function selRep(t){reportType=t;document.getElementById('ro-k').classList.toggle
    Grundlage (keine Kennzahlen bis zur 3. Liga, Datei nicht geladen), faellt
    der Abschnitt mit einem Satz weg, statt leer dazustehen. */
 function berichtLeistung(p){
+  const nb=window.NOTENBASIS;
+  let neu='';
+  if(nb&&p.ld_neu&&p.ld_neu.length){
+    const z=v=>Number(v||0).toLocaleString('de-DE');
+    neu='<h3>Leistungsdaten · Saison '+vglEsc(nb.neu)+' (läuft)</h3>'
+      +'<table class="ldt"><thead><tr><th>Wettbewerb</th><th>Spiele</th><th>Mögliche Spiele</th><th>Tore</th>'
+      +'<th>Vorlagen</th><th>Gelb</th><th>Gelb-Rot</th><th>Rot</th><th>Minuten</th></tr></thead><tbody>'
+      +p.ld_neu.map(r=>{const l=r.ld||{};return '<tr><td>'+vglEsc(r.liga||p.liga||'')+'<small>'+vglEsc(r.club||p.club||'')+'</small></td><td>'
+        +z(r.sp)+'</td><td>'+(l.ms==null?'–':z(l.ms))+'</td><td>'+z(l.t)+'</td><td>'+z(l.v)+'</td><td>'+z(l.g)+'</td><td>'
+        +z(l.gr)+'</td><td>'+z(l.r)+'</td><td>'+z(r.min)+"'</td></tr>";}).join('')+'</tbody></table>'
+      +(mischZeile(p)?'<p class="lhinw">'+mischZeile(p)+'</p>':'');
+  }
+  return neu+berichtLeistungAlt(p);
+}
+function berichtLeistungAlt(p){
   if(!p.ld)return '';
   const z=v=>Number(v||0).toLocaleString('de-DE');
   const reihen=[{liga:p.note_liga||p.liga,club:p.note_club||p.club,sp:p.einsaetze,min:p.minuten,ld:p.ld,haupt:true}]
@@ -7280,7 +7429,7 @@ function downloadReport(){
   const datum=new Date().toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
   const _fl=flagsFuer(p);const st=_fl.filter(f=>f.c==='pos').map(f=>f.t),sw=_fl.filter(f=>f.c==='neg').map(f=>f.t),nu=_fl.filter(f=>f.c==='neu').map(f=>f.t);
   const tnRes=lastTN,ms=tnRes?tnRes.tn:null;
-  let h='<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;font-size:11pt;color:#1a1a1a;margin:0}.page{padding:40px 48px;max-width:800px;margin:0 auto}.header{border-bottom:2px solid #185FA5;padding-bottom:16px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-end}.header h1{font-size:18pt;font-weight:700;color:#185FA5;margin:0 0 4px}.header p{font-size:9pt;color:#666;margin:0}.hr{text-align:right;font-size:9pt;color:#666}.logo{font-size:14pt;font-weight:700;color:#185FA5}h2{font-size:12pt;font-weight:700;color:#185FA5;margin:22px 0 10px;padding-bottom:4px;border-bottom:0.5px solid #dde4f0}h3{font-size:11pt;font-weight:700;margin:14px 0 6px}.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}.si{background:#f0f5fb;border-radius:4px;padding:8px 10px}.sl{font-size:8pt;color:#666}.sv{font-size:11pt;font-weight:700}.ng{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}.nb{border:1px solid #dde4f0;border-radius:4px;padding:12px 14px}.nl{font-size:8pt;color:#666}.nv{font-size:22pt;font-weight:700;color:#185FA5}.ns{font-size:8pt;color:#888}.fi{display:flex;gap:8px;margin-bottom:6px;font-size:10pt}.fd{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:3px}.fd.p{background:#3B6D11}.fd.n{background:#A32D2D}.fd.u{background:#888}.fz{background:#e8f2fb;border-left:3px solid #185FA5;padding:12px 14px;font-size:10pt;color:#0C447C;line-height:1.6}.pr{display:flex;align-items:center;gap:10px;margin-bottom:8px}.pn{font-size:9pt;width:180px;flex-shrink:0}.po{flex:1;height:7px;background:#e8eef5;border-radius:4px;overflow:hidden}.pi2{height:100%}.pp{font-size:9pt;color:#666;width:28px;text-align:right}.mb{background:#f7fdf9;border:1px solid #c0ddb0;border-radius:4px;padding:14px 16px}.mt{font-size:10pt;font-weight:700;color:#3B6D11;margin-bottom:6px}.mx{font-size:10pt;line-height:1.6}.cb{display:inline-block;padding:3px 10px;border-radius:12px;font-size:9pt;font-weight:700}.cr{background:#FCEBEB;color:#A32D2D}.cy{background:#FAEEDA;color:#854F0B}.cg{background:#EAF3DE;color:#3B6D11}.cn{background:#EEF1F5;color:#555}.ub{display:inline-block;background:#E1F5EE;color:#0F6E56;padding:2px 8px;border-radius:10px;font-size:9pt;font-weight:700;margin-left:8px}.footer{border-top:0.5px solid #ddd;margin-top:32px;padding-top:10px;font-size:8pt;color:#999;display:flex;justify-content:space-between}.ldt{width:100%;border-collapse:collapse;font-size:9.5pt;margin:4px 0 12px}.ldt th{font-size:8pt;color:#666;font-weight:normal;text-align:right;padding:4px 6px;border-bottom:1px solid #dde4f0}.ldt td{text-align:right;padding:5px 6px;border-bottom:0.5px solid #eef1f5}.ldt th:first-child,.ldt td:first-child{text-align:left}.ldt td small{display:block;color:#888;font-size:8pt}.ldt tr.sum td{font-weight:700;background:#f5f8fc}.lhinw{font-size:8pt;color:#888;margin:-6px 0 12px}.kzb{break-inside:avoid;margin-bottom:8px}.kzb h4{font-size:9.5pt;margin:12px 0 5px;color:#185FA5}.kzr{display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:9pt}.kzn{width:210px;flex-shrink:0}.kzw{width:64px;text-align:right;color:#333;flex-shrink:0}.kzo{flex:1;height:6px;background:#e8eef5;border-radius:3px;overflow:hidden}.kzi{height:100%}.kzp{width:26px;text-align:right;color:#666;flex-shrink:0}.rol{display:flex;align-items:baseline;gap:8px;margin-bottom:5px;font-size:9.5pt}.rol b{width:210px;flex-shrink:0}.rol span{color:#666;font-size:8.5pt;flex:1}.rol i{font-style:normal;font-weight:700;color:#185FA5;width:40px;text-align:right}@media print{body{print-color-adjust:exact;-webkit-print-color-adjust:exact}}</style></head><body><div class="page"><div class="header"><div><h1>'+p.name+'</h1><p>'+p.pos+' · '+p.club+' · '+p.liga+' · #'+p.number+'</p></div><div class="hr"><div class="logo">ScoutIQ</div><div>Erstellt am '+datum+'</div><div>'+(reportType==='kompakt'?'Kompaktbericht':'Ausführlicher Bericht')+'</div></div></div><h2>Spielereinschätzung</h2><div class="sg"><div class="si"><div class="sl">Alter</div><div class="sv">'+p.age+' J.</div></div><div class="si"><div class="sl">Fuß</div><div class="sv">'+p.foot+'</div></div><div class="si"><div class="sl">Größe</div><div class="sv">'+p.height+'</div></div><div class="si"><div class="sl">Marktwert</div><div class="sv">'+p.mv+' €</div></div></div><div style="margin-bottom:14px">Vertrag: <span class="cb '+(p.contract==='red'?'cr':p.contract==='yellow'?'cy':p.contract==='green'?'cg':'cn')+'">'+ctxt(p.contract)+'</span>'+(function(){const lh=leiheInfo(p);if(!lh)return '';return ' <span style="font-size:9pt;color:#555">· ausgeliehen'+(lh.von?' von '+lh.von:'')+(lh.bis?' bis '+dtm(lh.bis):'')+'; Vertrag beim Stammverein '+(lh.stamm?'bis '+dtm(lh.stamm):'unbekannt')+'</span>';})()+(p.underval?'<span class="ub">Unterbewertet</span>':'')+'</div><div class="ng"><div class="nb"><div class="nl">Liga-Note (LN)</div><div class="nv">'+p.ln+'</div><div class="ns">Percentil vs. alle '+p.pos+'</div></div><div class="nb"><div class="nl">Potenzial-Note (PN)</div><div class="nv">'+p.pn+'</div><div class="ns">'+pnHerleitung(p)+'</div></div></div>';
+  let h='<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;font-size:11pt;color:#1a1a1a;margin:0}.page{padding:40px 48px;max-width:800px;margin:0 auto}.header{border-bottom:2px solid #185FA5;padding-bottom:16px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-end}.header h1{font-size:18pt;font-weight:700;color:#185FA5;margin:0 0 4px}.header p{font-size:9pt;color:#666;margin:0}.hr{text-align:right;font-size:9pt;color:#666}.logo{font-size:14pt;font-weight:700;color:#185FA5}h2{font-size:12pt;font-weight:700;color:#185FA5;margin:22px 0 10px;padding-bottom:4px;border-bottom:0.5px solid #dde4f0}h3{font-size:11pt;font-weight:700;margin:14px 0 6px}.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}.si{background:#f0f5fb;border-radius:4px;padding:8px 10px}.sl{font-size:8pt;color:#666}.sv{font-size:11pt;font-weight:700}.ng{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}.nb{border:1px solid #dde4f0;border-radius:4px;padding:12px 14px}.nl{font-size:8pt;color:#666}.nv{font-size:22pt;font-weight:700;color:#185FA5}.ns{font-size:8pt;color:#888}.fi{display:flex;gap:8px;margin-bottom:6px;font-size:10pt}.fd{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:3px}.fd.p{background:#3B6D11}.fd.n{background:#A32D2D}.fd.u{background:#888}.fz{background:#e8f2fb;border-left:3px solid #185FA5;padding:12px 14px;font-size:10pt;color:#0C447C;line-height:1.6}.pr{display:flex;align-items:center;gap:10px;margin-bottom:8px}.pn{font-size:9pt;width:180px;flex-shrink:0}.po{flex:1;height:7px;background:#e8eef5;border-radius:4px;overflow:hidden}.pi2{height:100%}.pp{font-size:9pt;color:#666;width:28px;text-align:right}.mb{background:#f7fdf9;border:1px solid #c0ddb0;border-radius:4px;padding:14px 16px}.mt{font-size:10pt;font-weight:700;color:#3B6D11;margin-bottom:6px}.mx{font-size:10pt;line-height:1.6}.cb{display:inline-block;padding:3px 10px;border-radius:12px;font-size:9pt;font-weight:700}.cr{background:#FCEBEB;color:#A32D2D}.cy{background:#FAEEDA;color:#854F0B}.cg{background:#EAF3DE;color:#3B6D11}.cn{background:#EEF1F5;color:#555}.ub{display:inline-block;background:#E1F5EE;color:#0F6E56;padding:2px 8px;border-radius:10px;font-size:9pt;font-weight:700;margin-left:8px}.footer{border-top:0.5px solid #ddd;margin-top:32px;padding-top:10px;font-size:8pt;color:#999;display:flex;justify-content:space-between}.ldt{width:100%;border-collapse:collapse;font-size:9.5pt;margin:4px 0 12px}.ldt th{font-size:8pt;color:#666;font-weight:normal;text-align:right;padding:4px 6px;border-bottom:1px solid #dde4f0}.ldt td{text-align:right;padding:5px 6px;border-bottom:0.5px solid #eef1f5}.ldt th:first-child,.ldt td:first-child{text-align:left}.ldt td small{display:block;color:#888;font-size:8pt}.ldt tr.sum td{font-weight:700;background:#f5f8fc}.lhinw{font-size:8pt;color:#888;margin:-6px 0 12px}.kzb{break-inside:avoid;margin-bottom:8px}.kzb h4{font-size:9.5pt;margin:12px 0 5px;color:#185FA5}.kzr{display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:9pt}.kzn{width:210px;flex-shrink:0}.kzw{width:64px;text-align:right;color:#333;flex-shrink:0}.kzo{flex:1;height:6px;background:#e8eef5;border-radius:3px;overflow:hidden}.kzi{height:100%}.kzp{width:26px;text-align:right;color:#666;flex-shrink:0}.rol{display:flex;align-items:baseline;gap:8px;margin-bottom:5px;font-size:9.5pt}.rol b{width:210px;flex-shrink:0}.rol span{color:#666;font-size:8.5pt;flex:1}.rol i{font-style:normal;font-weight:700;color:#185FA5;width:40px;text-align:right}@media print{body{print-color-adjust:exact;-webkit-print-color-adjust:exact}}</style></head><body><div class="page"><div class="header"><div><h1>'+p.name+'</h1><p>'+p.pos+' · '+p.club+' · '+p.liga+' · #'+p.number+'</p></div><div class="hr"><div class="logo">ScoutIQ</div><div>Erstellt am '+datum+'</div><div>'+(reportType==='kompakt'?'Kompaktbericht':'Ausführlicher Bericht')+'</div></div></div><h2>Spielereinschätzung</h2><div class="sg"><div class="si"><div class="sl">Alter</div><div class="sv">'+p.age+' J.</div></div><div class="si"><div class="sl">Fuß</div><div class="sv">'+p.foot+'</div></div><div class="si"><div class="sl">Größe</div><div class="sv">'+p.height+'</div></div><div class="si"><div class="sl">Marktwert</div><div class="sv">'+p.mv+' €</div></div></div><div style="margin-bottom:14px">Vertrag: <span class="cb '+(p.contract==='red'?'cr':p.contract==='yellow'?'cy':p.contract==='green'?'cg':'cn')+'">'+ctxt(p.contract)+'</span>'+(function(){const lh=leiheInfo(p);if(!lh)return '';return ' <span style="font-size:9pt;color:#555">· ausgeliehen'+(lh.von?' von '+lh.von:'')+(lh.bis?' bis '+dtm(lh.bis):'')+'; Vertrag beim Stammverein '+(lh.stamm?'bis '+dtm(lh.stamm):'unbekannt')+'</span>';})()+(p.underval?'<span class="ub">Unterbewertet</span>':'')+'</div><div class="ng"><div class="nb"><div class="nl">Liga-Note (LN)</div><div class="nv">'+p.ln+'</div><div class="ns">Percentil vs. alle '+p.pos+(p.misch&&window.NOTENBASIS?' · '+(p.misch.w<100?(100-p.misch.w)+' % '+window.NOTENBASIS.alt+', '+p.misch.w+' % '+window.NOTENBASIS.neu:'aus '+window.NOTENBASIS.neu):'')+'</div></div><div class="nb"><div class="nl">Potenzial-Note (PN)</div><div class="nv">'+p.pn+'</div><div class="ns">'+pnHerleitung(p)+'</div></div></div>';
   h+=berichtLeistung(p)+(reportType==='ausfuehrlich'?'':berichtRolleKurz(p));
   if(reportType==='ausfuehrlich'){h+='<h3>Parameter-Percentile</h3>';p.params.forEach(pm=>{const c=pm.cat==='top'?'#185FA5':pm.cat==='low'?'#F0997B':'#9DC0E8';h+='<div class="pr"><div class="pn">'+pm.n+'</div><div class="po"><div class="pi2" style="width:'+pm.p+'%;background:'+c+'"></div></div><div class="pp">'+pm.p+'</div></div>'})}
   if(reportType==='ausfuehrlich')h+=berichtKennzahlen(p)+berichtRollen(p);
@@ -7513,7 +7662,7 @@ if(API_URL){
           f('hs-saison', aktuell && aktuell !== dataSaison ? aktuell : dataSaison);
           var lbl = document.querySelector('#hs-saison + .hstat-lbl');
           if(lbl && aktuell && aktuell !== dataSaison)
-            lbl.textContent = 'Kader · Noten ' + dataSaison;
+            lbl.textContent = 'Kader · Noten ' + (typeof notenSaisonText==='function'?notenSaisonText():dataSaison);
         }
         if(echt){
           f('hs-stand', new Date(dataStand).toLocaleDateString('de-DE',

@@ -13,3 +13,6 @@ data/players_raw.json
 __pycache__/
 *.pyc
 .venv/
+
+# Sperre gegen zwei gleichzeitige Datenlaeufe
+.lauf.lock/
