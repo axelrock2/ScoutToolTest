@@ -151,6 +151,25 @@ def main() -> int:
     ohne = {o["id"]: o for o in d.get("ohne_note_spieler", [])}
     zaehl = Counter()
 
+    # Reine Note der laufenden Saison fuer die Bestenliste der Kaderanalyse.
+    # In den Sofascore-Ligen beruht sie vorerst nur auf Transfermarkt-Werten
+    # ("tm"); liefert Sofascore wieder, rechnet compute_grades.py die Werte
+    # von selbst ein und die Kennzeichnung entfaellt - Liga fuer Liga.
+    sofa_ligen = {s["liga_id"] for s in roh["spieler"] if s.get("sofa")}
+    tm_ligen = sorted(l for l in SOFASCORE_LIGEN if l not in sofa_ligen)
+    for n in neu_d["players"]:
+        if not n.get("belastbar"):
+            continue
+        info = {"ln": n["ln"], "min": n["minuten"]}
+        if n["liga_id"] in tm_ligen:
+            info["tm"] = 1
+        ziel_eintrag = alt.get(n["id"]) or ohne.get(n["id"])
+        if ziel_eintrag is not None:
+            if n["liga_id"] != ziel_eintrag.get("liga_id"):
+                info["liga_id"] = n["liga_id"]
+            ziel_eintrag["saison_neu"] = info
+            zaehl["saison_neu"] += 1
+
     for n in neu_d["players"]:
         pid = n["id"]
         lid = n["liga_id"]
@@ -213,6 +232,7 @@ def main() -> int:
 
         # Bisher ohne Note im Kader (oder gar nicht erfasst): neu aufnehmen.
         q = dict(n)
+        q["saison_neu"] = {"ln": n["ln"], "min": n["minuten"]}
         q["niveau"] = niveau.get(lid, q.get("niveau"))
         q["misch"] = info
         q["ld_neu"] = kompakt(reihen, q)
@@ -244,6 +264,8 @@ def main() -> int:
         "stand_neu": roh.get("stand"), "spieltage": spieltage,
         "gehalten": sorted(SOFASCORE_LIGEN) if not mit_sofa else [],
         "gemischt": zaehl["gemischt"],
+        "saison_tm_ligen": tm_ligen,
+        "saison_ohne_akte": sum(1 for o in ohne.values() if o.get("saison_neu")),
         "nur_neu": zaehl["nur_neu_war_duenn"] + zaehl["nur_neu_aufgenommen"],
     }
     with open(ziel, "w", encoding="utf-8") as fh:

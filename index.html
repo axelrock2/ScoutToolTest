@@ -2812,11 +2812,47 @@ const TT_KATEGORIEN=[
      +'je Lebensjahr unter 26, höchstens 12'}
 ];
 
-let ttZustand={liga:null,kat:TT_KATEGORIEN[0].id,form:TT_FORMATION_VORGABE};
+/* ---------- Beste der laufenden Saison (02.11.2026) ----------------------
+   Zweite Karte neben dem Top-Team: je Liga die Elf mit der besten Note der
+   LAUFENDEN Saison (ab 450 Minuten), dazu je Position die zwei
+   Naechstbesten - einmal alle, einmal die Juengsten (U23, umschaltbar U21).
+   Grundlage ist die reine Saisonnote aus scripts/mische_noten.py
+   (saison_neu), nicht die Mischnote. In den Ligen mit Sofascore-Kennzahlen
+   beruht sie vorerst nur auf Transfermarkt-Werten und ist so gekennzeichnet;
+   liefert Sofascore wieder, fliessen dessen Werte von selbst ein. Spieler,
+   die dort noch ohne Note im Kader stehen, sind dabei - "ohne Akte", der
+   Klick fuehrt zu Transfermarkt. */
+const ttSaisonSort=(a,b)=>b.ln-a.ln||(b.minuten26||0)-(a.minuten26||0);
+const ttMin=p=>Number(p.minuten26||0).toLocaleString('de-DE')+"'";
+const SAISON_KATEGORIEN=[
+  {id:'saison-beste',name:'Beste der Saison',saison:true,weitere:2,
+   filter:()=>true,sort:ttSaisonSort,
+   marke:ttMin,markeName:'Ligaminuten der laufenden Saison',
+   wert:p=>ttMin(p)+' · '+ttAlter(p),
+   regel:'Je Position die beste Note der laufenden Saison, ab 450 Ligaminuten'},
+  {id:'saison-jung',name:'Jüngste Beste',saison:true,weitere:2,
+   filter:p=>!!p.age&&p.age<=ttZustand.alter,sort:ttSaisonSort,
+   marke:ttAlter,markeName:'Alter',
+   wert:p=>ttAlter(p)+' · '+ttMin(p),
+   regel:'Spieler bis höchstens 23 Jahre — je Position die beste Note der laufenden Saison, ab 450 Ligaminuten'}
+];
+let ttZustand={liga:null,kat:TT_KATEGORIEN[0].id,form:TT_FORMATION_VORGABE,modus:'topteam',alter:23};
+function saisonKandidaten(ligaId){
+  const out=[];
+  const aus=(p,akte)=>{
+    const s=p.saison_neu;
+    if(!s||(s.liga_id||p.liga_id)!==ligaId||p.weg)return;
+    out.push(Object.assign({},p,{ln:s.ln,minuten26:s.min,saisonTm:!!s.tm,ohneAkte:!akte,
+      lnMisch:akte?p.ln:null,ini:p.ini||ini(p.name),niveau:niveauVonLiga(ligaId)}));
+  };
+  PLAYERS.forEach(p=>aus(p,true));
+  OHNE_NOTE.forEach(p=>aus(p,false));
+  return out;
+}
 let ttDaten={};          // Spieler-ID -> {p, platz, ersatz, als, rang, von}
 let ttRueckScroll=null;  // Scrollstand beim Oeffnen einer Akte
 
-function ttKategorie(id){return TT_KATEGORIEN.find(k=>k.id===id)||TT_KATEGORIEN[0];}
+function ttKategorie(id){return TT_KATEGORIEN.concat(SAISON_KATEGORIEN).find(k=>k.id===id)||TT_KATEGORIEN[0];}
 
 /* Die Elf. Erst alle Startplaetze aus der eigenen Position, dann deren Luecken
    aus verwandten Positionen, dann die Ersatzplaetze in derselben Reihenfolge -
@@ -2825,8 +2861,9 @@ function ttAufstellung(ligaId,katId,formId){
   const kat=ttKategorie(katId);
   const form=TT_FORMATIONEN[formId]||TT_FORMATIONEN[TT_FORMATION_VORGABE];
   const ziel=niveauVonLiga(ligaId);
-  const kandidaten=PLAYERS.filter(p=>p.liga_id===ligaId&&!p.weg&&p.belastbar!==false)
-    .map(p=>einordnenAuf(p,ziel)).filter(kat.filter);
+  const kandidaten=(kat.saison?saisonKandidaten(ligaId)
+    :PLAYERS.filter(p=>p.liga_id===ligaId&&!p.weg&&p.belastbar!==false).map(p=>einordnenAuf(p,ziel)))
+    .filter(kat.filter);
   const nach={};
   kandidaten.forEach(p=>{(nach[p.pos]=nach[p.pos]||[]).push(p);});
   for(const pos in nach)nach[pos].sort(kat.sort);
@@ -2845,9 +2882,19 @@ function ttAufstellung(ligaId,katId,formId){
   });
   fuellen('start',naechster,false);
   fuellen('start',verwandter,true);
-  fuellen('ersatz',naechster,false);
-  fuellen('ersatz',verwandter,true);
-  return {kat:kat,form:form,plaetze:plaetze,nach:nach,anzahl:kandidaten.length};
+  /* Bestenliste: statt eines Ersatzes je Platz die zwei Naechstbesten je
+     Position - streng auf der Position, sonst stuende ein ZM unter den DM. */
+  const weitere={};
+  if(kat.weitere){
+    plaetze.forEach(pl=>{
+      if(weitere[pl.pos])return;
+      weitere[pl.pos]=(nach[pl.pos]||[]).filter(p=>!benutzt.has(p.id)).slice(0,kat.weitere);
+    });
+  }else{
+    fuellen('ersatz',naechster,false);
+    fuellen('ersatz',verwandter,true);
+  }
+  return {kat:kat,form:form,plaetze:plaetze,nach:nach,weitere:weitere,anzahl:kandidaten.length};
 }
 
 function ttRing(p,als){
@@ -2856,11 +2903,16 @@ function ttRing(p,als){
 }
 
 function ttKarteHTML(ligaId){
-  return '<div class="verein-card tt-karte" onclick="pickTopTeam(\''+ligaId+'\')">'
+  const nb=window.NOTENBASIS;
+  return '<div class="verein-card tt-karte" data-art="topteam" onclick="pickTopTeam(\''+ligaId+'\')">'
     +'<div class="vc-icon"><i class="ti ti-trophy" aria-hidden="true"></i></div>'
     +'<div class="vc-name">Top-Team der Liga<span class="tt-karte-sub">'
     +TT_KATEGORIEN.length+' Kategorien · '+Object.keys(TT_FORMATIONEN).length
-    +' Formationen</span></div></div>';
+    +' Formationen</span></div></div>'
+    +(nb?'<div class="verein-card tt-karte" data-art="saison" onclick="pickSaisonBeste(\''+ligaId+'\')">'
+      +'<div class="vc-icon"><i class="ti ti-flame" aria-hidden="true"></i></div>'
+      +'<div class="vc-name">Beste der Saison '+vglEsc(nb.neu)+'<span class="tt-karte-sub">'
+      +'Top 11 + 2 je Position · Überblick und Jüngste</span></div></div>':'');
 }
 
 function pickTopTeam(ligaId){
@@ -2868,8 +2920,10 @@ function pickTopTeam(ligaId){
      noch gegen den zuvor gewaehlten Verein. */
   kadVerein=null;kadVereinLiga=null;
   ttZustand.liga=ligaId;
+  ttZustand.modus='topteam';
+  if(ttKategorie(ttZustand.kat).saison)ttZustand.kat=TT_KATEGORIEN[0].id;
   document.querySelectorAll('#kad-verein-panel .verein-card')
-    .forEach(c=>c.classList.toggle('sel',c.classList.contains('tt-karte')));
+    .forEach(c=>c.classList.toggle('sel',c.dataset.art==='topteam'));
   const l=LIGEN.find(x=>x.id===ligaId)||{name:'',land:''};
   document.getElementById('kad-opt-panel').innerHTML=
     '<div class="panel-title"><span class="idx">03</span> Analyse</div>'
@@ -2887,7 +2941,44 @@ function pickTopTeam(ligaId){
     +'<button class="btn-primary" onclick="topTeamStarten()"><i class="ti ti-trophy"></i> Top-Team zeigen</button>';
 }
 
+function pickSaisonBeste(ligaId){
+  kadVerein=null;kadVereinLiga=null;
+  ttZustand.liga=ligaId;
+  ttZustand.modus='saison';
+  if(!ttKategorie(ttZustand.kat).saison)ttZustand.kat=SAISON_KATEGORIEN[0].id;
+  document.querySelectorAll('#kad-verein-panel .verein-card')
+    .forEach(c=>c.classList.toggle('sel',c.dataset.art==='saison'));
+  const l=LIGEN.find(x=>x.id===ligaId)||{name:'',land:''}, nb=window.NOTENBASIS||{};
+  document.getElementById('kad-opt-panel').innerHTML=
+    '<div class="panel-title"><span class="idx">03</span> Analyse</div>'
+    +'<div class="sel-info"><div class="sl">Ausgewählt</div><div class="sn">Beste der Saison '+vglEsc(nb.neu||'')+'</div>'
+    +'<div class="sm">'+l.name+' · '+l.land+'</div></div>'
+    +'<p class="tt-panel-text">Die Elf mit der besten Note der laufenden Saison, ab 450 Ligaminuten, '
+    +'dazu je Position die zwei Nächstbesten. Ansicht, Altersgrenze und Formation lassen sich '
+    +'danach direkt umschalten.</p>'
+    +'<div class="fg"><label for="tt-kat-wahl">Ansicht</label><select id="tt-kat-wahl">'
+    +SAISON_KATEGORIEN.map(k=>'<option value="'+k.id+'"'+(k.id===ttZustand.kat?' selected':'')+'>'
+      +k.name+'</option>').join('')+'</select></div>'
+    +'<div class="fg"><label for="tt-alter-wahl">Altersgrenze für „Jüngste Beste“</label><select id="tt-alter-wahl">'
+    +'<option value="23"'+(ttZustand.alter===23?' selected':'')+'>U23 — bis 23 Jahre</option>'
+    +'<option value="21"'+(ttZustand.alter===21?' selected':'')+'>U21 — bis 21 Jahre</option></select></div>'
+    +'<div class="fg"><label for="tt-form-wahl">Formation</label><select id="tt-form-wahl">'
+    +Object.keys(TT_FORMATIONEN).map(f=>'<option'+(f===ttZustand.form?' selected':'')+'>'+f
+      +'</option>').join('')+'</select></div>'
+    +'<button class="btn-primary" onclick="topTeamStarten()"><i class="ti ti-flame"></i> Bestenliste zeigen</button>';
+}
+
+/* Spieler ohne Akte (bisher ohne Note im Kader) oeffnen Transfermarkt. */
+function ttOeffnen(id){
+  const d=ttDaten[id];
+  if(d&&d.p.ohneAkte){window.open(tmUrl(d.p),'_blank','noopener');return;}
+  ttProfil(id);
+}
+function ttAlterSetzen(a){ttZustand.alter=+a;ttZeichnen();}
+
 function topTeamStarten(){
+  const a=document.getElementById('tt-alter-wahl');
+  if(a)ttZustand.alter=+a.value;
   const k=document.getElementById('tt-kat-wahl'), f=document.getElementById('tt-form-wahl');
   if(k)ttZustand.kat=k.value;
   if(f)ttZustand.form=f.value;
@@ -2914,9 +3005,14 @@ function renderTopTeam(){
       '<div class="au-hinweis">Liga in der Kaderanalyse wählen.</div>';
     return;
   }
-  kopf.innerHTML='<h2>Top-Team der Liga <span class="hl">// '+vglEsc(l.name)+'</span></h2><p>'
+  const saison=ttZustand.modus==='saison', nb=window.NOTENBASIS||{};
+  kopf.innerHTML='<h2>'+(saison?'Beste der Saison '+vglEsc(nb.neu||''):'Top-Team der Liga')
+    +' <span class="hl">// '+vglEsc(l.name)+'</span></h2><p>'
     +[l.land,dataSaisonAktuell?'Kader '+dataSaisonAktuell:null,
-      dataSaison?'Noten '+notenSaisonText():null].filter(Boolean).join(' · ')+'</p>';
+      saison?(nb.spieltage&&nb.spieltage[l.id]?nb.spieltage[l.id]+'. Spieltag':null)
+        :(dataSaison?'Noten '+notenSaisonText():null),
+      saison&&nb.stand_neu?'Stand '+dtm(nb.stand_neu.slice(0,10)):null]
+      .filter(Boolean).join(' · ')+'</p>';
   ttZeichnen();
 }
 
@@ -2930,8 +3026,14 @@ function ttZeichnen(){
     '<div class="tt-steuer">'
       +'<div><div class="tt-wahl-titel" id="tt-kat-titel">Kategorie</div>'
         +'<div class="tt-wahl" role="group" aria-labelledby="tt-kat-titel">'
-        +TT_KATEGORIEN.map(k=>knopf(k.id===ttZustand.kat,k.name,'ttKategorieSetzen',k.id)).join('')
+        +(ttZustand.modus==='saison'?SAISON_KATEGORIEN:TT_KATEGORIEN)
+          .map(k=>knopf(k.id===ttZustand.kat,k.name,'ttKategorieSetzen',k.id)).join('')
         +'</div></div>'
+      +(ttZustand.kat==='saison-jung'
+        ?'<div><div class="tt-wahl-titel" id="tt-alter-titel">Altersgrenze</div>'
+          +'<div class="tt-wahl" role="group" aria-labelledby="tt-alter-titel">'
+          +[23,21].map(a=>knopf(ttZustand.alter===a,'U'+a,'ttAlterSetzen',a,' tt-f')).join('')
+          +'</div></div>':'')
       +'<div><div class="tt-wahl-titel" id="tt-form-titel">Formation</div>'
         +'<div class="tt-wahl" role="group" aria-labelledby="tt-form-titel">'
         +Object.keys(TT_FORMATIONEN).map(f=>knopf(f===ttZustand.form,f,'ttFormationSetzen',f,' tt-f')).join('')
@@ -2980,16 +3082,17 @@ function ttHTML(a,l){
     const woher=pl.startAls?', aufgerückt von '+posName(p.pos):'';
     figuren+='<div class="tt-slot" style="'+lage+'">'
       +'<button type="button" class="tt-sp '+ttRing(p,pl.startAls)+'" data-erkl="t:'+p.id+'" '
-        +'onclick="ttProfil('+p.id+')" aria-label="'+vglEsc(p.name+', '+posName(pl.pos)+woher
-          +', Startelf, Note '+p.ln+(kat.marke?', '+kat.markeName+' '+kat.marke(p):'')+'. Spielerakte öffnen')+'">'
+        +'onclick="ttOeffnen('+p.id+')" aria-label="'+vglEsc(p.name+', '+posName(pl.pos)+woher
+          +', Startelf, Note '+p.ln+(kat.marke?', '+kat.markeName+' '+kat.marke(p):'')
+          +(p.ohneAkte?'. Noch ohne Akte, öffnet Transfermarkt':'. Spielerakte öffnen'))+'">'
         +'<span class="au-kreis">'+vglEsc(p.ini||'')+bild(p)
           +(kat.marke?'<span class="au-nr tt-marke">'+vglEsc(kat.marke(p))+'</span>':'')
           +'<span class="au-note">'+p.ln+'</span></span>'
         +'<span class="au-name">'+vglEsc(kurzname(p.name))+zeichen(p)+'</span>'
       +'</button>'
-      +(e
+      +(kat.weitere?'':e
         ?'<button type="button" class="tt-ers'+(pl.ersatzAls?' tt-ers-als':'')+'" data-erkl="t:'+e.id+'" '
-          +'onclick="ttProfil('+e.id+')" aria-label="'+vglEsc('Ersatz '+posName(pl.pos)+': '+e.name
+          +'onclick="ttOeffnen('+e.id+')" aria-label="'+vglEsc('Ersatz '+posName(pl.pos)+': '+e.name
             +(pl.ersatzAls?', aufgerückt von '+posName(e.pos):'')+', Note '+e.ln+'. Spielerakte öffnen')+'">'
           +'<span class="tt-ers-e" aria-hidden="true">E</span>'
           +'<span class="tt-ers-n">'+vglEsc(kurzname(e.name))+'</span><b>'+e.ln+'</b></button>'
@@ -3011,11 +3114,12 @@ function ttHTML(a,l){
       +'referrerpolicy="no-referrer-when-downgrade" onerror="this.remove()">':'';
     const opt=auslauf&&ttOption(p)?' <span class="tt-opt">+ Option</span>':'';
     return '<button type="button" class="au-zeile tt-zeile'+(ersatz?'':' au-start')+'" data-erkl="t:'+p.id+'" '
-      +'onclick="ttProfil('+p.id+')">'
+      +'onclick="ttOeffnen('+p.id+')">'
       +'<span class="au-mini">'+vglEsc(p.ini||'')+bild(p)+'</span>'
       +'<span class="au-z-name">'+vglEsc(p.name)
         +(als?'<em class="tt-rolle">'+p.pos+' als '+pos+'</em>':'<em'+(ersatz?' class="tt-rolle"':'')+'>'
-          +(ersatz?'Ersatz':'Startelf')+'</em>')
+          +(ersatz?(kat.weitere?'Nr. '+ersatz:'Ersatz'):'Startelf')+'</em>')
+        +(p.ohneAkte?'<em class="tt-rolle" title="Bisher ohne Note im Kader – der Klick öffnet Transfermarkt">ohne Akte</em>':'')
         +'<span class="tt-verein">'+wappen+vglEsc(p.club)+'</span></span>'
       +'<span class="au-z-min">'+vglEsc(kat.wert(p))+opt+'</span>'
       +'<span class="au-z-note">'+p.ln+'</span></button>';
@@ -3029,12 +3133,16 @@ function ttHTML(a,l){
         +(pls.length>1?' ×'+pls.length:'')+'</strong>'
         +'<span class="au-rang">'+anzahl+' in dieser Kategorie</span></div>'
       +pls.map(pl=>zeile(pl.start,false,pl.startAls,pos)).join('')
-      +pls.map(pl=>pl.start?zeile(pl.ersatz,true,pl.ersatzAls,pos):'').join('')
+      +(kat.weitere
+        ?(a.weitere[pos]||[]).map((p,i)=>{merke(p,pls[0],true,false);return zeile(p,pls.length+i+1,false,pos);}).join('')
+          +((a.weitere[pos]||[]).length<kat.weitere&&pls.some(pl=>pl.start)
+            ?'<div class="au-z-leer">Keine weiteren Spieler dieser Position mit 450 Minuten in dieser Ansicht.</div>':'')
+        :pls.map(pl=>pl.start?zeile(pl.ersatz,true,pl.ersatzAls,pos):'').join(''))
       +'</div>';
   }).join('');
 
   const leer=a.plaetze.filter(pl=>!pl.start).length;
-  const ohneErsatz=a.plaetze.filter(pl=>pl.start&&!pl.ersatz).length;
+  const ohneErsatz=kat.weitere?0:a.plaetze.filter(pl=>pl.start&&!pl.ersatz).length;
   const aufgerueckt=a.plaetze.some(pl=>pl.startAls||pl.ersatzAls);
   const mwAnteil=l.marktwert_anteil;
   const warnungen=[];
@@ -3042,6 +3150,17 @@ function ttHTML(a,l){
   else if(leer||ohneErsatz)warnungen.push((leer?leer+' Platz'+(leer>1?'plätze':'')+' unbesetzt':'')
     +(leer&&ohneErsatz?', ':'')+(ohneErsatz?ohneErsatz+' ohne Ersatz':'')
     +' — die Kategorie hat dafür zu wenige Spieler, auch auf verwandten Positionen.');
+  if(kat.saison){
+    const nb=window.NOTENBASIS||{}, tm=(nb.saison_tm_ligen||[]).indexOf(l.id)>=0;
+    if(tm)warnungen.push('Die Note '+vglEsc(nb.neu||'')+' beruht in dieser Liga vorerst nur auf '
+      +'Transfermarkt-Werten — im Mittel 5 statt 10 Kennzahlen. Sofascore liefert derzeit keine Werte '
+      +'der laufenden Saison; sobald es wieder liefert, fließen sie von selbst ein. Die Note in der '
+      +'Akte bleibt hier bei '+vglEsc(dataSaison||'')+'.');
+    const ohne=a.plaetze.filter(pl=>pl.start&&pl.start.ohneAkte).length
+      +Object.values(a.weitere||{}).reduce((n,l)=>n+l.filter(p=>p.ohneAkte).length,0);
+    if(ohne)warnungen.push(ohne+(ohne===1?' Spieler steht':' Spieler stehen')+' bisher ohne Note im Kader („ohne Akte“) — '
+      +'der Klick führt zu ihrem Transfermarkt-Profil.');
+  }
   if(kat.id==='auslauf'&&typeof mwAnteil==='number'&&mwAnteil<50)
     warnungen.push('Transfermarkt führt in dieser Liga nur für '+mwAnteil+' % der Spieler einen '
       +'Marktwert. Ohne Marktwert entscheidet die Note — die Elf gleicht dann weitgehend '
@@ -3052,7 +3171,8 @@ function ttHTML(a,l){
   const ende=ttSaisonende();
   return '<div class="au-kopf"><span><strong>'+vglEsc(kat.name)+'</strong> · '+zahl(a.anzahl)
       +' Spieler kommen infrage</span>'
-      +'<span>'+vglEsc(kat.regel)+(auslauf?' (spätestens '+dtm(ende)+')':'')+'</span></div>'
+      +'<span>'+vglEsc(kat.id==='saison-jung'?kat.regel.replace('23','höchstens '+ttZustand.alter).replace('höchstens höchstens','höchstens'):kat.regel)
+        +(auslauf?' (spätestens '+dtm(ende)+')':'')+'</span></div>'
     +(warnungen.length?'<div class="tt-warnung">'+warnungen.map(w=>'<p><i class="ti ti-info-circle" aria-hidden="true"></i>'+w+'</p>').join('')+'</div>':'')
     +'<div class="au-raster">'
       +'<div>'+platz
@@ -3062,19 +3182,26 @@ function ttHTML(a,l){
           +'<div class="leg-item au-schwach"><span class="leg-dot"></span>unter 40</div>'
           +(aufgerueckt?'<div class="leg-item au-ersatz"><span class="leg-dot"></span>von verwandter Position</div>':'')
           +(kat.marke?'<div class="leg-item">Zahl oben links: '+vglEsc(kat.markeName)+'</div>':'')
-          +'<div class="leg-item">'+(kat.marke?'unten rechts: ':'Zahl am Spieler: ')+'Liga-Note'
+          +'<div class="leg-item">'+(kat.marke?'unten rechts: ':'Zahl am Spieler: ')
+            +(kat.saison?'Note '+vglEsc((window.NOTENBASIS||{}).neu||''):'Liga-Note')
             +(umgerechnet?', auf die Liga umgerechnet':'')+'</div>'
-          +'<div class="leg-item"><span class="tt-ers-e tt-leg-e">E</span>Ersatz auf dieser Position</div>'
+          +(kat.weitere?'':'<div class="leg-item"><span class="tt-ers-e tt-leg-e">E</span>Ersatz auf dieser Position</div>')
           +(auslauf?'<div class="leg-item"><i class="ti ti-repeat"></i>Verlängerungsoption</div>'
                    :'<div class="leg-item"><i class="ti ti-hourglass-low"></i>Vertrag ≤ 12 Monate</div>')
           +'<div class="leg-item"><i class="ti ti-arrow-back-up"></i>Leihspieler</div>'
         +'</div>'
-        +'<div class="au-hinweis">'+vglEsc(a.form.hinweis)+' Je Platz der Beste der Kategorie auf '
+        +'<div class="au-hinweis">'+vglEsc(a.form.hinweis)+(kat.saison
+          ?' Je Platz der Beste der laufenden Saison auf dieser Position; die Liste daneben nennt je '
+            +'Position die zwei Nächstbesten. Jeder Spieler steht nur einmal. Grundlage: heutige Kader '
+            +vglEsc(dataSaisonAktuell||'')+', reine Saisonnote '+vglEsc((window.NOTENBASIS||{}).neu||'')
+            +' (nicht die Mischnote) mit mindestens '+zahl(window.MIN_MINUTEN||450)+' Ligaminuten. '
+            +'<strong>Klick auf einen Spieler</strong> öffnet seine Akte.</div>'
+          :' Je Platz der Beste der Kategorie auf '
           +'dieser Position, darunter der Nächste als Ersatz (E); jeder Spieler steht nur einmal. '
           +'Grundlage: heutige Kader '+vglEsc(dataSaisonAktuell||'')+', Noten '+vglEsc(notenSaisonText())
           +' mit mindestens '+zahl(window.MIN_MINUTEN||450)+' Ligaminuten, auf das Niveau der '+vglEsc(l.name)
           +' umgerechnet. Vertragsenden und Marktwerte: Transfermarkt — bei Leihspielern zählt der '
-          +'Vertrag beim Stammverein. <strong>Klick auf einen Spieler</strong> öffnet seine Akte.</div>'
+          +'Vertrag beim Stammverein. <strong>Klick auf einen Spieler</strong> öffnet seine Akte.</div>')
       +'</div>'
       +'<div class="au-tiefe" aria-label="Startelf und Ersatz je Position">'+liste+'</div>'
     +'</div>';
@@ -3092,9 +3219,14 @@ function erklTopTeam(id){
     +erklZeile('Platz',(d.ersatz?'Ersatz':'Startelf')+' · '+vglEsc(posName(d.platz))
       +(d.als?' — aufgerückt, eigentlich '+vglEsc(posName(p.pos)):''))
     +erklZeile('Verein',vglEsc(p.club))
-    +erklZeile('Note',p.ln+(p.ln_roh!==undefined
+    +(kat.saison?erklZeile('Note '+vglEsc((window.NOTENBASIS||{}).neu||''),p.ln+' — '+(p.saisonTm
+        ?'nur aus Transfermarkt-Werten (Sofascore liefert derzeit nicht)':'aus allen Kennzahlen der Liga'))
+      +erklZeile('Mischnote',p.ohneAkte?'keine — bisher ohne Note im Kader':String(p.lnMisch))
+      +erklZeile('Spielzeit',ttMin(p)+' Ligaminuten in der laufenden Saison')
+      :'')
+    +(kat.saison?'':erklZeile('Note',p.ln+(p.ln_roh!==undefined
       ?' — umgerechnet auf die '+vglEsc(d.liga)+', gemessen '+p.ln_roh+(p.note_liga?' in der '+vglEsc(p.note_liga):'')
-      :''))
+      :'')))
     +erklZeile('Alter',p.age?p.age+' Jahre':'k. A.')
     +(kat.id==='potenzial'?erklZeile('PN',ttPN(p)+' = Note '+p.ln+' + Altersbonus '+bonus
       +(p.ln+bonus>99?' (höchstens 99)':'')):'')
@@ -3102,12 +3234,12 @@ function erklTopTeam(id){
       ?' <span style="color:var(--amber)">· mit Verlängerungsoption („'+vglEsc(p.auslauf.option)
         +'“) — zieht der Verein sie, wird er nicht frei</span>':''))
     +erklZeile('Marktwert',p.mv_eur?vglEsc(p.mv)+' €':'nicht angegeben')
-    +erklZeile('Spielzeit',zahl(p.minuten)+' Ligaminuten in '+(p.einsaetze||0)+' Einsätzen, '+vglEsc(dataSaison||''))
+    +(kat.saison?'':erklZeile('Spielzeit',zahl(p.minuten)+' Ligaminuten in '+(p.einsaetze||0)+' Einsätzen, '+vglEsc(dataSaison||'')))
     +erklZeile('Auswahl','Nr. '+d.rang+' von '+d.von+' '+vglEsc(posName(p.pos))+' in „'+vglEsc(kat.name)+'“')
     +'</dl><div class="erkl-fuss">'+(d.als
       ?'Auf diesem Platz gibt es in der Kategorie keinen weiteren '+vglEsc(posName(d.platz))
         +' — deshalb rückt der Nächste einer verwandten Position nach. '
-      :'')+'Klick öffnet die Spielerakte.</div>';
+      :'')+(p.ohneAkte?'Noch ohne Akte — der Klick öffnet sein Transfermarkt-Profil.':'Klick öffnet die Spielerakte.')+'</div>';
 }
 
 /* ---------- Vereinskontext ----------------------------------------------

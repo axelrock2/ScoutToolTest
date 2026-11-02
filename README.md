@@ -1058,6 +1058,37 @@ Liste wieder zur Analyse statt zum geleerten Formular.
 Kandidatenlisten dieselben wie vorher — dieselben Spieler in derselben
 Reihenfolge, dieselbe Hinweiszeile. Die Spielersuche bleibt unberührt.
 
+### Beste der Saison 2026/27 (02.11.2026)
+
+Neben dem Top-Team steht je Liga eine zweite Karte: **„Beste der Saison"**.
+Sie zeigt die Elf mit der besten Note der **laufenden** Saison und je
+Position die zwei Nächstbesten — als Überblick und als **„Jüngste Beste"**
+(bis 23 Jahre, per Knopf bis 21). Spielfeld, Formationen und Erklärfenster
+sind die des Top-Teams; auf dem Platz steht die Elf, die Liste daneben nennt
+je Position Startelf, Nr. 2 und Nr. 3.
+
+- **Grundlage ist die reine Saisonnote**, nicht die Mischnote: derselbe
+  Notenlauf über die Leistungsdaten 2026/27, ab 450 Ligaminuten.
+- **In den Ligen mit Sofascore-Kennzahlen** beruht sie vorerst nur auf
+  Transfermarkt-Werten — im Mittel 5 statt 10 Kennzahlen; in der Bundesliga
+  liegt sie im Schnitt 16 Punkte neben der Note 2025/26. Die Seite sagt das
+  über jeder solchen Liste. Liefert Sofascore wieder, rechnet der Wochenlauf
+  dessen Werte von selbst ein, und die Kennzeichnung verschwindet Liga für
+  Liga. Die Note in der Akte bleibt dort bei 2025/26.
+- **Spieler, die bisher ohne Note im Kader stehen**, sind dabei — 483 mit
+  mindestens 450 Minuten, vor allem Neuzugänge in den Profiligen. Sie tragen
+  „ohne Akte", der Klick führt zu ihrem Transfermarkt-Profil.
+- Fehlt einer Ansicht ein Spieler für einen Platz — etwa ein U21-Torwart mit
+  450 Minuten in der Bundesliga —, rückt wie im Top-Team eine verwandte
+  Position nach oder der Platz bleibt mit Hinweis leer.
+
+Gespeichert ist die Saisonnote als `saison_neu` (Note, Minuten, Kennzeichen
+„nur Transfermarkt") an jedem Spieler mit 450 Minuten — 7.675 Spieler,
+gut 0,3 MB. **Geprüft:** 420 Kombinationen (35 Ligen, drei Ansichten, vier
+Formationen) am Desktop und auf Handybreiten bis 240 Pixel ohne
+Überlappung; das bisherige Top-Team ist in allen 840 Kombinationen
+unverändert.
+
 ### Top-Team der Liga (freigegeben am 18.09.2026)
 
 In der Kaderanalyse steht bei jeder Liga über den Vereinen die Karte **„Top-Team
