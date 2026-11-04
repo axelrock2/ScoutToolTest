@@ -1,26 +1,26 @@
 {
  "art": "wochenlauf",
- "start": "2026-11-02T10:11:04Z",
- "ende": "2026-11-02T10:12:22+00:00",
+ "start": "2026-11-03T06:16:17Z",
+ "ende": "2026-11-04T12:09:35+00:00",
  "ergebnis": "teilweise",
  "transferteil": "2026-09-10",
  "schritte": [
   {
    "name": "Kader 2026",
    "status": "ok",
-   "detail": "18654 Spieler einem heutigen Kader zugeordnet, davon 5512 mit Vereinswechsel; 8299 ohne heutigen Kader (davon 1985, deren Verein nicht mehr in erfassten Ligen s",
-   "sekunden": 22
+   "detail": "18649 Spieler einem heutigen Kader zugeordnet, davon 5511 mit Vereinswechsel; 8304 ohne heutigen Kader (davon 1985, deren Verein nicht mehr in erfassten Ligen s",
+   "sekunden": 33509
   },
   {
    "name": "Leistungsdaten 2026",
    "status": "ok",
-   "detail": "17210 Spieler geschrieben (14548 mit Saisonwerten) -> data/players_raw_2026.json.gz",
-   "sekunden": 31
+   "detail": "3713 Spieler geschrieben (3089 mit Saisonwerten) -> data/players_raw_2026.json.gz",
+   "sekunden": 40271
   },
   {
    "name": "Sofascore",
    "status": "gesperrt",
-   "detail": "[X] Bundesliga: HTTP 403",
+   "detail": "[X] Bundesliga: Failed to perform, curl: (6) Could not resolve host: www.sofascore.com. See https://curl.se/libcurl/c/li",
    "sekunden": 1
   },
   {
@@ -32,19 +32,19 @@
   {
    "name": "Noten",
    "status": "ok",
-   "detail": "17721 Spieler bewertet, davon 12666 mit belastbarer Spielzeit (ab 450 Min) - von 26953 gesammelt -> data/players.json",
-   "sekunden": 12
+   "detail": "17721 Spieler bewertet, davon 12666 mit belastbarer Spielzeit (ab 450 Min) - von 26957 gesammelt -> data/players.json",
+   "sekunden": 23
   },
   {
    "name": "Mischnote",
    "status": "ok",
-   "detail": "Mischnote 2025/26 + 2026/27 (K = 1800): 2960 gemischt, 394 bisher duenn, 995 neu bewertet, 3326 in Sofascore-Ligen gehalten.",
+   "detail": "Mischnote 2025/26 + 2026/27 (K = 1800): 0 gemischt, 0 bisher duenn, 0 neu bewertet, 1510 in Sofascore-Ligen gehalten.",
    "sekunden": 11
   },
   {
    "name": "Frontend",
    "status": "ok",
-   "detail": "index.html: 3 Skriptblock(e), 353608 Zeichen, Syntax in Ordnung",
+   "detail": "index.html: 3 Skriptblock(e), 362061 Zeichen, Syntax in Ordnung",
    "sekunden": 0
   }
  ]
