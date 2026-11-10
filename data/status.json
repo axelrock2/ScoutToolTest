@@ -1,26 +1,26 @@
 {
  "art": "wochenlauf",
- "start": "2026-11-03T06:16:17Z",
- "ende": "2026-11-04T12:09:35+00:00",
+ "start": "2026-11-10T06:00:26Z",
+ "ende": "2026-11-10T07:29:31+00:00",
  "ergebnis": "teilweise",
  "transferteil": "2026-09-10",
  "schritte": [
   {
    "name": "Kader 2026",
    "status": "ok",
-   "detail": "18649 Spieler einem heutigen Kader zugeordnet, davon 5511 mit Vereinswechsel; 8304 ohne heutigen Kader (davon 1985, deren Verein nicht mehr in erfassten Ligen s",
-   "sekunden": 33509
+   "detail": "4306 Spieler einem heutigen Kader zugeordnet, davon 1568 mit Vereinswechsel; 1506 ohne heutigen Kader (davon 219, deren Verein nicht mehr in erfassten Ligen spi",
+   "sekunden": 2604
   },
   {
    "name": "Leistungsdaten 2026",
    "status": "ok",
-   "detail": "3713 Spieler geschrieben (3089 mit Saisonwerten) -> data/players_raw_2026.json.gz",
-   "sekunden": 40271
+   "detail": "17162 Spieler geschrieben (14634 mit Saisonwerten) -> data/players_raw_2026.json.gz",
+   "sekunden": 2654
   },
   {
    "name": "Sofascore",
    "status": "gesperrt",
-   "detail": "[X] Bundesliga: Failed to perform, curl: (6) Could not resolve host: www.sofascore.com. See https://curl.se/libcurl/c/li",
+   "detail": "[X] Bundesliga: HTTP 403",
    "sekunden": 1
   },
   {
@@ -33,19 +33,19 @@
    "name": "Noten",
    "status": "ok",
    "detail": "17721 Spieler bewertet, davon 12666 mit belastbarer Spielzeit (ab 450 Min) - von 26957 gesammelt -> data/players.json",
-   "sekunden": 23
+   "sekunden": 32
   },
   {
    "name": "Mischnote",
    "status": "ok",
-   "detail": "Mischnote 2025/26 + 2026/27 (K = 1800): 0 gemischt, 0 bisher duenn, 0 neu bewertet, 1510 in Sofascore-Ligen gehalten.",
-   "sekunden": 11
+   "detail": "Mischnote 2025/26 + 2026/27 (K = 1800): 3084 gemischt, 433 bisher duenn, 1067 neu bewertet, 3612 in Sofascore-Ligen gehalten.",
+   "sekunden": 53
   },
   {
    "name": "Frontend",
    "status": "ok",
    "detail": "index.html: 3 Skriptblock(e), 362061 Zeichen, Syntax in Ordnung",
-   "sekunden": 0
+   "sekunden": 1
   }
  ]
 }
