@@ -34,11 +34,6 @@ body:before{content:'';position:fixed;inset:0;background-image:linear-gradient(v
 .hero h1 .out{color:transparent;-webkit-text-stroke:1.5px var(--ink-2)}
 .hero h1 .hl{color:var(--lime)}
 .hero p{font-size:16px;color:var(--ink-2);max-width:520px;line-height:1.6;margin-bottom:8px}
-.hero-stats{display:flex;gap:36px;margin-top:36px;padding-top:28px;border-top:1px solid var(--line);flex-wrap:wrap}
-.hstat{display:flex;flex-direction:column;gap:4px}
-.hstat-num{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:30px;color:var(--ink);line-height:1}
-.hstat-num em{color:var(--lime);font-style:normal}
-.hstat-lbl{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3);text-transform:uppercase;letter-spacing:1.5px}
 .mode-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:1080px;margin:44px auto 0}
 .mode-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden}
 .mode-card:before{content:attr(data-num);position:absolute;top:18px;right:20px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3);letter-spacing:1px}
@@ -891,16 +886,7 @@ input[type=range]::-webkit-slider-thumb{box-shadow:none}
 .hero h1 .out{-webkit-text-stroke:1px var(--ink-3)}
 .hero p{font-size:16.5px;line-height:1.7;color:var(--ink-2);max-width:540px}
 .hero-eyebrow{font-size:10px;letter-spacing:3.5px;margin-bottom:26px}
-.hero-stats{gap:52px;margin-top:52px;padding-top:34px}
-.hstat-num{font-size:32px;font-weight:500}
-.hstat-lbl{font-size:9px;letter-spacing:2px}
 
-/* Die Datenstand-Reihe im Kopf: festes Raster statt Umbruch, damit die
-   vier Kacheln auf jeder Breite als eine ruhige Zeile stehen. */
-.hero-stats-lead{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
-  gap:28px 36px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);
-  padding:30px 0;margin-top:8px}
-.hero-stats-lead .hstat-num{font-size:27px;letter-spacing:-0.5px;white-space:nowrap}
 
 /* Karten: ohne Schlagschatten, dafuer klare Kante und ruhiger Wechsel. */
 .mode-grid{gap:16px;margin-top:56px}
@@ -1157,12 +1143,6 @@ input[type=range]::-webkit-slider-thumb{box-shadow:none}
        obendrein veraltete Zahlen (16 Ligen statt 33). -->
   <div class="hero">
     <div class="hero-eyebrow">Scouting-Terminal</div>
-    <div class="hero-stats hero-stats-lead">
-      <div class="hstat"><div class="hstat-num"><em id="hs-spieler">16.761</em></div><div class="hstat-lbl">Bewertete Spieler</div></div>
-      <div class="hstat"><div class="hstat-num" id="hs-ligen">33</div><div class="hstat-lbl">Wettbewerbe</div></div>
-      <div class="hstat"><div class="hstat-num" id="hs-saison">2025/26</div><div class="hstat-lbl">Saison</div></div>
-      <div class="hstat"><div class="hstat-num" id="hs-stand">–</div><div class="hstat-lbl">Datenstand</div></div>
-    </div>
   </div>
   <div class="mode-grid">
     <div class="mode-card" data-num="01" onclick="go('spielersuche')">
@@ -1219,7 +1199,6 @@ input[type=range]::-webkit-slider-thumb{box-shadow:none}
         <div class="fg"><label for="f-ln">Mindest-Liga-Note</label><select id="f-ln"><option value="">Keine</option><option value="60">60+</option><option value="65">65+</option><option value="70">70+</option><option value="75">75+</option><option value="80">80+</option></select></div>
         <div class="fg"><label for="f-vertrag">Vertragsstatus</label><select id="f-vertrag"><option value="">Alle</option><option value="red">Läuft ab (rot)</option><option value="yellow">Kritisch (gelb)</option><option value="green">Stabil (grün)</option><option value="none">Ohne Angabe</option></select></div>
         <div class="fg">
-          <div class="tr"><label for="f-auslaufend">Nur Vertragsläufer</label><label class="tog"><input type="checkbox" id="f-auslaufend"><span class="tslider"></span></label></div>
           <div class="tr"><label for="f-underval">Nur unterbewertete Spieler</label><label class="tog"><input type="checkbox" id="f-underval"><span class="tslider"></span></label></div>
           <div class="tr"><label for="f-belastbar" title="Blendet Spieler mit sehr wenig Saisonminuten aus">Nur belastbare Stichprobe</label><label class="tog"><input type="checkbox" id="f-belastbar" checked><span class="tslider"></span></label></div>
           <div class="tr"><label for="f-fit" title="Blendet Spieler mit 90+ Ausfalltagen in drei Jahren aus. Betrifft nur Spieler, für die eine Historie vorliegt.">Verletzungsanfällige ausblenden</label><label class="tog"><input type="checkbox" id="f-fit"><span class="tslider"></span></label></div>
@@ -1350,47 +1329,13 @@ input[type=range]::-webkit-slider-thumb{box-shadow:none}
 </div>
 
 <script>
-/* LIGEN, PLAYERS und KPOS sind nur Vorgabewerte (Demo). Beim Start werden
-   sie durch die echten Daten aus data/players.json ersetzt - siehe
-   loadScoutData() weiter unten. Schlaegt das Laden fehl, bleibt die Demo
-   sichtbar, die Seite ist also nie leer. */
-let LIGEN=[
-  {id:'buli',name:'Bundesliga',land:'GER',vereine:['Bayern München','Borussia Dortmund','Bayer Leverkusen','RB Leipzig','Eintracht Frankfurt','VfB Stuttgart','SC Freiburg','Union Berlin']},
-  {id:'buli2',name:'2. Bundesliga',land:'GER',vereine:['Hamburger SV','Fortuna Düsseldorf','Hannover 96','SC Paderborn','1. FC Kaiserslautern','Hertha BSC','Greuther Fürth','Eintr. Braunschweig']},
-  {id:'pl',name:'Premier League',land:'ENG',vereine:['Arsenal','Chelsea','Liverpool','Manchester City','Manchester United','Tottenham','Newcastle','Aston Villa']},
-  {id:'champ',name:'Championship',land:'ENG',vereine:['Leeds United','Sunderland','Sheffield United','Middlesbrough','Coventry City','Watford','Norwich City','Preston NE']},
-  {id:'laliga',name:'La Liga',land:'ESP',vereine:['Real Madrid','FC Barcelona','Atlético Madrid','Athletic Bilbao','Real Sociedad','Villarreal','Valencia CF','Sevilla FC']},
-  {id:'seriea',name:'Serie A',land:'ITA',vereine:['Juventus','Inter Mailand','AC Milan','SSC Napoli','AS Roma','Lazio','Atalanta','Fiorentina']},
-  {id:'ligue1',name:'Ligue 1',land:'FRA',vereine:['Paris SG','Marseille','AS Monaco','Olympique Lyon','LOSC Lille','RC Lens','Stade Rennais','OGC Nice']},
-  {id:'ere',name:'Eredivisie',land:'NED',vereine:['Ajax','PSV Eindhoven','Feyenoord','AZ Alkmaar','FC Utrecht','FC Twente','NEC Nijmegen','Sparta Rotterdam']},
-  {id:'primeira',name:'Primeira Liga',land:'POR',vereine:['Benfica','FC Porto','Sporting CP','SC Braga','Vitória SC','Boavista','Moreirense','Famalicão']},
-  {id:'scottish',name:'Scottish Prem.',land:'SCO',vereine:['Celtic FC','Rangers FC','Hearts','Aberdeen','Motherwell','Hibernian','Dundee United','St Mirren']},
-  {id:'oebuli',name:'Österreich Bundesliga',land:'AUT',vereine:['RB Salzburg','Rapid Wien','LASK','Sturm Graz','Austria Wien','Wolfsberger AC','WSG Tirol','A. Lustenau']},
-  {id:'superlig',name:'Süper Lig',land:'TUR',vereine:['Galatasaray','Fenerbahçe','Beşiktaş','Trabzonspor','Başakşehir','Kayserispor','Sivasspor','Antalyaspor']}
-];
-let PLAYERS=[
-  {id:1,ini:'RO',name:'Robert Okeke',pos:'OM',club:'Fortuna Düsseldorf',liga:'2. Bundesliga',age:23,foot:'rechts',height:'179 cm',weight:'76 kg',number:10,contract:'red',mv:'1,8 Mio.',ln:78,pn:81,underval:true,
-    params:[{n:'Schlüsselpässe',p:88,cat:'top'},{n:'xA / Spiel',p:82,cat:'top'},{n:'Erfolgreiche Dribblings',p:74,cat:'top'},{n:'xG / Spiel',p:65,cat:'mid'},{n:'Schüsse / Spiel',p:61,cat:'mid'},{n:'Progressive Carries',p:77,cat:'top'},{n:'Rückweg / Defensivarbeit',p:38,cat:'low'}],
-    flags:[{t:'Überdurchschnittliche Passkreativität: Schlüsselpässe Top-12% der Liga',c:'pos'},{t:'Starker Ballträger mit hoher Dribblingquote (74. Percentil)',c:'pos'},{t:'Defensiver Rückweg unter Ligadurchschnitt — typisch für diesen Spielertyp',c:'neg'},{t:'Vertrag läuft in 4 Monaten ab — sofortiger Handlungsbedarf',c:'neg'},{t:'Marktwert deutlich unter Leistungsniveau (Unterbewertet-Index: +23)',c:'neu'}],
-    fazit:'Okeke ist ein kreativer Achter mit ausgeprägtem Zug zum Tor. Seine Stärken in der finalen Phase machen ihn für ligaähnliche Vereine interessant. Kritischer Vertragsstatus bietet Ablösevorteil — Transfer noch in diesem Fenster empfohlen.'},
-  {id:2,ini:'MS',name:'Marvin Schneider',pos:'OM',club:'Hannover 96',liga:'2. Bundesliga',age:25,foot:'links',height:'183 cm',weight:'80 kg',number:8,contract:'yellow',mv:'3,2 Mio.',ln:73,pn:76,underval:false,
-    params:[{n:'Schlüsselpässe',p:72,cat:'top'},{n:'xA / Spiel',p:68,cat:'mid'},{n:'Erfolgreiche Dribblings',p:55,cat:'mid'},{n:'xG / Spiel',p:71,cat:'top'},{n:'Schüsse / Spiel',p:69,cat:'mid'},{n:'Progressive Carries',p:64,cat:'mid'},{n:'Rückweg / Defensivarbeit',p:58,cat:'mid'}],
-    flags:[{t:'Ausgewogenes Profil zwischen Kreativität und Torabschluss',c:'neu'},{t:'Vertrag läuft in 9 Monaten ab — Beobachtung empfohlen',c:'neg'},{t:'Überdurchschnittliche xG-Werte deuten auf gute Schusswahl hin',c:'pos'}],
-    fazit:'Schneider bietet ein balanciertes Offensivprofil mit soliden Werten in allen Kernbereichen. Für Vereine geeignet, die Konstanz über Kreativitätsspitzen stellen.'},
-  {id:3,ini:'TL',name:'Théo Laurent',pos:'Flügel',club:'SC Paderborn',liga:'2. Bundesliga',age:21,foot:'rechts',height:'175 cm',weight:'71 kg',number:7,contract:'green',mv:'2,5 Mio.',ln:71,pn:74,underval:true,
-    params:[{n:'Schlüsselpässe',p:66,cat:'mid'},{n:'xA / Spiel',p:61,cat:'mid'},{n:'Erfolgreiche Dribblings',p:88,cat:'top'},{n:'xG / Spiel',p:59,cat:'mid'},{n:'Schüsse / Spiel',p:54,cat:'mid'},{n:'Progressive Carries',p:84,cat:'top'},{n:'Rückweg / Defensivarbeit',p:62,cat:'mid'}],
-    flags:[{t:'Elite-Dribbler: Top-12% in der Liga bei erfolgreichen Eins-gegen-Eins-Aktionen',c:'pos'},{t:'Hoher xT durch progressive Carries und Tiefenläufe',c:'pos'},{t:'Abschlusseffizienz ausbaufähig (59. Percentil)',c:'neg'},{t:'Mit 21 Jahren noch in Entwicklung — Potenzial nach oben',c:'neu'}],
-    fazit:'Laurent ist ein gefährlicher Flügelspieler mit außergewöhnlichem Dribbling. Sein junges Alter und der laufende Vertrag machen ihn zu einem interessanten Entwicklungsspieler.'},
-  {id:4,ini:'JK',name:'Jonas Köhler',pos:'IV',club:'Hertha BSC',liga:'2. Bundesliga',age:27,foot:'rechts',height:'188 cm',weight:'85 kg',number:5,contract:'yellow',mv:'4,1 Mio.',ln:74,pn:77,underval:false,
-    params:[{n:'Luftzweikampfquote',p:83,cat:'top'},{n:'Bodenzweikampfquote',p:76,cat:'top'},{n:'Klärungsaktionen',p:71,cat:'top'},{n:'Interceptions / Spiel',p:68,cat:'mid'},{n:'Passquote',p:72,cat:'top'},{n:'Progressive Pässe',p:55,cat:'mid'},{n:'Fehler → Chancen (inv.)',p:81,cat:'top'}],
-    flags:[{t:'Dominant in der Luft: Top-17% aller IV in der 2. Bundesliga',c:'pos'},{t:'Sehr zuverlässig im Zweikampf — unterdurchschnittliche Fehlerquote',c:'pos'},{t:'Aufbau von hinten solide, aber nicht herausragend',c:'neu'},{t:'Vertrag läuft in 10 Monaten ab',c:'neg'}],
-    fazit:'Köhler ist ein robuster, zweikampfstarker Innenverteidiger mit guter Passquote. Für Vereine mit pressingorientiertem Spielstil eine verlässliche Verstärkungsoption.'},
-  {id:5,ini:'LS',name:'Luca Santoro',pos:'ST',club:'1. FC Kaiserslautern',liga:'2. Bundesliga',age:24,foot:'rechts',height:'182 cm',weight:'79 kg',number:9,contract:'red',mv:'2,0 Mio.',ln:69,pn:72,underval:true,
-    params:[{n:'Tore / 90 Min',p:74,cat:'top'},{n:'xG / Spiel',p:68,cat:'mid'},{n:'Schussgenauigkeit',p:71,cat:'top'},{n:'Kopfballchancen',p:58,cat:'mid'},{n:'Ablagen',p:62,cat:'mid'},{n:'Tiefenläufe',p:77,cat:'top'},{n:'xG-Übererfüllung',p:81,cat:'top'}],
-    flags:[{t:'Überdurchschnittliche xG-Übererfüllung: trifft besser als statistisch erwartet',c:'pos'},{t:'Starke Tiefenläufe — gefährlich bei Kontern',c:'pos'},{t:'Kopfball-Profil ausbaufähig',c:'neg'},{t:'Vertrag läuft in 3 Monaten ab — ablösefrei möglich',c:'neg'},{t:'Marktwert unter Leistungsniveau (Unterbewertet-Index: +18)',c:'neu'}],
-    fazit:'Santoro ist ein beweglicher Mittelstürmer mit ausgezeichneter Abschlusseffizienz. Sein ablaufender Vertrag macht ihn zum sofortigen Handlungsfall — ohne Ablöse realistisch verfügbar.'}
-];
-let KPOS=[{pos:'TW',note:72},{pos:'IV L',note:68},{pos:'IV R',note:71},{pos:'LV',note:54},{pos:'RV',note:62},{pos:'DM',note:57},{pos:'ZM L',note:75},{pos:'ZM R',note:69},{pos:'OM',note:65},{pos:'LA',note:51},{pos:'RA',note:58},{pos:'ST',note:73}];
+/* LIGEN, PLAYERS und KPOS fuellt loadScoutData() aus data/players.json.
+   Bis 11.11.2026 standen hier Demo-Werte mit erfundenen Spielern (etwa
+   "Robert Okeke"), die sichtbar blieben, wenn das Laden scheiterte - Zahlen
+   ohne Quelle. Jetzt bleibt die Seite dann leer und sagt, warum. */
+let LIGEN=[];
+let PLAYERS=[];
+let KPOS=[];
 /* ============================================================
    DATENANBINDUNG
 
@@ -1402,10 +1347,9 @@ let KPOS=[{pos:'TW',note:72},{pos:'IV L',note:68},{pos:'IV R',note:71},{pos:'LV'
    Vorteil gegenueber einem Server auf localhost:8000: funktioniert
    auf GitHub Pages, kein CORS, keine Ausfaelle, keine Kosten.
 
-   API_URL bleibt null - der Live-Modus weiter unten ist damit
-   inaktiv und wird nur noch als Reserve vorgehalten.
+   Den frueheren Live-Modus fuer ein FastAPI-Backend gibt es seit
+   11.11.2026 nicht mehr - er war nie eingeschaltet.
    ============================================================ */
-const API_URL=null;
 const DATA_URL='data/players.json';
 let dataStand=null,dataSaison=null,dataHinweis=null,dataBildBasis=null,
     dataSaisonAktuell=null;
@@ -1475,6 +1419,11 @@ async function loadScoutData(){
       .then(r=>r.ok?r.json():null).then(st=>{window.LAUFSTATUS=st;zeigeHerkunft();})
       .catch(()=>{});
     zeigeHerkunft();
+    /* Kopfdaten merken: die Startseite zeigt sie bei jeder Rueckkehr in der
+       Kopfzeile - seit 11.11.2026 die einzige Stelle fuer Spielerzahl,
+       Notensaison und Datenstand. */
+    window.DATENKOPF={players:{length:d.players.length},stand:d.stand,saison:d.saison,
+      quellen:d.quellen,hinweis:d.hinweis,mindestminuten:d.mindestminuten};
     showDataStand(d);
     fuelleLigaFilter();
     /* Falls der Nutzer schon auf einer Datenseite steht: neu zeichnen. */
@@ -1483,20 +1432,35 @@ async function loadScoutData(){
     /* Die Spielersuche zeigt Treffer, sobald die Daten da sind. */
     if(akt&&akt.id==='p-spielersuche')sucheZeichnen();
   }catch(e){
-    console.warn('data/players.json nicht geladen — Demo-Daten aktiv:',e);
+    console.warn('data/players.json nicht geladen:',e);
     showDataStand(null);
+    zeigeLadefehler(e);
   }
 }
 
-/* Kleiner Statusstreifen in der Kopfzeile: Stand, Saison, Spielerzahl.
-   Macht sichtbar, ob echte oder Demo-Daten angezeigt werden. */
+/* Hinweis auf der Startseite, wenn die Daten nicht geladen werden konnten -
+   statt einer stillschweigend leeren Seite. */
+function zeigeLadefehler(err){
+  const hero=document.querySelector('#p-home .hero');
+  if(!hero||document.getElementById('lade-fehler'))return;
+  const el=document.createElement('div');
+  el.id='lade-fehler';
+  el.style.cssText='margin:26px 0 0;padding:14px 18px;border-radius:12px;border:1px solid rgba(255,91,91,0.4);'
+    +'background:rgba(255,91,91,0.07);font-size:13px;line-height:1.6';
+  el.innerHTML='<strong style="color:var(--red)">Die Spielerdaten konnten nicht geladen werden.</strong> '
+    +'Bitte die Seite neu laden. Ohne Daten zeigt das Werkzeug keine Spieler — es gibt bewusst '
+    +'keine Beispielwerte. <span style="color:var(--ink-3)">('+String(err&&err.message||err).replace(/</g,'&lt;')+')</span>';
+  hero.appendChild(el);
+}
+
+/* Kleiner Statusstreifen in der Kopfzeile: Stand, Saison, Spielerzahl. */
 function showDataStand(d){
   const bc=document.querySelector('.breadcrumb');
   if(!bc)return;
   if(!d){
-    bc.innerHTML='<span class="dot" style="background:var(--amber);'
-      +'box-shadow:0 0 8px var(--amber)"></span> Demo-Daten';
-    bc.title='data/players.json fehlt oder ist leer.';
+    bc.innerHTML='<span class="dot" style="background:var(--red);'
+      +'box-shadow:0 0 8px var(--red)"></span> Daten nicht geladen';
+    bc.title='data/players.json fehlt, ist leer oder nicht lesbar.';
     return;
   }
   const datum=new Date(d.stand).toLocaleDateString('de-DE',
@@ -1614,11 +1578,6 @@ let styleProfile={pressing:3,ballbesitz:3,konter:3,aufbau:3,standards:3};
 let chosenFormation='4-2-3-1';
 let lastTN=null;
 
-async function apiGet(path){
-  if(!API_URL)return null;
-  try{const r=await fetch(API_URL+path);if(!r.ok)return null;return await r.json();}
-  catch(e){console.warn('API nicht erreichbar:',e);return null;}
-}
 
 /* ---------- Team-Note ------------------------------------------------------
    Freigegeben am 17.09.2026 nach gemessener Wirkung (README, "Passung aus
@@ -1682,7 +1641,7 @@ function pctLookup(pct,label){
 /* Kaderwerte des Bezugsvereins in KPOS legen.
    KPOS ist global und wird von bedarfNoteFor gelesen (20 % der Team-Note).
    Frueher setzte es nur renderKadResult - das Vereins-Matching rechnete
-   deshalb gegen das Demo-Array oder, nach einer Kaderanalyse, gegen DEREN
+   deshalb gegen das fruehere Demo-Array oder, nach einer Kaderanalyse, gegen DEREN
    Verein. Gemessen: Bayern wurde gegen den Kader von ETSV Hamburg
    gehalten. Deshalb wird es jetzt an jeder Stelle gesetzt, die es braucht,
    statt sich auf einen frueheren Aufruf zu verlassen. */
@@ -1928,6 +1887,7 @@ function go(page,from){
   window.scrollTo(0,0);
   const lbl={home:'TERMINAL // START',spielersuche:'SPIELERSUCHE',vereinsmatching:'VEREINS-MATCHING',kaderanalyse:'KADERANALYSE',kaderresult:'KADER // REPORT',ergebnisse:'TREFFER',profil:'SPIELERAKTE',auslaufer:'VERTRAGSAUSLÄUFER',ordner:'MERKLISTE',kader:'KADER',topteam:'TOP-TEAM'};
   document.getElementById('bc').innerHTML='<span class="dot"></span> '+(lbl[page]||page);
+  if(page==='home'&&window.DATENKOPF)showDataStand(window.DATENKOPF);
   if(page==='ergebnisse'){
     /* Aus den Kandidaten der Kaderanalyse zurueck zur Analyse, nicht zur
        Eingabe - go('kaderanalyse') setzt Liga, Verein und Felder zurueck. */
@@ -3488,7 +3448,7 @@ function leseFilter(){
           ageVon:parseInt(v('f-age-von'),10),ageBis:parseInt(v('f-age-bis'),10),
           maxMw:geldEingabe('f-mw'),minLn:parseInt(v('f-ln'),10),
           minZk:parseFloat(v('f-zk')),
-          vertrag:v('f-vertrag'),auslaufend:an('f-auslaufend'),
+          vertrag:v('f-vertrag'),
           underval:an('f-underval'),belastbar:an('f-belastbar'),fit:an('f-fit'),
           sort:v('f-sort')||'ln'};
 }
@@ -3525,7 +3485,6 @@ function filterPlayers(f){
        heraus, und die Ergebniszeile sagt das. */
     if(!isNaN(f.minZk)&&!(zkBelastbar(p)&&p.duelle.q>=f.minZk))return false;
     if(f.vertrag&&p.contract!==f.vertrag)return false;
-    if(f.auslaufend&&p.contract!=='red')return false;
     if(f.underval&&!p.underval)return false;
     if(f.belastbar&&p.belastbar===false)return false;
     /* Nur wer eine Historie hat, kann daran scheitern - fehlende Daten
@@ -3583,7 +3542,6 @@ function filterText(f){
   if(!isNaN(f.minLn))t.push('Liga-Note '+f.minLn+'+');
   if(!isNaN(f.minZk))t.push('Zweikampfquote ab '+f.minZk+' % (nur mit Zweikampfwerten)');
   if(f.vertrag)t.push('Vertrag '+f.vertrag);
-  if(f.auslaufend)t.push('nur Vertragsläufer');
   if(f.underval)t.push('nur unterbewertet');
   return t.length?t.join(' · '):'ohne Einschränkung';
 }
@@ -4648,7 +4606,7 @@ function sucheMehrZahl(){
   const wert=id=>(document.getElementById(id)||{}).value;
   const an=id=>!!(document.getElementById(id)||{}).checked;
   const n=['f-mw','f-zk','f-ln','f-vertrag'].filter(id=>wert(id)).length
-    +['f-auslaufend','f-underval','f-belastbar','f-fit'].filter(an).length;
+    +['f-underval','f-belastbar','f-fit'].filter(an).length;
   el.textContent=n?n+' aktiv':'';
 }
 function sucheProfil(id){
@@ -4674,7 +4632,7 @@ function sucheZuruecksetzen(){
   ['f-name','f-age-von','f-age-bis','f-mw','f-zk','f-ln','f-vertrag','f-pos'].forEach(function(id){
     const el=document.getElementById(id); if(el)el.value='';
   });
-  ['f-auslaufend','f-underval','f-fit'].forEach(function(id){
+  ['f-underval','f-fit'].forEach(function(id){
     const el=document.getElementById(id); if(el)el.checked=false;
   });
   const b=document.getElementById('f-belastbar'); if(b)b.checked=true;
@@ -7473,8 +7431,9 @@ function renderProfile(p,hasV,vN){
   });
 }
 function openModal(){
-  const hasV=(fromPage==='vereinsmatching'&&vmVerein)||fromPage==='kaderresult';
-  const vN=(fromPage==='vereinsmatching'&&vmVerein)?vmVerein:(fromPage==='kaderresult'?(kadVerein||'Hamburger SV'):null);
+  /* Derselbe Vereinsbezug wie in der Akte (profilBezug). Frueher stand hier
+     ein eigener Pruefweg mit Rueckfall auf "Hamburger SV" aus der Demo. */
+  const bezug=profilBezug(), hasV=!!bezug, vN=bezug?bezug.name:null;
   document.getElementById('modal-desc').textContent=hasV?'Spielereinschätzung plus Passungsanalyse für '+vN+'.':'Spielerakte mit Stärken, Schwächen und Eigenschaften — ohne Vereinsbezug.';
   document.getElementById('modal-ctx').innerHTML=hasV?'<div class="modal-ctx">Kontext: <strong>'+vN+'</strong></div>':'';
   reportType='kompakt';document.getElementById('ro-k').classList.add('sel');document.getElementById('ro-a').classList.remove('sel');
@@ -7570,9 +7529,7 @@ function berichtRolleKurz(p){
 function downloadReport(){
   const p=activePlayer,btn=document.getElementById('btn-dl');
   btn.disabled=true;btn.innerHTML='<i class="ti ti-loader"></i> Erstellt...';
-  const hasV=(fromPage==='vereinsmatching'&&vmVerein)||fromPage==='kaderresult';
-  const vN=(fromPage==='vereinsmatching'&&vmVerein)?vmVerein:(fromPage==='kaderresult'?(kadVerein||'Hamburger SV'):null);
-  const vLid=fromPage==='vereinsmatching'?vmVereinLiga:(fromPage==='kaderresult'?(kadVereinLiga||'buli2'):null);
+  const bezug=profilBezug(), hasV=!!bezug, vN=bezug?bezug.name:null, vLid=bezug?bezug.liga:null;
   const vLn=vLid?((LIGEN.find(x=>x.id===vLid)||{}).name||''):null;
   const datum=new Date().toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
   const _fl=flagsFuer(p);const st=_fl.filter(f=>f.c==='pos').map(f=>f.t),sw=_fl.filter(f=>f.c==='neg').map(f=>f.t),nu=_fl.filter(f=>f.c==='neu').map(f=>f.t);
@@ -7609,129 +7566,6 @@ function downloadReport(){
 }
 document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)closeModal()});
 
-/* ============================================================
-   LIVE-DATEN-MODUS — aktiv, sobald oben API_URL gesetzt ist.
-   Überschreibt die Demo-Funktionen und lädt echte Daten aus
-   dem ScoutIQ-Backend (FastAPI). Demo-Modus bleibt unberührt.
-   ============================================================ */
-if(API_URL){
-  let LIVE_LIGEN=[],liveTeams=[],selTeam=null,livePosFilter=null;
-  const lkey=l=>'c'+l.competition_id+'s'+l.season_id;
-  const lfind=key=>LIVE_LIGEN.find(x=>lkey(x)===key);
-  const lname=l=>l.competition_name+' '+l.season_name;
-  const LOADING='<div style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:1px;padding:20px 0">Lade Daten …</div>';
-  const NOAPI='<div style="font-size:13px;color:var(--ink-2);padding:20px 0">Backend nicht erreichbar. Läuft die API auf '+API_URL+'? (uvicorn api:app)</div>';
-
-  async function ensureLigen(){
-    if(!LIVE_LIGEN.length){const ls=await apiGet('/leagues');if(ls)LIVE_LIGEN=ls;}
-    return LIVE_LIGEN.length>0;
-  }
-  function currentLeague(){
-    const key=(fromPage==='kaderresult'?kadLiga:vmLiga)||vmLiga||kadLiga;
-    return key?lfind(key):LIVE_LIGEN[0];
-  }
-
-  renderLigen=async function(px){
-    const el=document.getElementById(px+'-liga-list');
-    el.innerHTML=LOADING;
-    if(!await ensureLigen()){el.innerHTML=NOAPI;return;}
-    const cur=px==='vm'?vmLiga:kadLiga;
-    el.innerHTML=LIVE_LIGEN.map(l=>'<div class="liga-item '+(cur===lkey(l)?'active':'')+'" onclick="pickLiga(\''+px+'\',\''+lkey(l)+'\')"><span>'+lname(l)+'</span><span class="liga-country">'+(l.country_name||'')+'</span></div>').join('');
-  };
-
-  pickLiga=async function(px,key){
-    const l=lfind(key);if(!l)return;
-    if(px==='vm'){vmLiga=key;vmVerein=null;}else{kadLiga=key;kadVerein=null;}
-    renderLigen(px);
-    const vp=document.getElementById(px+'-verein-panel');
-    vp.innerHTML='<div class="panel-title"><span class="idx">02</span> Verein</div>'+LOADING;
-    const ts=await apiGet('/leagues/'+l.competition_id+'/'+l.season_id+'/teams')||[];
-    liveTeams=ts;
-    vp.innerHTML='<div class="panel-title"><span class="idx">02</span> Verein</div>'+
-      (ts.length?'<div class="verein-grid">'+ts.map(t=>'<div class="verein-card" data-tid="'+t.team_id+'" onclick="pickVerein(\''+px+'\','+t.team_id+',\''+key+'\')"><div class="vc-icon">'+ini(t.team_name)+'</div><div class="vc-name">'+t.team_name+'</div></div>').join('')+'</div>'
-      :'<div style="font-size:13px;color:var(--ink-2)">Keine Vereine — wurden aggregate_stats.py und compute_grades.py für diese Liga ausgeführt?</div>');
-    document.getElementById(px+'-opt-panel').innerHTML='<div class="panel-title"><span class="idx">03</span> '+(px==='vm'?'Optionen':'Analyse')+'</div><div class="empty-panel" style="padding:48px 16px"><i class="ti ti-'+(px==='vm'?'adjustments':'chart-grid-dots')+'"></i><p>Verein wählen</p></div>';
-  };
-
-  pickVerein=function(px,teamId,key){
-    const t=liveTeams.find(x=>x.team_id===teamId);if(!t)return;
-    selTeam={id:t.team_id,name:t.team_name};
-    const l=lfind(key);
-    if(px==='vm'){vmVerein=t.team_name;vmVereinLiga=key;}else{kadVerein=t.team_name;kadVereinLiga=key;}
-    document.querySelectorAll('#'+px+'-verein-panel .verein-card').forEach(c=>c.classList.toggle('sel',c.dataset.tid==String(teamId)));
-    const selInfo='<div class="sel-info"><div class="sl">Ausgewählt</div><div class="sn">'+t.team_name+'</div><div class="sm">'+lname(l)+'</div></div>';
-    if(px==='vm'){
-      document.getElementById('vm-opt-panel').innerHTML='<div class="panel-title"><span class="idx">03</span> Optionen</div>'+selInfo+
-      '<div class="fg"><label>Formation</label><select id="vm-formation"><option>4-2-3-1</option><option>4-3-3</option><option>3-5-2</option><option>4-4-2</option><option>3-4-3</option><option>5-3-2</option><option>4-1-4-1</option></select></div>'+
-      '<div class="fg"><label>Gesuchte Position</label><select id="vm-pos"><option value="">Alle Positionen</option><option>IV</option><option>LV/RV</option><option>DM</option><option>ZM</option><option>OM/Flügel</option><option>ST/HS</option></select></div>'+
-      '<div class="fg"><label>Spielstil-Profil</label><div style="margin-top:8px">'+['Pressing','Ballbesitz','Konter','Aufbau hinten','Standards'].map((s,i)=>'<div class="slider-row"><div class="srl"><span>'+s+'</span><span class="srv" id="sv'+i+'">3</span></div><input type="range" min="1" max="5" value="3" oninput="document.getElementById(\'sv'+i+'\').textContent=this.value"></div>').join('')+'</div></div>'+
-      '<button class="btn-primary" onclick="liveStartMatching()"><i class="ti ti-arrows-shuffle"></i> Matching starten</button>';
-    }else{
-      document.getElementById('kad-opt-panel').innerHTML='<div class="panel-title"><span class="idx">03</span> Analyse</div>'+selInfo+
-      '<button class="btn-primary" onclick="go(\'kaderresult\',\'kaderanalyse\')"><i class="ti ti-chart-grid-dots"></i> Analyse starten</button>';
-    }
-  };
-
-  window.liveStartMatching=function(){
-    styleProfile={pressing:+document.getElementById('sv0').textContent,ballbesitz:+document.getElementById('sv1').textContent,konter:+document.getElementById('sv2').textContent,aufbau:+document.getElementById('sv3').textContent,standards:+document.getElementById('sv4').textContent};
-    chosenFormation=document.getElementById('vm-formation').value;
-    livePosFilter=document.getElementById('vm-pos').value||null;
-    go('ergebnisse','vereinsmatching');
-  };
-
-  renderPlayers=async function(){
-    const el=document.getElementById('player-list');
-    el.innerHTML=LOADING;
-    if(!await ensureLigen()){el.innerHTML=NOAPI;return;}
-    const l=currentLeague();
-    let url='/players?competition_id='+l.competition_id+'&season_id='+l.season_id+'&limit=60';
-    if(livePosFilter)url+='&position_group='+encodeURIComponent(livePosFilter);
-    const ps=await apiGet(url)||[];
-    document.getElementById('res-num').textContent=ps.length;
-    document.getElementById('res-filt').textContent=lname(l)+(livePosFilter?' · '+livePosFilter:'')+' · min. 450 Min.';
-    el.innerHTML=ps.length?ps.map(p=>{
-      const cc=contractColorFromDate(p.contract_until),mv=fmtMv(p.market_value_eur);
-      return '<div class="pcard" onclick="showProfile('+p.player_id+')"><div class="av">'+ini(p.player_name)+(p.shirt_number?'<span class="num">'+p.shirt_number+'</span>':'')+'</div><div class="pi"><h4>'+p.player_name+'</h4><div class="meta"><span class="pos-tag">'+(p.position_group||'–')+'</span><span>'+(p.team_name||'–')+'</span><span>'+lname(l)+'</span></div><div class="badges">'+cbadge(cc)+(mv?'<span class="badge b-blue">'+mv+' €</span>':'')+'</div></div><div class="scores"><div class="score-cap primary"><div class="scl">LN</div><div class="scv">'+(p.liga_note??'–')+'</div>'+(p.liga_note!=null?'<div class="scbar" style="width:'+p.liga_note+'%"></div>':'')+'</div><div class="score-cap"><div class="scl">PN</div><div class="scv">'+(p.positions_note??'–')+'</div>'+(p.positions_note!=null?'<div class="scbar" style="width:'+p.positions_note+'%;background:var(--blue)"></div>':'')+'</div></div></div>';
-    }).join(''):'<div class="empty-panel"><i class="ti ti-database-off"></i><p>Keine Spieler — compute_grades.py schon ausgeführt?</p></div>';
-  };
-
-  showProfile=async function(id){
-    const l=currentLeague();if(!l)return;
-    document.getElementById('profil-content').innerHTML=LOADING;go('profil');
-    const d=await apiGet('/players/'+id+'?competition_id='+l.competition_id+'&season_id='+l.season_id);
-    if(!d){document.getElementById('profil-content').innerHTML=NOAPI;return;}
-    const pctObj=d.percentiles||{};
-    const params=Object.entries(pctObj).map(([n,v])=>({n:n,p:v,cat:catOf(v)}));
-    const age=d.birth_date?Math.floor((Date.now()-new Date(d.birth_date))/3.15576e10):'–';
-    const p={id:id,ini:ini(d.player_name),name:d.player_name,pos:d.position_group||'–',club:d.team_name||'–',liga:lname(l),age:age,foot:d.preferred_foot||'–',height:d.height_cm?d.height_cm+' cm':'–',weight:d.weight_kg?d.weight_kg+' kg':'–',number:d.shirt_number||'–',contract:contractColorFromDate(d.contract_until),mv:fmtMv(d.market_value_eur)||'k.A.',ln:d.liga_note,pn:d.positions_note,underval:false,params:params,flags:d.flags||[],fazit:d.fazit||''};
-    activePlayer=p;
-    const hasV=((fromPage==='vereinsmatching'&&vmVerein)||fromPage==='kaderresult')&&selTeam;
-    const vN=hasV?selTeam.name:null;
-    lastTN=null;
-    if(hasV){
-      const s=styleProfile;
-      const t=await apiGet('/team-note/'+id+'?competition_id='+l.competition_id+'&season_id='+l.season_id+'&team_id='+selTeam.id+'&formation='+encodeURIComponent(chosenFormation)+'&pressing='+s.pressing+'&ballbesitz='+s.ballbesitz+'&konter='+s.konter+'&aufbau='+s.aufbau+'&standards='+s.standards);
-      if(t&&t.aufschluesselung){
-        const a=t.aufschluesselung;
-        lastTN={tn:t.team_note,stil:a.stilpassung,dims:a.stil_je_dimension,bedarf:a.bedarfspassung,formfit:a.formationspassung,gaps:a.datenluecken_stil||[]};
-      }
-    }
-    renderProfile(p,hasV,vN);
-  };
-
-  renderKadResult=async function(){
-    const l=currentLeague();
-    const head=document.getElementById('kad-result-header');
-    head.innerHTML='<h2>'+(selTeam?selTeam.name:'—')+' <span class="hl">// Scan</span></h2><p>'+(l?lname(l):'')+' · Live-Daten (StatsBomb Open Data)</p>';
-    const bars=document.getElementById('kad-bars');bars.innerHTML=LOADING;
-    if(!selTeam||!l){bars.innerHTML=NOAPI;return;}
-    const rows=await apiGet('/squad-analysis?team_id='+selTeam.id+'&competition_id='+l.competition_id+'&season_id='+l.season_id)||[];
-    bars.innerHTML=rows.length?rows.map(r=>{const note=r.durchschnitt_ln;const w=note==null?0:note;return '<div class="kbar-row"><div class="kbar-pos" style="width:96px">'+(r.position_group||'–')+'</div><div class="kbar-wrap"><div class="kbar" style="width:'+w+'%;background:'+(note==null?'var(--line)':nc(note))+'">'+(note!=null?'<span class="kbar-val">'+note+'</span>':'')+'</div></div></div>';}).join(''):'<div style="font-size:13px;color:var(--ink-2)">Keine Daten für diesen Verein.</div>';
-    const weak=rows.filter(r=>r.durchschnitt_ln!=null&&r.durchschnitt_ln<60);
-    document.getElementById('kad-recs').innerHTML=weak.length?weak.map(r=>'<div class="pcard" onclick="liveWeakClick(\''+r.position_group+'\')" style="grid-template-columns:auto 1fr auto"><div class="av" style="background:rgba(255,91,91,0.1);border-color:rgba(255,91,91,0.3);color:#FF5B5B;font-family:\'JetBrains Mono\',monospace;font-size:20px">'+r.durchschnitt_ln+'</div><div class="pi"><h4>'+r.position_group+' — Verstärkung prüfen</h4><div class="meta"><span>'+r.anzahl_spieler+' Spieler bewertet</span><span>Beste LN: '+(r.bester_ln??'–')+'</span></div></div><div style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--lime);text-transform:uppercase;letter-spacing:1px">Spieler →</div></div>').join(''):'<div style="font-size:13px;color:var(--ink-2)">Keine Positionsgruppe unter Note 60.</div>';
-  };
-  window.liveWeakClick=function(pg){livePosFilter=pg;go('ergebnisse','kaderresult');};
-}
 </script>
 
 <!-- ====================================================================
@@ -7780,53 +7614,6 @@ if(API_URL){
   }else{ start(); }
 })();
 
-/* Fuellt die Datenstand-Zeile im Kopfbereich aus den geladenen Daten.
-   Liest nur - keine Funktion der Anwendung wird aufgerufen. Bewusst
-   getrennt vom Bewegungsblock darunter: die Zahlen muessen auch dann
-   stimmen, wenn Bewegungseffekte abgeschaltet sind. */
-(function(){
-  "use strict";
-  var versuche = 0;
-  function setzen(){
-    try{
-      var geladen = typeof PLAYERS !== 'undefined' && PLAYERS.length;
-      /* dataStand wird erst gesetzt, wenn die ECHTEN Daten da sind.
-         Vorher zeigt PLAYERS die eingebaute Demo (5 Spieler) - deren
-         Zahlen sollen hier nie stehenbleiben. Also: jedes Mal neu
-         fuellen und weiter nachfragen, bis der echte Stand da ist
-         oder die Versuche erschoepft sind. */
-      var echt = typeof dataStand !== 'undefined' && dataStand;
-      if(geladen){
-        var f = function(id, wert){
-          var el = document.getElementById(id);
-          if(el && wert !== null && wert !== undefined) el.textContent = wert;
-        };
-        f('hs-spieler', PLAYERS.length.toLocaleString('de-DE'));
-        if(typeof LIGEN !== 'undefined' && LIGEN.length) f('hs-ligen', LIGEN.length);
-        /* Zwei Saisons, zwei Aussagen: Kader und Vereine sind von heute,
-           die Noten aus der letzten vollstaendigen Spielzeit. */
-        if(typeof dataSaison !== 'undefined' && dataSaison){
-          var aktuell = (typeof dataSaisonAktuell !== 'undefined') ? dataSaisonAktuell : null;
-          f('hs-saison', aktuell && aktuell !== dataSaison ? aktuell : dataSaison);
-          var lbl = document.querySelector('#hs-saison + .hstat-lbl');
-          if(lbl && aktuell && aktuell !== dataSaison)
-            lbl.textContent = 'Kader · Noten ' + (typeof notenSaisonText==='function'?notenSaisonText():dataSaison);
-        }
-        if(echt){
-          f('hs-stand', new Date(dataStand).toLocaleDateString('de-DE',
-            {day:'2-digit', month:'2-digit', year:'numeric'}));
-        }
-      }
-      if(!echt && ++versuche < 120) setTimeout(setzen, 250);
-    }catch(e){ /* Anzeige ist Beiwerk - Rueckfallwerte stehen im HTML */ }
-  }
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', setzen);
-  }else{
-    setzen();
-  }
-})();
-
 (function(){
   "use strict";
   try{
@@ -7846,7 +7633,7 @@ if(API_URL){
       });
     }, {rootMargin:'0px 0px -8% 0px', threshold:0.06});
 
-    var AUSWAHL = '.sec, .pcard, .mode-card, .hstat, .verein-card, .kbar-row';
+    var AUSWAHL = '.sec, .pcard, .mode-card, .verein-card, .kbar-row';
 
     function vorbereiten(wurzel){
       var gefunden = wurzel.querySelectorAll ? wurzel.querySelectorAll(AUSWAHL) : [];

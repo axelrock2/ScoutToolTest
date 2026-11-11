@@ -115,8 +115,26 @@ funktionierte nur auf dem eigenen Rechner, nicht auf GitHub Pages, und
 scheiterte an CORS. Der jetzige Weg hat kein CORS-Problem, weil das Frontend
 eine Datei aus demselben Verzeichnis liest.
 
-Schlägt das Laden fehl, zeigt die Seite die eingebauten Demo-Daten und
-markiert das in der Kopfzeile — sie ist also nie leer.
+Schlägt das Laden fehl, sagt die Seite das: rote Kopfzeile „Daten nicht
+geladen" und ein Hinweis auf der Startseite. Bis 11.11.2026 zeigte sie
+stattdessen eingebaute Demo-Daten mit erfundenen Spielern — Zahlen ohne
+Quelle; die gibt es nicht mehr.
+
+### Entfernt am 11.11.2026
+
+| Was | Warum |
+|---|---|
+| Kennzahlenzeile auf der Startseite (Spieler, Wettbewerbe, Saison, Datenstand) | dieselben Angaben wie die Kopfzeile; die zeigt sie auf der Startseite jetzt bei jeder Rückkehr |
+| Demo-Daten (erfundene Spieler, Ligen, Kaderwerte) | blieben sichtbar, wenn das Laden scheiterte — ohne Quelle |
+| Live-Daten-Modus für ein FastAPI-Backend | nie eingeschaltet, rund 120 Zeilen toter Code |
+| Schalter „Nur Vertragsläufer" in der Spielersuche | wirkte genau wie „Vertragsstatus: Läuft ab (rot)"; für die genaue Suche gibt es die Ausläufer-Seite |
+
+Geprüft: Die Spielersuche liefert im Grundzustand und mit Filtern dieselben
+Treffer in derselben Reihenfolge wie vorher; der alte Schalter ergab exakt
+dieselben Spieler wie „Vertragsstatus: rot". Dabei fiel auf, dass der
+Bericht-Dialog den Verein aus der Kaderanalyse nicht erkannte und ohne
+Verein auf „Hamburger SV" aus der Demo zurückfiel — er nutzt jetzt
+denselben Vereinsbezug wie die Akte.
 
 ## Ligen
 
