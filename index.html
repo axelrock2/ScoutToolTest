@@ -1588,8 +1588,8 @@ function mischZeile(p){
 function laufstatusBlock(){
   const st=window.LAUFSTATUS, nb=window.NOTENBASIS;
   if(!st&&!nb)return '';
-  const farbe={ok:'var(--green)',uebersprungen:'var(--ink-3)',fehler:'var(--red)',gesperrt:'var(--amber)'};
-  const wort={ok:'ok',uebersprungen:'übersprungen',fehler:'Fehler',gesperrt:'gesperrt'};
+  const farbe={ok:'var(--green)',uebersprungen:'var(--ink-3)',fehler:'var(--red)',gesperrt:'var(--amber)',teilweise:'var(--amber)'};
+  const wort={ok:'ok',uebersprungen:'übersprungen',fehler:'Fehler',gesperrt:'gesperrt',teilweise:'teilweise'};
   const dauer=s=>s>=90?Math.round(s/60)+' min':s+' s';
   const zeilen=st?(st.schritte||[]).map(x=>'<div class="lauf-zeile"><span class="lauf-status" style="color:'
       +(farbe[x.status]||'var(--ink-2)')+'">'+(wort[x.status]||x.status)+'</span><span>'+vglEsc(x.name)

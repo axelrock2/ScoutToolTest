@@ -2071,6 +2071,30 @@ denselben Commit. Geprüft sind alle fünf Wege des Schritts in einem
 Wegwerf-Repository: ohne Netz, mit nachzuholendem Commit, ohne Änderungen,
 mit neuen Daten und mit `PUSH=0`.
 
+**Netzausfall mitten im Wochenlauf (04.11.2026).** Der Lauf startete
+nachts beim Aufwachen des Macs und verlor danach immer wieder die
+Namensauflösung (*Could not resolve host*). Zwei Lücken machten daraus
+Datenverlust: `build_players.py` zählte jede *angefragte* Liga als erneuert —
+auch eine, deren Abrufe scheiterten —, und der Laufstatus hielt einen
+Schritt mit Ausfällen für „ok". So schrumpfte die Datei der laufenden Saison
+von 17.210 auf 3.713 Spieler und ging eine Woche lang so hinaus, bis der
+Lauf am 10.11. sie wiederherstellte. Seitdem:
+
+- Eine Liga gilt nur als erneuert, wenn **alle** Vereine samt Leistungsdaten
+  gelesen wurden; sonst behält sie ihren letzten vollständigen Stand.
+- Ein Schritt mit Ausfällen einzelner Ligen oder Vereine heißt
+  „teilweise" — in der Datenherkunft der Seite sichtbar.
+- Bei Ausfällen wartet der Lauf auf das Netz und holt Kader- und
+  Leistungsschritt **einmal nach**; bereits gelesene Seiten kommen aus dem
+  Zwischenspeicher.
+- **Vor dem Veröffentlichen** schrumpft kein Bestand um mehr als 10 %:
+  sonst werden die Daten auf den letzten Stand zurückgesetzt und nur der
+  Laufstatus übertragen.
+
+Geprüft mit nachgestellten Ausfällen (Zusammenführung, zweiter Versuch,
+Schrumpfprüfung); kein Spieler wurde im Vorfall fälschlich als „nicht mehr
+im Kader" markiert — diese Schutzregel bestand schon.
+
 **Und ein Merksatz dazu:** Ein laufendes Shell-Skript nicht bearbeiten.
 Bash liest Skripte über einen Byte-Offset nach; werden Zeilen davor
 eingefügt, setzt es an verschobener Stelle fort. Aufgetreten als

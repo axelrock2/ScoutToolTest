@@ -470,6 +470,7 @@ def sammle(ligen: list, max_vereine: int | None) -> tuple[list[dict], list[dict]
 
         vor = len(spieler)
         ok_clubs = 0
+        ohne_leistung = 0
         for vid, slug in clubs:
             if zeit_um():
                 print(f"  [-] {lg.name}: Zeitbudget waehrend der Liga erschoepft",
@@ -479,8 +480,11 @@ def sammle(ligen: list, max_vereine: int | None) -> tuple[list[dict], list[dict]
                 verein_name, profile = kader(vid, slug, SAISON)
                 try:
                     stats = leistung(vid, slug, SAISON, lg.tm_id)
-                except Exception:
-                    stats = {}                # Leistungsseite optional
+                except Exception as exc:
+                    stats = {}                # Leistungsseite optional - aber
+                    ohne_leistung += 1        # die Liga gilt dann nicht als vollstaendig
+                    print(f"  [!] {lg.name} / {slug}: Leistungsdaten fehlen ({exc})",
+                          file=sys.stderr)
                 for pid, prof in profile.items():
                     if not prof["name"]:
                         continue
@@ -499,14 +503,24 @@ def sammle(ligen: list, max_vereine: int | None) -> tuple[list[dict], list[dict]
             except Exception as exc:
                 print(f"  [!] {lg.name} / {slug}: {exc}", file=sys.stderr)
 
+        # Nur eine VOLLSTAENDIG gelesene Liga gilt als erneuert. Am 04.11.2026
+        # fiel waehrend eines Laufs immer wieder das Netz aus; Ligen mit ein
+        # paar gelesenen Vereinen galten als "ok" und ersetzten den ganzen
+        # bisherigen Stand. Unvollstaendige heissen jetzt "teilweise" und
+        # behalten in der Zusammenfuehrung ihren letzten vollstaendigen Stand.
+        vollstaendig = bool(clubs) and ok_clubs == len(clubs) and not ohne_leistung
         stand.update(
-            status="ok" if ok_clubs else "fehlt",
+            status="ok" if vollstaendig else ("teilweise" if ok_clubs else "fehlt"),
             vereine=f"{ok_clubs}/{len(clubs)}",
             spieler=len(spieler) - vor,
         )
+        if ohne_leistung:
+            stand["ohne_leistung"] = ohne_leistung
         bericht.append(stand)
-        print(f"  [ok] {lg.name}: {ok_clubs}/{len(clubs)} Vereine, "
-              f"{len(spieler) - vor} Spieler", file=sys.stderr)
+        print(f"  [{'ok' if vollstaendig else '!'}] {lg.name}: {ok_clubs}/{len(clubs)} Vereine, "
+              f"{len(spieler) - vor} Spieler"
+              + (f", {ohne_leistung} ohne Leistungsdaten" if ohne_leistung else "")
+              + ("" if vollstaendig else " - unvollstaendig"), file=sys.stderr)
 
     return spieler, bericht
 
@@ -907,13 +921,27 @@ def main() -> int:
         return 1
 
     # Bereits vorhandene Ligen erhalten, sofern sie in diesem Lauf nicht
-    # angefasst wurden. So laesst sich der Bestand schrittweise erweitern,
-    # und eine Liga, die heute ausfaellt, behaelt ihren letzten Stand.
+    # VOLLSTAENDIG erneuert wurden. So laesst sich der Bestand schrittweise
+    # erweitern, und eine Liga, die heute ganz oder teilweise ausfaellt,
+    # behaelt ihren letzten Stand. Bis 11.11.2026 zaehlte jede angefragte
+    # Liga als erneuert - ein Volllauf mit Netzausfall hat so am 04.11.2026
+    # die Leistungsdaten von 25 Ligen verworfen (17.210 -> 3.713 Spieler).
     if not args.frisch and os.path.exists(TARGET):
         try:
             with gzip.open(TARGET, "rt", encoding="utf-8") as fh:
                 alt = json.load(fh)
-            neu_ids = {lg.frontend_id for lg in ligen}
+            alt_ligen = {s.get("liga_id") for s in alt.get("spieler", [])}
+            neu_ids = {q["id"] for q in bericht if q.get("status") == "ok"}
+            # Unvollstaendig, aber noch nie gesammelt: dann lieber der Teil
+            # als gar nichts.
+            neu_ids |= {q["id"] for q in bericht
+                        if q.get("status") == "teilweise" and q["id"] not in alt_ligen}
+            verworfen = {q["id"] for q in bericht if q["id"] not in neu_ids}
+            if verworfen:
+                print(f"  {len(verworfen)} Ligen nicht vollstaendig gelesen - sie behalten "
+                      f"ihren letzten Stand: {', '.join(sorted(verworfen))}", file=sys.stderr)
+            spieler = [s for s in spieler if s.get("liga_id") in neu_ids]
+            bericht = [q for q in bericht if q["id"] in neu_ids]
             behalten = [s for s in alt.get("spieler", [])
                         if s.get("liga_id") not in neu_ids]
             alt_bericht = [q for q in alt.get("quellen", [])

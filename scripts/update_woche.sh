@@ -65,31 +65,61 @@ schritt() {   # Name, Status (ok|uebersprungen|fehler|gesperrt), Detail, Sekunde
   SCHRITTE+=("$1|$2|$3|$4")
   echo "  -> $1: $2${3:+ ($3)}"
 }
-laufe() {     # Name, Befehl ... - meldet ok/fehler mit Laufzeit und letzter Zeile
+TEILAUSFALL=0
+laufe() {     # Name, Befehl ... - meldet ok/teilweise/fehler mit Laufzeit
   local name="$1"; shift
   local t0=$SECONDS ausgabe rc
   ausgabe="$("$@" 2>&1)"; rc=$?
   printf '%s\n' "$ausgabe" | tail -40
   local letzte; letzte="$(printf '%s\n' "$ausgabe" | grep -v '^\[20' | grep -v '^\s*$' | tail -1 | cut -c1-160)"
-  if [ $rc -eq 0 ]; then schritt "$name" ok "$letzte" $((SECONDS - t0))
-  else schritt "$name" fehler "$letzte" $((SECONDS - t0)); fi
+  # Ausfaelle einzelner Ligen oder Vereine ([X], [!], [-]) beenden das Skript
+  # nicht mit Fehlercode. Bis 11.11.2026 hiess so ein Schritt trotzdem "ok" -
+  # am 04.11. und 10.11. fehlten so unbemerkt je zehn Ligen.
+  local ausfaelle; ausfaelle="$(printf '%s\n' "$ausgabe" | grep -cE '^ *\[(X|!|-)\]')"
+  TEILAUSFALL=0
+  if [ $rc -ne 0 ]; then schritt "$name" fehler "$letzte" $((SECONDS - t0))
+  elif [ "$ausfaelle" -gt 0 ]; then
+    TEILAUSFALL=1
+    schritt "$name" teilweise "$ausfaelle Ausfaelle, z. B. $(printf '%s\n' "$ausgabe" | grep -E '^ *\[(X|!|-)\]' | head -1 | sed 's/^ *//' | cut -c1-110)" $((SECONDS - t0))
+  else schritt "$name" ok "$letzte" $((SECONDS - t0)); fi
   return $rc
 }
 
+netz_warten() {   # bis zu 15 Minuten
+  for i in $(seq 1 30); do
+    curl -s -m 10 -o /dev/null https://www.transfermarkt.de && curl -s -m 10 -o /dev/null https://github.com && return 0
+    sleep 30
+  done
+  return 1
+}
+
+# Sammelschritt mit einem zweiten Versuch. Faellt unterwegs das Netz aus -
+# etwa weil der Mac zugeklappt wurde -, wartet der Lauf auf das Netz und holt
+# den Schritt einmal nach. Bereits gelesene Seiten liegen im Zwischenspeicher
+# (6 Stunden); der zweite Versuch kostet deshalb nur die fehlenden Abrufe.
+sammeln() {   # Name, Befehl ...
+  laufe "$@"
+  if [ "$TEILAUSFALL" = 1 ]; then
+    echo "  Teilausfall - warte auf Netz und versuche es einmal erneut."
+    if netz_warten; then
+      unset "SCHRITTE[$((${#SCHRITTE[@]}-1))]"
+      local name="$1"; shift
+      laufe "$name (2. Versuch)" "$@"
+    fi
+  fi
+}
+
 echo "== Netz =="
-for i in $(seq 1 30); do
-  curl -s -m 10 -o /dev/null https://github.com && break
-  [ "$i" = 30 ] && { echo "Kein Netz nach 15 Minuten - Lauf entfaellt."; exit 1; }
-  sleep 30
-done
+netz_warten || { echo "Kein Netz nach 15 Minuten - Lauf entfaellt."; exit 1; }
 "$PY" -c "import scrapling" 2>/dev/null || { echo "scrapling fehlt: $PY -m pip install -r requirements.txt" >&2; exit 1; }
 
 echo; echo "== Heutige Kader, Marktwerte, Wechsel =="
-laufe "Kader $SAISON_NEU" "$PY" scripts/build_players.py --saison-aktuell
+sammeln "Kader $SAISON_NEU" "$PY" scripts/build_players.py --saison-aktuell
 
 echo; echo "== Leistungsdaten der laufenden Saison =="
-# Ohne --frisch: eine Liga, die heute ausfaellt, behaelt ihren letzten Stand.
-laufe "Leistungsdaten $SAISON_NEU" env SCOUT_SAISON="$SAISON_NEU" SCOUT_TARGET="$ROH_NEU" \
+# Ohne --frisch: eine Liga, die heute ganz oder teilweise ausfaellt, behaelt
+# ihren letzten vollstaendigen Stand (build_players.py).
+sammeln "Leistungsdaten $SAISON_NEU" env SCOUT_SAISON="$SAISON_NEU" SCOUT_TARGET="$ROH_NEU" \
   "$PY" scripts/build_players.py
 
 echo; echo "== Sofascore (laufende Saison) =="
@@ -159,6 +189,43 @@ laufe "Noten" "$PY" scripts/compute_grades.py || { echo "Notenlauf gescheitert -
 laufe "Mischnote" "$PY" scripts/mische_noten.py || { echo "Mischnote gescheitert - nichts uebertragen." >&2; exit 1; }
 laufe "Frontend" "$PY" scripts/check_frontend.py || { echo "Syntaxfehler in index.html - nicht uebertragen." >&2; exit 1; }
 
+# --- Plausibilitaet vor dem Veroeffentlichen ---------------------------------
+# Zweites Netz unter der Zusammenfuehrung: schrumpft ein Bestand um mehr als
+# 10 % gegenueber dem veroeffentlichten Stand, geht er nicht hinaus. Die
+# Daten werden auf den letzten Stand zurueckgesetzt, nur der Laufstatus wird
+# uebertragen - die Seite sagt dann, dass dieser Lauf verworfen wurde.
+SCHRUMPF="$("$PY" - "$ROH_NEU" <<'PYCODE'
+import gzip, json, subprocess, sys
+def anzahl(d):
+    return len(d.get("spieler") or d.get("players") or [])
+probleme = []
+for pfad in (sys.argv[1], "data/players_raw.json.gz", "data/players.json"):
+    gz = pfad.endswith(".gz")
+    alt = subprocess.run(["git", "show", "HEAD:" + pfad], capture_output=True)
+    if alt.returncode:
+        continue                              # noch nie veroeffentlicht
+    try:
+        a = anzahl(json.loads(gzip.decompress(alt.stdout) if gz else alt.stdout))
+        n = anzahl(json.load(gzip.open(pfad, "rt", encoding="utf-8") if gz
+                             else open(pfad, encoding="utf-8")))
+    except Exception as exc:
+        probleme.append(f"{pfad} nicht lesbar ({exc})")
+        continue
+    if a and n < 0.9 * a:
+        probleme.append(f"{pfad.split('/')[-1]}: {a} -> {n} Spieler")
+print("; ".join(probleme))
+PYCODE
+)"
+DATEN=(data/players.json data/players_raw.json.gz data/metriken.json "$ROH_NEU")
+if [ -n "$SCHRUMPF" ]; then
+  schritt "Plausibilitaet" fehler "verworfen, Bestand geschrumpft: $SCHRUMPF" 0
+  git checkout -- "${DATEN[@]}" 2>/dev/null
+  VEROEFFENTLICHEN=0
+else
+  schritt "Plausibilitaet" ok "kein Bestand um mehr als 10 % geschrumpft" 0
+  VEROEFFENTLICHEN=1
+fi
+
 # --- Status fuer die Seite ---------------------------------------------------
 printf '%s\n' "${SCHRITTE[@]}" | START="$START" TRANSFERTEIL_ZULETZT="$TRANSFERTEIL_ZULETZT" "$PY" -c '
 import json, os, sys
@@ -168,7 +235,7 @@ for z in sys.stdin.read().splitlines():
     if not z.strip(): continue
     name, status, detail, sek = (z.split("|", 3) + ["", "", "", "0"])[:4]
     schritte.append({"name": name, "status": status, "detail": detail, "sekunden": int(sek or 0)})
-fehler = [s for s in schritte if s["status"] in ("fehler", "gesperrt")]
+fehler = [s for s in schritte if s["status"] in ("fehler", "gesperrt", "teilweise")]
 json.dump({"art": "wochenlauf", "start": os.environ["START"],
            "ende": datetime.now(timezone.utc).isoformat(timespec="seconds"),
            "ergebnis": "teilweise" if fehler else "ok",
@@ -190,8 +257,12 @@ kein_netz() {
   echo "Der naechste Lauf uebertraegt sie nach; von Hand: git pull --rebase origin main && git push origin main" >&2
   melden "Wochenlauf fertig, Uebertragen gescheitert (kein Netz)"; exit 1
 }
-git add data/players.json data/players_raw.json.gz data/metriken.json data/status.json
-[ -f "$ROH_NEU" ] && git add "$ROH_NEU"
+if [ "$VEROEFFENTLICHEN" = 1 ]; then
+  git add data/players.json data/players_raw.json.gz data/metriken.json data/status.json
+  [ -f "$ROH_NEU" ] && git add "$ROH_NEU"
+else
+  git add data/status.json                    # nur der Hinweis, dass verworfen wurde
+fi
 if ! git diff --staged --quiet; then
   git "${GIT_ID[@]}" commit -q -m "Spielerdaten aktualisiert, Wochenlauf ($(date +%d.%m.%Y))"
 fi
