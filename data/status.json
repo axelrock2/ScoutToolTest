@@ -1,21 +1,21 @@
 {
  "art": "wochenlauf",
- "start": "2026-11-10T06:00:26Z",
- "ende": "2026-11-10T07:29:31+00:00",
+ "start": "2026-11-17T06:04:20Z",
+ "ende": "2026-11-17T12:30:03+00:00",
  "ergebnis": "teilweise",
  "transferteil": "2026-09-10",
  "schritte": [
   {
    "name": "Kader 2026",
    "status": "ok",
-   "detail": "4306 Spieler einem heutigen Kader zugeordnet, davon 1568 mit Vereinswechsel; 1506 ohne heutigen Kader (davon 219, deren Verein nicht mehr in erfassten Ligen spi",
-   "sekunden": 2604
+   "detail": "18648 Spieler einem heutigen Kader zugeordnet, davon 5520 mit Vereinswechsel; 8309 ohne heutigen Kader (davon 1986, deren Verein nicht mehr in erfassten Ligen s",
+   "sekunden": 20951
   },
   {
    "name": "Leistungsdaten 2026",
    "status": "ok",
-   "detail": "17162 Spieler geschrieben (14634 mit Saisonwerten) -> data/players_raw_2026.json.gz",
-   "sekunden": 2654
+   "detail": "17236 Spieler geschrieben (14733 mit Saisonwerten) -> data/players_raw_2026.json.gz",
+   "sekunden": 2167
   },
   {
    "name": "Sofascore",
@@ -32,20 +32,26 @@
   {
    "name": "Noten",
    "status": "ok",
-   "detail": "17721 Spieler bewertet, davon 12666 mit belastbarer Spielzeit (ab 450 Min) - von 26957 gesammelt -> data/players.json",
-   "sekunden": 32
+   "detail": "17721 Spieler bewertet, davon 12666 mit belastbarer Spielzeit (ab 450 Min) - von 26986 gesammelt -> data/players.json",
+   "sekunden": 10
   },
   {
    "name": "Mischnote",
    "status": "ok",
-   "detail": "Mischnote 2025/26 + 2026/27 (K = 1800): 3084 gemischt, 433 bisher duenn, 1067 neu bewertet, 3612 in Sofascore-Ligen gehalten.",
-   "sekunden": 53
+   "detail": "Mischnote 2025/26 + 2026/27 (K = 1800): 3150 gemischt, 452 bisher duenn, 1117 neu bewertet, 3649 in Sofascore-Ligen gehalten.",
+   "sekunden": 8
   },
   {
    "name": "Frontend",
    "status": "ok",
-   "detail": "index.html: 3 Skriptblock(e), 362061 Zeichen, Syntax in Ordnung",
+   "detail": "index.html: 3 Skriptblock(e), 342251 Zeichen, Syntax in Ordnung",
    "sekunden": 1
+  },
+  {
+   "name": "Plausibilitaet",
+   "status": "ok",
+   "detail": "kein Bestand um mehr als 10 % geschrumpft",
+   "sekunden": 0
   }
  ]
 }
