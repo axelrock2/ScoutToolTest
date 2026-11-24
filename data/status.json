@@ -1,21 +1,21 @@
 {
  "art": "wochenlauf",
- "start": "2026-11-17T06:04:20Z",
- "ende": "2026-11-17T12:30:03+00:00",
+ "start": "2026-11-24T06:14:23Z",
+ "ende": "2026-11-24T11:14:24+00:00",
  "ergebnis": "teilweise",
  "transferteil": "2026-09-10",
  "schritte": [
   {
    "name": "Kader 2026",
    "status": "ok",
-   "detail": "18648 Spieler einem heutigen Kader zugeordnet, davon 5520 mit Vereinswechsel; 8309 ohne heutigen Kader (davon 1986, deren Verein nicht mehr in erfassten Ligen s",
-   "sekunden": 20951
+   "detail": "18672 Spieler einem heutigen Kader zugeordnet, davon 5523 mit Vereinswechsel; 8314 ohne heutigen Kader (davon 1986, deren Verein nicht mehr in erfassten Ligen s",
+   "sekunden": 16042
   },
   {
    "name": "Leistungsdaten 2026",
    "status": "ok",
-   "detail": "17236 Spieler geschrieben (14733 mit Saisonwerten) -> data/players_raw_2026.json.gz",
-   "sekunden": 2167
+   "detail": "17267 Spieler geschrieben (14825 mit Saisonwerten) -> data/players_raw_2026.json.gz",
+   "sekunden": 1928
   },
   {
    "name": "Sofascore",
@@ -32,14 +32,14 @@
   {
    "name": "Noten",
    "status": "ok",
-   "detail": "17721 Spieler bewertet, davon 12666 mit belastbarer Spielzeit (ab 450 Min) - von 26986 gesammelt -> data/players.json",
-   "sekunden": 10
+   "detail": "17721 Spieler bewertet, davon 12666 mit belastbarer Spielzeit (ab 450 Min) - von 26998 gesammelt -> data/players.json",
+   "sekunden": 12
   },
   {
    "name": "Mischnote",
    "status": "ok",
-   "detail": "Mischnote 2025/26 + 2026/27 (K = 1800): 3150 gemischt, 452 bisher duenn, 1117 neu bewertet, 3649 in Sofascore-Ligen gehalten.",
-   "sekunden": 8
+   "detail": "Mischnote 2025/26 + 2026/27 (K = 1800): 3208 gemischt, 473 bisher duenn, 1153 neu bewertet, 3865 in Sofascore-Ligen gehalten.",
+   "sekunden": 12
   },
   {
    "name": "Frontend",
